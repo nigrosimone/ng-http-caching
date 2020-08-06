@@ -43,7 +43,7 @@ import { NgModule } from '@angular/core';
 import { NgHttpCachingModule, NgHttpCachingConfig } from 'ng-http-caching';
 
 // your config...
-const NgHttpCachingConfig: NgHttpCachingConfig = {
+const ngHttpCachingConfig: NgHttpCachingConfig = {
   lifetime: 1000;
 };
 
@@ -53,7 +53,7 @@ const NgHttpCachingConfig: NgHttpCachingConfig = {
     BrowserModule,
     AppRoutingModule,
     HttpClientModule,
-    NgHttpCachingModule.forRoot(NgHttpCachingConfig),
+    NgHttpCachingModule.forRoot(ngHttpCachingConfig),
   ],
   providers: [],
   bootstrap: [AppComponent],

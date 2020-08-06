@@ -1,4 +1,4 @@
-# NgHttpCaching [![Build Status](https://travis-ci.org/nigrosimone/ng-http-caching.svg?branch=master)](https://travis-ci.com/github/nigrosimone/ng-http-caching)
+# NgHttpCaching [![Build Status](https://travis-ci.org/nigrosimone/ng-http-caching.svg?branch=master)](https://travis-ci.com/github/nigrosimone/ng-http-caching) [![Coverage Status](https://coveralls.io/repos/github/nigrosimone/ng-http-caching/badge.svg?branch=master)](https://coveralls.io/github/nigrosimone/ng-http-caching?branch=master)
 
 Cache for HTTP requests in Angular application.
 

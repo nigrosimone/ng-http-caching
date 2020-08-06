@@ -6,7 +6,7 @@ Cache for HTTP requests in Angular application.
 
 Sometime there is a need to cache the HTTP requests so that browser doesn’t have to hit server to fetch same data when same service is invoked serially or in parallel. NgHttpCaching intercept all request are made, try to retrieve a cached instance of the response and then return the cached response or send the request to the backend. Once the operation has completed cache the response.
 
-See the (stackblitz demo)[https://stackblitz.com/edit/demo-ng-http-caching?file=src%2Fapp%2Fapp.component.ts].
+See the [stackblitz demo](https://stackblitz.com/edit/demo-ng-http-caching?file=src%2Fapp%2Fapp.component.ts).
 
 
 # Get Started

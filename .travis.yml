@@ -3,7 +3,7 @@ sudo: false
 
 language: node_js
 node_js:
-  - '8'
+  - "10"
 
 addons:
   apt:
@@ -14,10 +14,10 @@ addons:
 
 cache:
   directories:
-    - ./node_modules
+     - ./node_modules
 
 install:
   - npm install
 
 script:
-  - npm run test -- --watch=false --no-progress --browsers=ChromeHeadlessNoSandbox
+  - npm run test -- --no-watch --no-progress --browsers=ChromeHeadlessCI

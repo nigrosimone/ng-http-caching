@@ -422,6 +422,7 @@ describe('NgHttpCachingService: default isExpired', () => {
     };
     expect(service.isExpired(cacheEntry)).toBeTrue();
   });
+
 });
 
 describe('NgHttpCachingService: override isExpired', () => {
@@ -623,6 +624,20 @@ describe('NgHttpCachingService: default isExpired with request lifetime', () => 
     };
     expect(service.isExpired(cacheEntry)).toBeFalse();
   });
+
+  it('wrong expired', () => {
+    const cacheEntry: NgHttpCachingEntry = {
+      url: 'https://angular.io/docs?foo=bar',
+      addedTime: Date.now(),
+      response: new HttpResponse({}),
+      request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar', null, {
+        headers: new HttpHeaders({
+          [NgHttpCachingHeaders.LIFETIME]: '-1',
+        }),
+      }),
+    };
+    expect(() => service.isExpired(cacheEntry)).toThrow(new Error('lifetime must be greater than or equal 0'));
+  });
 });
 
 describe('NgHttpCachingService: ADD and GET and DELETE', () => {
@@ -638,6 +653,23 @@ describe('NgHttpCachingService: ADD and GET and DELETE', () => {
   it('should be created', () => {
     expect(service).toBeTruthy();
   });
+
+  it('ADD and GET expired', (done) => {
+    const req = new HttpRequest('GET', 'https://angular.io/docs?foo=bar', null, {
+      headers: new HttpHeaders({
+        [NgHttpCachingHeaders.LIFETIME]: '10',
+      }),
+    });
+    const res = new HttpResponse({ body: { foo: true } });
+    service.addToCache(req, res);
+    expect(service.getFromCache(req)).toEqual(res);
+
+    setTimeout(() => {
+      expect(service.getFromCache(req)).toBeUndefined();
+      done();
+    }, 50);
+
+  }, 1000);
 
   it('ADD and GET and DELETE', () => {
     const req = new HttpRequest('GET', 'https://angular.io/docs?foo=bar');

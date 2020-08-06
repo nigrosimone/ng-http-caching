@@ -105,7 +105,7 @@ Example of customization:
 ```ts
 import { NgHttpCachingConfig, NgHttpCachingEntry } from 'ng-http-caching';
 
-const NgHttpCachingConfig: NgHttpCachingConfig = {
+const ngHttpCachingConfig: NgHttpCachingConfig = {
   isExpired: (entry: NgHttpCachingEntry): boolean => {
       // all cache entry with empty body are always expired
       return !entry.response.body;
@@ -121,7 +121,7 @@ Example of customization:
 ```ts
 import { NgHttpCachingConfig } from 'ng-http-caching';
 
-const NgHttpCachingConfig: NgHttpCachingConfig = {
+const ngHttpCachingConfig: NgHttpCachingConfig = {
   isCacheable: (req: HttpRequest<any>): boolean => {
       // login endpoint isn't cacheable
       return req.urlWithParams.indexOf('/login') !== -1;
@@ -138,7 +138,7 @@ Example of customization:
 ```ts
 import { NgHttpCachingConfig } from 'ng-http-caching';
 
-const NgHttpCachingConfig: NgHttpCachingConfig = {
+const ngHttpCachingConfig: NgHttpCachingConfig = {
   getKey: (req: HttpRequest<any>): string => {
     // add method to the key
     return req.method + req.urlWithParams;

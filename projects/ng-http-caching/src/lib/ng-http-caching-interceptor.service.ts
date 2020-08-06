@@ -11,15 +11,18 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
   constructor(private readonly cacheService: NgHttpCachingService) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    // run garbage collector
+    this.cacheService.runGc();
+
     // Don't cache if it's not cacheable
     if ( !this.cacheService.isCacheable(req) ) {
       return next.handle(req);
     }
 
-    // Checked if there is cached data for this URI
+    // Checked if there is cached data for this request
     const cachedResponse = this.cacheService.getFromCache(req);
     if (cachedResponse) {
-      // In case of parallel requests to same URI,
+      // In case of parallel requests to same request,
       // return the request already in progress
       // otherwise return the last cached data
       return (cachedResponse instanceof Observable) ? cachedResponse : of(cachedResponse.clone());

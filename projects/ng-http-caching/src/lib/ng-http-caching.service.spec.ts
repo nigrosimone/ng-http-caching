@@ -694,3 +694,71 @@ describe('NgHttpCachingService: get override config', () => {
     expect(service.getConfig().allowedMethod).toEqual(config.allowedMethod);
   });
 });
+
+
+describe('NgHttpCachingService: clearCache', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [NgHttpCachingService],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+
+  it('after clearCache no cached entry', () => {
+    const req = new HttpRequest('GET', 'https://angular.io/docs?foo=bar');
+    const res = new HttpResponse({ body: { foo: true } });
+    service.addToCache(req, res);
+    expect(service.getFromCache(req)).toEqual(res);
+    service.clearCache();
+    expect(service.getFromCache(req)).toBeUndefined();
+  });
+});
+
+
+describe('NgHttpCachingService: runGc', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        NgHttpCachingService
+      ],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+
+  it('after runGc no cached entry', (done) => {
+    const reqExp = new HttpRequest('GET', 'https://angular.io/docs?foo=expired', {
+      headers: new HttpHeaders({
+        [NgHttpCachingHeaders.LIFETIME]: '1',
+      }),
+    });
+    const reqFresh = new HttpRequest('GET', 'https://angular.io/docs?foo=fresh');
+    const res = new HttpResponse({ body: { foo: true } });
+
+    service.addToCache(reqExp, res);
+    service.addToCache(reqFresh, res);
+
+    expect(service.getFromCache(reqExp)).toEqual(res);
+    expect(service.getFromCache(reqFresh)).toEqual(res);
+
+    setTimeout(() => {
+      service.runGc();
+
+      expect(service.getFromCache(reqExp)).toBeUndefined();
+      expect(service.getFromCache(reqFresh)).toEqual(res);
+
+      done();
+    }, 50);
+  }, 1000);
+});

@@ -101,6 +101,24 @@ export class NgHttpCachingService {
   }
 
   /**
+   * Clear the cache
+   */
+  clearCache(): void {
+    this.store.clear();
+  }
+
+  /**
+   * Run garbage collector (delete expired cache entry)
+   */
+  runGc(): void {
+    this.store.forEach((entry: NgHttpCachingEntry, key: string) => {
+      if ( this.isExpired(entry) ){
+        this.store.delete(key);
+      }
+    });
+  }
+
+  /**
    * Return true if cache entry is expired
    */
   isExpired(entry: NgHttpCachingEntry): boolean {

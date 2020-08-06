@@ -1,0 +1,76 @@
+{
+  "name": "ng-http-caching",
+  "version": "0.0.0",
+  "description": "Cache for HTTP requests in Angular application.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nigrosimone/ng-http-caching.git"
+  },
+  "keywords": [
+    "angular",
+    "cache",
+    "interceptor",
+    "network",
+    "http",
+    "client",
+    "http-client",
+    "header",
+    "headers",
+    "interact",
+    "configuration"
+  ],
+  "author": "Simone Nigro <nigro.simone@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nigrosimone/ng-http-caching/issues"
+  },
+  "homepage": "https://github.com/nigrosimone/ng-http-caching",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "test": "ng test",
+    "lint": "ng lint",
+    "e2e": "ng e2e",
+    "start-proxy": "ng serve --proxy-config proxy.config.json"
+  },
+  "private": true,
+  "dependencies": {
+    "@angular/animations": "~10.0.6",
+    "@angular/common": "~10.0.6",
+    "@angular/compiler": "~10.0.6",
+    "@angular/core": "~10.0.6",
+    "@angular/forms": "~10.0.6",
+    "@angular/platform-browser": "~10.0.6",
+    "@angular/platform-browser-dynamic": "~10.0.6",
+    "@angular/router": "~10.0.6",
+    "rxjs": "~6.5.5",
+    "tslib": "^2.0.0",
+    "zone.js": "~0.10.3"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "~0.1000.5",
+    "@angular-devkit/build-ng-packagr": "~0.1000.5",
+    "@angular/cli": "~10.0.5",
+    "@angular/compiler-cli": "~10.0.6",
+    "@types/node": "^12.11.1",
+    "@types/jasmine": "~3.5.0",
+    "@types/jasminewd2": "~2.0.3",
+    "codelyzer": "^6.0.0",
+    "jasmine-core": "~3.5.0",
+    "jasmine-spec-reporter": "~5.0.0",
+    "karma": "~5.0.0",
+    "karma-chrome-launcher": "~3.1.0",
+    "karma-coverage-istanbul-reporter": "~3.0.2",
+    "karma-jasmine": "~3.3.0",
+    "karma-jasmine-html-reporter": "^1.5.0",
+    "ng-packagr": "^10.0.0",
+    "protractor": "~7.0.0",
+    "ts-node": "~8.3.0",
+    "tslint": "~6.1.0",
+    "typescript": "~3.9.5"
+  },
+  "engines": {
+    "node": ">=12.13.0"
+  }
+}

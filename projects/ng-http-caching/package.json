@@ -1,0 +1,35 @@
+{
+  "name": "ng-http-caching",
+  "version": "0.0.1",
+  "description": "Cache for HTTP requests in Angular application.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nigrosimone/ng-http-caching.git"
+  },
+  "keywords": [
+    "angular",
+    "cache",
+    "interceptor",
+    "network",
+    "http",
+    "client",
+    "http-client",
+    "header",
+    "headers",
+    "interact",
+    "configuration"
+  ],
+  "author": "Simone Nigro <nigro.simone@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nigrosimone/ng-http-caching/issues"
+  },
+  "homepage": "https://github.com/nigrosimone/ng-http-caching",
+  "peerDependencies": {
+    "@angular/common": "^10.0.6",
+    "@angular/core": "^10.0.6"
+  },
+  "dependencies": {
+    "tslib": "^2.0.0"
+  }
+}

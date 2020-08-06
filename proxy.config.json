@@ -1,0 +1,10 @@
+{
+    "/api/*":{
+      "pathRewrite": {
+        "/api" : ""
+      },
+      "target":"https://postman-echo.com",
+      "secure": false,
+      "changeOrigin": true
+    }
+  }

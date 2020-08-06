@@ -4,20 +4,20 @@ Cache for HTTP requests in Angular application.
 
 # Description
 
-Sometime there is a need to cache the HTTP requests so that browser doesn’t have to hit server to fetch same data when same service is invoked serially or in parallel. NgHttpCaching intercept all request are made, try to retrieve a cached instance of the response and then return the cached response or send the request to the backend. Once the operation has completed cache the response.
+Sometime there is a need to cache the HTTP requests so that browser doesn’t have to hit server to fetch same data when same service is invoked serially or in parallel. `NgHttpCaching` intercept all request are made, try to retrieve a cached instance of the response and then return the cached response or send the request to the backend. Once the operation has completed cache the response.
 
 See the [stackblitz demo](https://stackblitz.com/edit/demo-ng-http-caching?file=src%2Fapp%2Fapp.component.ts).
 
 
 # Get Started
 
-Step 1: intall ng-http-caching
+*Step 1*: intall `ng-http-caching`
 
 ```bash
 npm i ng-http-caching
 ```
 
-Step 2: Import `NgHttpCachingModule` into your app module, eg.:
+*Step 2*: Import `NgHttpCachingModule` into your app module, eg.:
 
 ```ts
 import { NgModule } from '@angular/core';
@@ -38,7 +38,7 @@ import { NgHttpCachingModule } from 'ng-http-caching';
 export class AppModule { }
 ```
 
-If you want configure `NgHttpCachingModule`, you can pass a configuration to the module, eg.:
+if you want configure `NgHttpCachingModule`, you can pass a configuration to the module, eg.:
 
 ```ts
 import { NgModule } from '@angular/core';
@@ -82,15 +82,15 @@ export interface NgHttpCachingConfig {
 
 ### lifetime (number - default: 3.600.000)
 Number of millisecond that a response is stored in the cache. 
-You can set specific "lifitime" for each request by add the header `X-NG-HTTP-CACHING-LIFETIME` (see examble below).
+You can set specific "lifetime" for each request by add the header `X-NG-HTTP-CACHING-LIFETIME` (see examble below).
 
 ### allowedMethod (string[] - default: ['GET'])
 Array of allowed HTTP methods to cache. 
 You can allow multiple methods, eg.: `['GET', 'POST', 'PUT', 'DELETE', 'HEAD']` or 
 allow all methods by: `['ALL']`. If `allowedMethod` is an empty array (`[]`), no response are cached.
-Warning! NgHttpCaching use the full url (url with query parameters) as unique key for the cached response,
-this is correct for the GET request but is potentially wrong for other type of request (eg. `POST`, `PUT`). 
-You can set a different key by customizing the `getKey` config method.
+*Warning!* `NgHttpCaching` use the full url (url with query parameters) as unique key for the cached response,
+this is correct for the `GET` request but is _potentially_ wrong for other type of request (eg. `POST`, `PUT`). 
+You can set a different "key" by customizing the `getKey` config method (see `getKey` section).
 
 ### cacheStrategy (enum NgHttpCachingStrategy - default: NgHttpCachingStrategy.ALLOW_ALL)
 Set the cache strategy, possible strategies are:
@@ -98,7 +98,7 @@ Set the cache strategy, possible strategies are:
 - `NgHttpCachingStrategy.DISALLOW_ALL`: Only the request with `X-NG-HTTP-CACHING-ALLOW-CACHE` header are cacheable if HTTP method is into `allowedMethod`;
 
 ### isExpired (function - default see NgHttpCachingService.isExpired());
-If this function return true the request is expired and a new request is send to backend. 
+If this function return `true` the request is expired and a new request is send to backend. 
 If the result is `undefined`, the normal behaviour is provided.
 Example of customization:
 
@@ -114,7 +114,7 @@ const NgHttpCachingConfig: NgHttpCachingConfig = {
 ```
 
 ### isCacheable (function - default see NgHttpCachingService.isCacheable());
-If this function return true the request is cacheable. 
+If this function return `true` the request is cacheable. 
 If the result is `undefined`, the normal behaviour is provided.
 Example of customization:
 
@@ -131,7 +131,7 @@ const NgHttpCachingConfig: NgHttpCachingConfig = {
 
 
 ### getKey (function - default see NgHttpCachingService.getKey());
-This function return the unique key for store the response into the cache. 
+This function return the unique key (`string`) for store the response into the cache. 
 If the result is `undefined`, the normal behaviour is provided.
 Example of customization:
 
@@ -166,7 +166,7 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     // this request will never cache
-    this.http.get('/api/test', {
+    this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
       headers: {
          [NgHttpCachingHeaders.DISALLOW_CACHE]: '1',
       }
@@ -195,7 +195,7 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     // this request will expire from 365 days
-    this.http.get('/api/test', {
+    this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
       headers: {
          [NgHttpCachingHeaders.LIFETIME]: (1000 * 60 * 60 * 24 * 365).toString(),
       }
@@ -225,7 +225,7 @@ export class AppComponent implements OnInit {
   ngOnInit(): void {
     // this request is marked as cacheable
     // (this is necessary only if cache strategy is DISALLOW_ALL)
-    this.http.get('/api/test', {
+    this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
       headers: {
          [NgHttpCachingHeaders.ALLOW_ALL]: '1',
       }

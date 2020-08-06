@@ -13,4 +13,7 @@ install:
   - npm install
 
 script:
-  - npm run test ng-http-caching -- --no-watch --no-progress --browsers=ChromeHeadlessCI
+  - npm run test ng-http-caching -- --code-coverage --no-watch --no-progress --browsers=ChromeHeadlessCI
+
+after_script:
+  - cat ./coverage/*/lcov.info | ./node_modules/coveralls/bin/coveralls.js

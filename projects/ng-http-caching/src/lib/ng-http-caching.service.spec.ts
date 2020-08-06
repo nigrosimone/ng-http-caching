@@ -1,24 +1,24 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpRequest, HttpResponse, HttpHeaders } from '@angular/common/http';
 import {
-  NgxHttpCachingService,
-  NGX_HTTP_CACHE_CONFIG,
-  NgxCacheConfigDefault,
-  NgxHttpCachingConfig,
-  NgxHttpCachingEntry,
-  NgxHttpCachingStrategy,
-  NgxHttpCachingHeaders,
+  NgHttpCachingService,
+  NG_HTTP_CACHING_CONFIG,
+  NgHttpCachingConfigDefault,
+  NgHttpCachingConfig,
+  NgHttpCachingEntry,
+  NgHttpCachingStrategy,
+  NgHttpCachingHeaders,
 } from './ng-http-caching.service';
 
 
-describe('NgxHttpCachingService: no config', () => {
-  let service: NgxHttpCachingService;
+describe('NgHttpCachingService: no config', () => {
+  let service: NgHttpCachingService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [NgxHttpCachingService],
+      providers: [NgHttpCachingService],
     });
-    service = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {
@@ -26,21 +26,21 @@ describe('NgxHttpCachingService: no config', () => {
   });
 
   it('should have: default value', () => {
-    expect(service.getConfig()).toEqual(NgxCacheConfigDefault);
+    expect(service.getConfig()).toEqual(NgHttpCachingConfigDefault);
   });
 });
 
-describe('NgxHttpCachingService: empty config', () => {
-  let service: NgxHttpCachingService;
+describe('NgHttpCachingService: empty config', () => {
+  let service: NgHttpCachingService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        NgxHttpCachingService,
-        { provide: NGX_HTTP_CACHE_CONFIG, useValue: {} },
+        NgHttpCachingService,
+        { provide: NG_HTTP_CACHING_CONFIG, useValue: {} },
       ],
     });
-    service = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {
@@ -48,13 +48,13 @@ describe('NgxHttpCachingService: empty config', () => {
   });
 
   it('should have: default value', () => {
-    expect(service.getConfig()).toEqual(NgxCacheConfigDefault);
+    expect(service.getConfig()).toEqual(NgHttpCachingConfigDefault);
   });
 });
 
-describe('NgxHttpCachingService: override config', () => {
-  let service: NgxHttpCachingService;
-  const config: NgxHttpCachingConfig = {
+describe('NgHttpCachingService: override config', () => {
+  let service: NgHttpCachingService;
+  const config: NgHttpCachingConfig = {
     lifetime: 10,
     allowedMethod: ['POST'],
   };
@@ -62,11 +62,11 @@ describe('NgxHttpCachingService: override config', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        NgxHttpCachingService,
-        { provide: NGX_HTTP_CACHE_CONFIG, useValue: config },
+        NgHttpCachingService,
+        { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
-    service = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {
@@ -75,24 +75,24 @@ describe('NgxHttpCachingService: override config', () => {
 
   it('should have: override value', () => {
     expect(service.getConfig().lifetime).not.toEqual(
-      NgxCacheConfigDefault.lifetime
+      NgHttpCachingConfigDefault.lifetime
     );
     expect(service.getConfig().allowedMethod).not.toEqual(
-      NgxCacheConfigDefault.allowedMethod
+      NgHttpCachingConfigDefault.allowedMethod
     );
     expect(service.getConfig().lifetime).toEqual(config.lifetime);
     expect(service.getConfig().allowedMethod).toEqual(config.allowedMethod);
   });
 });
 
-describe('NgxHttpCachingService: default getKey', () => {
-  let service: NgxHttpCachingService;
+describe('NgHttpCachingService: default getKey', () => {
+  let service: NgHttpCachingService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [NgxHttpCachingService],
+      providers: [NgHttpCachingService],
     });
-    service = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {
@@ -106,10 +106,10 @@ describe('NgxHttpCachingService: default getKey', () => {
   });
 });
 
-describe('NgxHttpCachingService: override getKey', () => {
-  let service: NgxHttpCachingService;
+describe('NgHttpCachingService: override getKey', () => {
+  let service: NgHttpCachingService;
 
-  const config: NgxHttpCachingConfig = {
+  const config: NgHttpCachingConfig = {
     getKey: (req: HttpRequest<any>): string => {
       return req.method + req.urlWithParams;
     },
@@ -118,11 +118,11 @@ describe('NgxHttpCachingService: override getKey', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        NgxHttpCachingService,
-        { provide: NGX_HTTP_CACHE_CONFIG, useValue: config },
+        NgHttpCachingService,
+        { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
-    service = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {
@@ -136,10 +136,10 @@ describe('NgxHttpCachingService: override getKey', () => {
   });
 });
 
-describe('NgxHttpCachingService: override getKey return undefined', () => {
-  let service: NgxHttpCachingService;
+describe('NgHttpCachingService: override getKey return undefined', () => {
+  let service: NgHttpCachingService;
 
-  const config: NgxHttpCachingConfig = {
+  const config: NgHttpCachingConfig = {
     getKey: (req: HttpRequest<any>): string => {
       return undefined;
     },
@@ -148,11 +148,11 @@ describe('NgxHttpCachingService: override getKey return undefined', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        NgxHttpCachingService,
-        { provide: NGX_HTTP_CACHE_CONFIG, useValue: config },
+        NgHttpCachingService,
+        { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
-    service = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {
@@ -166,14 +166,14 @@ describe('NgxHttpCachingService: override getKey return undefined', () => {
   });
 });
 
-describe('NgxHttpCachingService: default isCacheable', () => {
-  let service: NgxHttpCachingService;
+describe('NgHttpCachingService: default isCacheable', () => {
+  let service: NgHttpCachingService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [NgxHttpCachingService],
+      providers: [NgHttpCachingService],
     });
-    service = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {
@@ -194,20 +194,20 @@ describe('NgxHttpCachingService: default isCacheable', () => {
   });
 });
 
-describe('NgxHttpCachingService: default isCacheable allow ALL', () => {
-  let service: NgxHttpCachingService;
-  const config: NgxHttpCachingConfig = {
+describe('NgHttpCachingService: default isCacheable allow ALL', () => {
+  let service: NgHttpCachingService;
+  const config: NgHttpCachingConfig = {
     allowedMethod: ['ALL']
   };
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        NgxHttpCachingService,
-        { provide: NGX_HTTP_CACHE_CONFIG, useValue: config },
+        NgHttpCachingService,
+        { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
-    service = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {
@@ -228,10 +228,10 @@ describe('NgxHttpCachingService: default isCacheable allow ALL', () => {
   });
 });
 
-describe('NgxHttpCachingService: override isCacheable', () => {
-  let service: NgxHttpCachingService;
+describe('NgHttpCachingService: override isCacheable', () => {
+  let service: NgHttpCachingService;
 
-  const config: NgxHttpCachingConfig = {
+  const config: NgHttpCachingConfig = {
     isCacheable: (req: HttpRequest<any>): boolean => {
       // cacheable only if without queryparameters
       return req.urlWithParams.indexOf('?') === -1;
@@ -241,11 +241,11 @@ describe('NgxHttpCachingService: override isCacheable', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        NgxHttpCachingService,
-        { provide: NGX_HTTP_CACHE_CONFIG, useValue: config },
+        NgHttpCachingService,
+        { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
-    service = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {
@@ -266,10 +266,10 @@ describe('NgxHttpCachingService: override isCacheable', () => {
   });
 });
 
-describe('NgxHttpCachingService: override isCacheable return undefined', () => {
-  let service: NgxHttpCachingService;
+describe('NgHttpCachingService: override isCacheable return undefined', () => {
+  let service: NgHttpCachingService;
 
-  const config: NgxHttpCachingConfig = {
+  const config: NgHttpCachingConfig = {
     isCacheable: (req: HttpRequest<any>): boolean => {
       return undefined;
     },
@@ -278,11 +278,11 @@ describe('NgxHttpCachingService: override isCacheable return undefined', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        NgxHttpCachingService,
-        { provide: NGX_HTTP_CACHE_CONFIG, useValue: config },
+        NgHttpCachingService,
+        { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
-    service = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {
@@ -303,21 +303,21 @@ describe('NgxHttpCachingService: override isCacheable return undefined', () => {
   });
 });
 
-describe('NgxHttpCachingService: isCacheable strategy DISALLOW_ALL', () => {
-  let service: NgxHttpCachingService;
+describe('NgHttpCachingService: isCacheable strategy DISALLOW_ALL', () => {
+  let service: NgHttpCachingService;
 
-  const config: NgxHttpCachingConfig = {
-    cacheStrategy: NgxHttpCachingStrategy.DISALLOW_ALL,
+  const config: NgHttpCachingConfig = {
+    cacheStrategy: NgHttpCachingStrategy.DISALLOW_ALL,
   };
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        NgxHttpCachingService,
-        { provide: NGX_HTTP_CACHE_CONFIG, useValue: config },
+        NgHttpCachingService,
+        { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
-    service = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {
@@ -334,7 +334,7 @@ describe('NgxHttpCachingService: isCacheable strategy DISALLOW_ALL', () => {
 
   it('GET with allow header is cacheable', () => {
     const headers = new HttpHeaders({
-      [NgxHttpCachingHeaders.ALLOW_CACHE]: '1',
+      [NgHttpCachingHeaders.ALLOW_CACHE]: '1',
     });
     const httpRequest = new HttpRequest(
       'GET',
@@ -346,21 +346,21 @@ describe('NgxHttpCachingService: isCacheable strategy DISALLOW_ALL', () => {
   });
 });
 
-describe('NgxHttpCachingService: isCacheable strategy ALLOW_ALL', () => {
-  let service: NgxHttpCachingService;
+describe('NgHttpCachingService: isCacheable strategy ALLOW_ALL', () => {
+  let service: NgHttpCachingService;
 
-  const config: NgxHttpCachingConfig = {
-    cacheStrategy: NgxHttpCachingStrategy.ALLOW_ALL,
+  const config: NgHttpCachingConfig = {
+    cacheStrategy: NgHttpCachingStrategy.ALLOW_ALL,
   };
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        NgxHttpCachingService,
-        { provide: NGX_HTTP_CACHE_CONFIG, useValue: config },
+        NgHttpCachingService,
+        { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
-    service = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {
@@ -377,7 +377,7 @@ describe('NgxHttpCachingService: isCacheable strategy ALLOW_ALL', () => {
 
   it('GET with disallow header isn\'t cacheable', () => {
     const headers = new HttpHeaders({
-      [NgxHttpCachingHeaders.DISALLOW_CACHE]: '1',
+      [NgHttpCachingHeaders.DISALLOW_CACHE]: '1',
     });
     const httpRequest = new HttpRequest(
       'GET',
@@ -389,14 +389,14 @@ describe('NgxHttpCachingService: isCacheable strategy ALLOW_ALL', () => {
   });
 });
 
-describe('NgxHttpCachingService: default isExpired', () => {
-  let service: NgxHttpCachingService;
+describe('NgHttpCachingService: default isExpired', () => {
+  let service: NgHttpCachingService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [NgxHttpCachingService],
+      providers: [NgHttpCachingService],
     });
-    service = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {
@@ -404,7 +404,7 @@ describe('NgxHttpCachingService: default isExpired', () => {
   });
 
   it('not expired', () => {
-    const cacheEntry: NgxHttpCachingEntry = {
+    const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
       addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({}),
@@ -414,7 +414,7 @@ describe('NgxHttpCachingService: default isExpired', () => {
   });
 
   it('expired', () => {
-    const cacheEntry: NgxHttpCachingEntry = {
+    const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
       addedTime: Date.now() - 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({}),
@@ -424,10 +424,10 @@ describe('NgxHttpCachingService: default isExpired', () => {
   });
 });
 
-describe('NgxHttpCachingService: override isExpired', () => {
-  let service: NgxHttpCachingService;
-  const config: NgxHttpCachingConfig = {
-    isExpired: (entry: NgxHttpCachingEntry): boolean => {
+describe('NgHttpCachingService: override isExpired', () => {
+  let service: NgHttpCachingService;
+  const config: NgHttpCachingConfig = {
+    isExpired: (entry: NgHttpCachingEntry): boolean => {
       return true;
     },
   };
@@ -435,11 +435,11 @@ describe('NgxHttpCachingService: override isExpired', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        NgxHttpCachingService,
-        { provide: NGX_HTTP_CACHE_CONFIG, useValue: config },
+        NgHttpCachingService,
+        { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
-    service = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {
@@ -447,7 +447,7 @@ describe('NgxHttpCachingService: override isExpired', () => {
   });
 
   it('expired 1', () => {
-    const cacheEntry: NgxHttpCachingEntry = {
+    const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
       addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({}),
@@ -457,7 +457,7 @@ describe('NgxHttpCachingService: override isExpired', () => {
   });
 
   it('expired 2', () => {
-    const cacheEntry: NgxHttpCachingEntry = {
+    const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
       addedTime: Date.now() - 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({}),
@@ -467,10 +467,10 @@ describe('NgxHttpCachingService: override isExpired', () => {
   });
 });
 
-describe('NgxHttpCachingService: override isExpired return undefined', () => {
-  let service: NgxHttpCachingService;
-  const config: NgxHttpCachingConfig = {
-    isExpired: (entry: NgxHttpCachingEntry): boolean => {
+describe('NgHttpCachingService: override isExpired return undefined', () => {
+  let service: NgHttpCachingService;
+  const config: NgHttpCachingConfig = {
+    isExpired: (entry: NgHttpCachingEntry): boolean => {
       return undefined;
     },
   };
@@ -478,11 +478,11 @@ describe('NgxHttpCachingService: override isExpired return undefined', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        NgxHttpCachingService,
-        { provide: NGX_HTTP_CACHE_CONFIG, useValue: config },
+        NgHttpCachingService,
+        { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
-    service = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {
@@ -490,7 +490,7 @@ describe('NgxHttpCachingService: override isExpired return undefined', () => {
   });
 
   it('expired', () => {
-    const cacheEntry: NgxHttpCachingEntry = {
+    const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
       addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({}),
@@ -500,7 +500,7 @@ describe('NgxHttpCachingService: override isExpired return undefined', () => {
   });
 
   it('not expired', () => {
-    const cacheEntry: NgxHttpCachingEntry = {
+    const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
       addedTime: Date.now() - 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({}),
@@ -510,20 +510,20 @@ describe('NgxHttpCachingService: override isExpired return undefined', () => {
   });
 });
 
-describe('NgxHttpCachingService: default isExpired with long lifetime', () => {
-  let service: NgxHttpCachingService;
-  const config: NgxHttpCachingConfig = {
+describe('NgHttpCachingService: default isExpired with long lifetime', () => {
+  let service: NgHttpCachingService;
+  const config: NgHttpCachingConfig = {
     lifetime: 1000 * 60 * 60 * 24 * 365 * 2,
   };
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        NgxHttpCachingService,
-        { provide: NGX_HTTP_CACHE_CONFIG, useValue: config },
+        NgHttpCachingService,
+        { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
-    service = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {
@@ -531,7 +531,7 @@ describe('NgxHttpCachingService: default isExpired with long lifetime', () => {
   });
 
   it('not expired 1', () => {
-    const cacheEntry: NgxHttpCachingEntry = {
+    const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
       addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({}),
@@ -541,7 +541,7 @@ describe('NgxHttpCachingService: default isExpired with long lifetime', () => {
   });
 
   it('not expired 2', () => {
-    const cacheEntry: NgxHttpCachingEntry = {
+    const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
       addedTime: Date.now() - 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({}),
@@ -551,20 +551,20 @@ describe('NgxHttpCachingService: default isExpired with long lifetime', () => {
   });
 });
 
-describe('NgxHttpCachingService: default isExpired with infinite lifetime', () => {
-  let service: NgxHttpCachingService;
-  const config: NgxHttpCachingConfig = {
+describe('NgHttpCachingService: default isExpired with infinite lifetime', () => {
+  let service: NgHttpCachingService;
+  const config: NgHttpCachingConfig = {
     lifetime: 0,
   };
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        NgxHttpCachingService,
-        { provide: NGX_HTTP_CACHE_CONFIG, useValue: config },
+        NgHttpCachingService,
+        { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
-    service = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {
@@ -572,7 +572,7 @@ describe('NgxHttpCachingService: default isExpired with infinite lifetime', () =
   });
 
   it('not expired', () => {
-    const cacheEntry: NgxHttpCachingEntry = {
+    const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
       addedTime: Date.now() - 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({}),
@@ -582,14 +582,14 @@ describe('NgxHttpCachingService: default isExpired with infinite lifetime', () =
   });
 });
 
-describe('NgxHttpCachingService: default isExpired with request lifetime', () => {
-  let service: NgxHttpCachingService;
+describe('NgHttpCachingService: default isExpired with request lifetime', () => {
+  let service: NgHttpCachingService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [NgxHttpCachingService],
+      providers: [NgHttpCachingService],
     });
-    service = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {
@@ -597,13 +597,13 @@ describe('NgxHttpCachingService: default isExpired with request lifetime', () =>
   });
 
   it('expired', () => {
-    const cacheEntry: NgxHttpCachingEntry = {
+    const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
       addedTime: Date.now() - 1000 * 60 * 60 * 24 * 365 * 2,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar', null, {
         headers: new HttpHeaders({
-          [NgxHttpCachingHeaders.LIFETIME]: (1000 * 60 * 60 * 24 * 365).toString(),
+          [NgHttpCachingHeaders.LIFETIME]: (1000 * 60 * 60 * 24 * 365).toString(),
         }),
       }),
     };
@@ -611,13 +611,13 @@ describe('NgxHttpCachingService: default isExpired with request lifetime', () =>
   });
 
   it('not expired', () => {
-    const cacheEntry: NgxHttpCachingEntry = {
+    const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
       addedTime: Date.now(),
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar', null, {
         headers: new HttpHeaders({
-          [NgxHttpCachingHeaders.LIFETIME]: (1000 * 60 * 60 * 24 * 365).toString(),
+          [NgHttpCachingHeaders.LIFETIME]: (1000 * 60 * 60 * 24 * 365).toString(),
         }),
       }),
     };
@@ -625,14 +625,14 @@ describe('NgxHttpCachingService: default isExpired with request lifetime', () =>
   });
 });
 
-describe('NgxHttpCachingService: ADD and GET and DELETE', () => {
-  let service: NgxHttpCachingService;
+describe('NgHttpCachingService: ADD and GET and DELETE', () => {
+  let service: NgHttpCachingService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [NgxHttpCachingService],
+      providers: [NgHttpCachingService],
     });
-    service = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {
@@ -649,14 +649,14 @@ describe('NgxHttpCachingService: ADD and GET and DELETE', () => {
   });
 });
 
-describe('NgxHttpCachingService: get default config', () => {
-  let service: NgxHttpCachingService;
+describe('NgHttpCachingService: get default config', () => {
+  let service: NgHttpCachingService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [NgxHttpCachingService],
+      providers: [NgHttpCachingService],
     });
-    service = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {
@@ -664,13 +664,13 @@ describe('NgxHttpCachingService: get default config', () => {
   });
 
   it('default', () => {
-    expect(service.getConfig()).toEqual(NgxCacheConfigDefault);
+    expect(service.getConfig()).toEqual(NgHttpCachingConfigDefault);
   });
 });
 
-describe('NgxHttpCachingService: get override config', () => {
-  let service: NgxHttpCachingService;
-  const config: NgxHttpCachingConfig = {
+describe('NgHttpCachingService: get override config', () => {
+  let service: NgHttpCachingService;
+  const config: NgHttpCachingConfig = {
     lifetime: 0,
     allowedMethod: ['POST'],
   };
@@ -678,11 +678,11 @@ describe('NgxHttpCachingService: get override config', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        NgxHttpCachingService,
-        { provide: NGX_HTTP_CACHE_CONFIG, useValue: config },
+        NgHttpCachingService,
+        { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
-    service = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {

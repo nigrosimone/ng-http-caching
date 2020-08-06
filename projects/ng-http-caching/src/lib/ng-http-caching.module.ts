@@ -2,10 +2,10 @@ import { NgModule, ModuleWithProviders } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import {
-  NGX_HTTP_CACHE_CONFIG,
-  NgxHttpCachingConfig,
+  NG_HTTP_CACHING_CONFIG,
+  NgHttpCachingConfig,
 } from './ng-http-caching.service';
-import { NgxHttpCachingInterceptorService } from './ng-http-caching-interceptor.service';
+import { NgHttpCachingInterceptorService } from './ng-http-caching-interceptor.service';
 
 @NgModule({
   declarations: [],
@@ -13,22 +13,22 @@ import { NgxHttpCachingInterceptorService } from './ng-http-caching-interceptor.
   providers: [
     {
       provide: HTTP_INTERCEPTORS,
-      useClass: NgxHttpCachingInterceptorService,
+      useClass: NgHttpCachingInterceptorService,
       multi: true,
     },
   ],
   exports: [],
 })
-export class NgxHttpCachingModule {
+export class NgHttpCachingModule {
   static forRoot(
-    NgxHttpCachingConfig?: NgxHttpCachingConfig
-  ): ModuleWithProviders<NgxHttpCachingModule> {
+    NgHttpCachingConfig?: NgHttpCachingConfig
+  ): ModuleWithProviders<NgHttpCachingModule> {
     return {
-      ngModule: NgxHttpCachingModule,
+      ngModule: NgHttpCachingModule,
       providers: [
         {
-          provide: NGX_HTTP_CACHE_CONFIG,
-          useValue: NgxHttpCachingConfig,
+          provide: NG_HTTP_CACHING_CONFIG,
+          useValue: NgHttpCachingConfig,
         },
       ],
     };

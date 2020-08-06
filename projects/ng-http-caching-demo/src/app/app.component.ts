@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { NgxHttpCachingService} from '../../../ng-http-caching/src/lib/ng-http-caching.service';
+import { NgHttpCachingService} from '../../../ng-http-caching/src/lib/ng-http-caching.service';
 import { HttpClient } from '@angular/common/http';
 
 
@@ -12,11 +12,11 @@ export class AppComponent {
   title = 'ng-http-caching-demo';
 
   constructor(
-    private NgxHttpCachingService: NgxHttpCachingService,
+    private NgHttpCachingService: NgHttpCachingService,
     private http: HttpClient){}
 
   dump(): void {
-    console.log(this.NgxHttpCachingService.store);
+    console.log(this.NgHttpCachingService.store);
   }
 
   getRequest(): void {

@@ -2,8 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { HTTP_INTERCEPTORS, HttpRequest, HttpHandler, HttpResponse, HttpEvent } from '@angular/common/http';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { of, Observable } from 'rxjs';
-import { NgxHttpCachingService, NGX_HTTP_CACHE_CONFIG } from './ng-http-caching.service';
-import { NgxHttpCachingInterceptorService } from './ng-http-caching-interceptor.service';
+import { NgHttpCachingService, NG_HTTP_CACHING_CONFIG } from './ng-http-caching.service';
+import { NgHttpCachingInterceptorService } from './ng-http-caching-interceptor.service';
 
 export class MockHandler extends HttpHandler {
   handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
@@ -11,26 +11,26 @@ export class MockHandler extends HttpHandler {
   }
 }
 
-describe('NgxHttpCachingInterceptorService', () => {
-  let service: NgxHttpCachingInterceptorService;
-  let httpCacheService: NgxHttpCachingService;
+describe('NgHttpCachingInterceptorService', () => {
+  let service: NgHttpCachingInterceptorService;
+  let httpCacheService: NgHttpCachingService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
       providers: [
-        NgxHttpCachingService,
-        NgxHttpCachingInterceptorService,
-        { provide: NGX_HTTP_CACHE_CONFIG, useValue: {} },
+        NgHttpCachingService,
+        NgHttpCachingInterceptorService,
+        { provide: NG_HTTP_CACHING_CONFIG, useValue: {} },
         {
           provide: HTTP_INTERCEPTORS,
-          useClass: NgxHttpCachingInterceptorService,
+          useClass: NgHttpCachingInterceptorService,
           multi: true,
         },
       ],
     });
-    service = TestBed.inject(NgxHttpCachingInterceptorService);
-    httpCacheService = TestBed.inject(NgxHttpCachingService);
+    service = TestBed.inject(NgHttpCachingInterceptorService);
+    httpCacheService = TestBed.inject(NgHttpCachingService);
   });
 
   it('should be created', () => {

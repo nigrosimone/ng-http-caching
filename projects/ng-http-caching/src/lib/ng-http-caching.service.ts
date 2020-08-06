@@ -1,61 +1,61 @@
 import { Injectable, InjectionToken, Inject, Optional } from '@angular/core';
 import { HttpRequest, HttpResponse } from '@angular/common/http';
 
-export interface NgxHttpCachingEntry {
+export interface NgHttpCachingEntry {
   url: string;
   response: HttpResponse<any>;
   request: HttpRequest<any>;
   addedTime: number;
 }
 
-export const NGX_HTTP_CACHE_CONFIG = new InjectionToken<NgxHttpCachingConfig>(
+export const NG_HTTP_CACHING_CONFIG = new InjectionToken<NgHttpCachingConfig>(
   'ng-http-caching.config'
 );
 
-export enum NgxHttpCachingStrategy {
+export enum NgHttpCachingStrategy {
   ALLOW_ALL = 'ALLOW_ALL',
   DISALLOW_ALL = 'DISALLOW_ALL',
 }
 
-export enum NgxHttpCachingHeaders {
-  ALLOW_CACHE = 'X-NGX-CACHE-ALLOW-CACHE',
-  DISALLOW_CACHE = 'X-NGX-CACHE-DISALLOW-CACHE',
-  LIFETIME = 'X-NGX-CACHE-LIFETIME',
+export enum NgHttpCachingHeaders {
+  ALLOW_CACHE = 'X-NG-HTTP-CACHING-ALLOW-CACHE',
+  DISALLOW_CACHE = 'X-NG-HTTP-CACHING-DISALLOW-CACHE',
+  LIFETIME = 'X-NG-HTTP-CACHING-LIFETIME',
 }
-export class NgxHttpCachingConfig {
+export class NgHttpCachingConfig {
   lifetime?: number;
   allowedMethod?: string[];
-  cacheStrategy?: NgxHttpCachingStrategy;
-  isExpired?: (entry: NgxHttpCachingEntry) => boolean | undefined;
+  cacheStrategy?: NgHttpCachingStrategy;
+  isExpired?: (entry: NgHttpCachingEntry) => boolean | undefined;
   isCacheable?: (req: HttpRequest<any>) => boolean | undefined;
   getKey?: (req: HttpRequest<any>) => string | undefined;
 }
 
-export const NgxCacheConfigDefault: NgxHttpCachingConfig = {
+export const NgHttpCachingConfigDefault: NgHttpCachingConfig = {
   lifetime: 3600,
   allowedMethod: ['GET'],
-  cacheStrategy: NgxHttpCachingStrategy.ALLOW_ALL,
+  cacheStrategy: NgHttpCachingStrategy.ALLOW_ALL,
 };
 
 @Injectable()
-export class NgxHttpCachingService {
-  public readonly store = new Map<string, NgxHttpCachingEntry>();
-  private config: NgxHttpCachingConfig;
+export class NgHttpCachingService {
+  public readonly store = new Map<string, NgHttpCachingEntry>();
+  private config: NgHttpCachingConfig;
 
   constructor(
-    @Inject(NGX_HTTP_CACHE_CONFIG) @Optional() config: NgxHttpCachingConfig
+    @Inject(NG_HTTP_CACHING_CONFIG) @Optional() config: NgHttpCachingConfig
   ) {
     if (config) {
-      this.config = { ...NgxCacheConfigDefault, ...config };
+      this.config = { ...NgHttpCachingConfigDefault, ...config };
     } else {
-      this.config = NgxCacheConfigDefault;
+      this.config = NgHttpCachingConfigDefault;
     }
   }
 
   /**
    * Return the config
    */
-  getConfig(): NgxHttpCachingConfig {
+  getConfig(): NgHttpCachingConfig {
     return this.config;
   }
 
@@ -64,7 +64,7 @@ export class NgxHttpCachingService {
    */
   getFromCache(req: HttpRequest<any>): HttpResponse<any> | undefined {
     const key: string = this.getKey(req);
-    const cached: NgxHttpCachingEntry = this.store.get(key);
+    const cached: NgHttpCachingEntry = this.store.get(key);
 
     if (!cached) {
       return undefined;
@@ -83,7 +83,7 @@ export class NgxHttpCachingService {
    */
   addToCache(req: HttpRequest<any>, res: HttpResponse<any>): void {
     const key: string = this.getKey(req);
-    const entry: NgxHttpCachingEntry = {
+    const entry: NgHttpCachingEntry = {
       url: req.urlWithParams,
       response: res,
       request: req,
@@ -103,7 +103,7 @@ export class NgxHttpCachingService {
   /**
    * Return true if cache entry is expired
    */
-  isExpired(entry: NgxHttpCachingEntry): boolean {
+  isExpired(entry: NgHttpCachingEntry): boolean {
     // if user provide custom method, use it
     if (typeof this.config.isExpired === 'function') {
       const result = this.config.isExpired(entry);
@@ -115,8 +115,8 @@ export class NgxHttpCachingService {
     // config/default lifetime
     let lifetime = this.config.lifetime;
     // request has own lifetime
-    if (entry.request.headers.has(NgxHttpCachingHeaders.LIFETIME)) {
-      lifetime = +entry.request.headers.get(NgxHttpCachingHeaders.LIFETIME);
+    if (entry.request.headers.has(NgHttpCachingHeaders.LIFETIME)) {
+      lifetime = +entry.request.headers.get(NgHttpCachingHeaders.LIFETIME);
     }
     // never expire if 0
     if (lifetime === 0) {
@@ -142,13 +142,13 @@ export class NgxHttpCachingService {
       }
     }
     // request has disallow cache header
-    if (req.headers.has(NgxHttpCachingHeaders.DISALLOW_CACHE)) {
+    if (req.headers.has(NgHttpCachingHeaders.DISALLOW_CACHE)) {
       return false;
     }
     // strategy is disallow all...
-    if (this.config.cacheStrategy === NgxHttpCachingStrategy.DISALLOW_ALL) {
+    if (this.config.cacheStrategy === NgHttpCachingStrategy.DISALLOW_ALL) {
       // request isn't allowed if come without allow header
-      if (!req.headers.has(NgxHttpCachingHeaders.ALLOW_CACHE)) {
+      if (!req.headers.has(NgHttpCachingHeaders.ALLOW_CACHE)) {
         return false;
       }
     }
@@ -174,7 +174,7 @@ export class NgxHttpCachingService {
         return result;
       }
     }
-    // default key id url with query parameters
+    // default key id is url with query parameters
     return req.urlWithParams;
   }
 }

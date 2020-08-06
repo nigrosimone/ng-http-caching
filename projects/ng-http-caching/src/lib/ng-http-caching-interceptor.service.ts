@@ -2,13 +2,13 @@ import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest, HttpResponse } fr
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { NgxHttpCachingService } from './ng-http-caching.service';
+import { NgHttpCachingService } from './ng-http-caching.service';
 
 
 @Injectable()
-export class NgxHttpCachingInterceptorService implements HttpInterceptor {
+export class NgHttpCachingInterceptorService implements HttpInterceptor {
 
-  constructor(private readonly cacheService: NgxHttpCachingService) {}
+  constructor(private readonly cacheService: NgHttpCachingService) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     // Don't cache if it's not cacheable

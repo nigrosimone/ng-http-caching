@@ -28,11 +28,11 @@ module.exports = function (config) {
     browsers: ['Chrome'],
     singleRun: false,
     restartOnFileChange: true,
-	customLaunchers: {
-	  ChromeHeadlessCI: {
-		base: 'ChromeHeadless',
-		flags: ['--no-sandbox']
-	  }
-	}
+    customLaunchers: {
+      ChromeHeadlessCI: {
+        base: 'ChromeHeadless',
+        flags: ['--no-sandbox']
+      }
+    }
   });
 };

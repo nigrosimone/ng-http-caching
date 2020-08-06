@@ -78,7 +78,7 @@ export interface NgHttpCachingConfig {
 }
 ```
 
-### lifetime (number - default: 3600)
+### lifetime (number - default: 3.600.000)
 Number of millisecond that a response is stored in the cache. 
 You can set specific "lifitime" for each request by add the header `X-NG-HTTP-CACHING-LIFETIME` (see examble below).
 

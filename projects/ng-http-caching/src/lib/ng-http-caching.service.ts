@@ -32,7 +32,7 @@ export class NgHttpCachingConfig {
 }
 
 export const NgHttpCachingConfigDefault: NgHttpCachingConfig = {
-  lifetime: 3600,
+  lifetime: 60 * 60 * 100,
   allowedMethod: ['GET'],
   cacheStrategy: NgHttpCachingStrategy.ALLOW_ALL,
 };

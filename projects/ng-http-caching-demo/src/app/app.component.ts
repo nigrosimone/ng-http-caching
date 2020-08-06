@@ -12,11 +12,11 @@ export class AppComponent {
   title = 'ng-http-caching-demo';
 
   constructor(
-    private NgHttpCachingService: NgHttpCachingService,
+    private ngHttpCachingService: NgHttpCachingService,
     private http: HttpClient){}
 
   dump(): void {
-    console.log(this.NgHttpCachingService.store);
+    console.log(this.ngHttpCachingService.store);
   }
 
   getRequest(): void {

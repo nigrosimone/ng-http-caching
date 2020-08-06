@@ -5,8 +5,6 @@ import { HttpClientModule } from '@angular/common/http';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { NgHttpCachingModule } from '../../../ng-http-caching/src/lib/ng-http-caching.module';
-import { NgHttpCachingService } from '../../../ng-http-caching/src/lib/ng-http-caching.service';
-
 
 
 @NgModule({
@@ -15,12 +13,7 @@ import { NgHttpCachingService } from '../../../ng-http-caching/src/lib/ng-http-c
     BrowserModule,
     AppRoutingModule,
     HttpClientModule,
-    NgHttpCachingModule.forRoot({
-      lifetime: 3600 * 60
-    }),
-  ],
-  providers: [
-    NgHttpCachingService,
+    NgHttpCachingModule,
   ],
   bootstrap: [AppComponent],
 })

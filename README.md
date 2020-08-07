@@ -122,7 +122,7 @@ Example of customization:
 import { NgHttpCachingConfig, NgHttpCachingEntry } from 'ng-http-caching';
 
 const ngHttpCachingConfig: NgHttpCachingConfig = {
-  isExpired: (entry: NgHttpCachingEntry): boolean => {
+  isExpired: (entry: NgHttpCachingEntry): boolean | undefined => {
       // In this example a special API endpoint (/my-endpoint) send into the body response
       // an expireAt Date property. Only for this endpoit the expiration is provided by expireAt value.
       // For all the other endpoint normal behaviour is provided.
@@ -144,7 +144,7 @@ Example of customization:
 import { NgHttpCachingConfig } from 'ng-http-caching';
 
 const ngHttpCachingConfig: NgHttpCachingConfig = {
-  isCacheable: (req: HttpRequest<any>): boolean => {
+  isCacheable: (req: HttpRequest<any>): boolean | undefined => {
       // In this example the /my-endpoint isn't cacheable.
       // For all the other endpoint normal behaviour is provided.
       if( req.urlWithParams.indexOf('/my-endpoint') !== -1 ){
@@ -172,7 +172,7 @@ const hashOptions = {
 };
 
 const ngHttpCachingConfig: NgHttpCachingConfig = {
-  getKey: (req: HttpRequest<any>): string => {
+  getKey: (req: HttpRequest<any>): string | undefined => {
     // In this example the full request is hashed for provide an unique key for the cache.
     // This is important if you want support method like POST or PUT.
     return req.method + '@' + req.urlWithParams + '@' + hash(req.params, hashOptions) + '@' + hash(req.body, hashOptions);

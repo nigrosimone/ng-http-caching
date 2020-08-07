@@ -172,6 +172,7 @@ const hashOptions = {
 };
 
 const ngHttpCachingConfig: NgHttpCachingConfig = {
+  allowedMethod: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD'],
   getKey: (req: HttpRequest<any>): string | undefined => {
     // In this example the full request is hashed for provide an unique key for the cache.
     // This is important if you want support method like POST or PUT.

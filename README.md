@@ -270,3 +270,27 @@ export class AppComponent implements OnInit {
   }
 }
 ```
+
+## Example: clear/flush all the cache
+
+If user switch the account (logout/login) or the application language, maybe ca be necessary clear all the cache, eg.:
+
+```ts
+import { Component } from '@angular/core';
+import { NgHttpCachingService } from 'ng-http-caching';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.scss']
+})
+export class AppComponent {
+
+  constructor(private ngHttpCachingService: NgHttpCachingService) {}
+
+  clearCache(): void {
+    // Clear all the cache
+    this.ngHttpCachingService.clearCache();
+  }
+}
+```

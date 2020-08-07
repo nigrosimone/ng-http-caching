@@ -127,7 +127,7 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
       // an expireAt Date property. Only for this endpoit the expiration is provided by expireAt value.
       // For all the other endpoint normal behaviour is provided.
       if( entry.request.urlWithParams.indexOf('/my-endpoint') !== -1 ){
-        return entry.response.body.expireAt > Date.now();
+        return entry.response.body.expireAt.getTime() > Date.now();
       }
       // by returning "undefined" normal "ng-http-caching" workflow is applied
       return undefined;

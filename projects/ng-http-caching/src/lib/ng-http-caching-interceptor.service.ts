@@ -1,8 +1,8 @@
 import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { tap } from 'rxjs/operators';
-import { NgHttpCachingService } from './ng-http-caching.service';
+import { tap, finalize, share } from 'rxjs/operators';
+import { NgHttpCachingService, NgHttpCachingHeaders } from './ng-http-caching.service';
 
 
 @Injectable()
@@ -16,25 +16,56 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
 
     // Don't cache if it's not cacheable
     if ( !this.cacheService.isCacheable(req) ) {
-      return next.handle(req);
+      return this.sendRequest(req, next);
     }
 
-    // Checked if there is cached data for this request
-    const cachedResponse = this.cacheService.getFromCache(req);
+    // Checked if there is pending response for this request
+    const cachedObservable: Observable<HttpEvent<any>> = this.cacheService.getFromQueue(req);
+    if ( cachedObservable ) {
+      // console.log('cachedObservable', req);
+      return cachedObservable;
+    }
+
+    // Checked if there is cached response for this request
+    const cachedResponse: HttpResponse<any> = this.cacheService.getFromCache(req);
     if (cachedResponse) {
-      // In case of parallel requests to same request,
-      // return the request already in progress
-      // otherwise return the last cached data
-      return (cachedResponse instanceof Observable) ? cachedResponse : of(cachedResponse.clone());
+      // console.log('cachedResponse', req);
+      return of(cachedResponse.clone());
     }
 
     // If the request of going through for first time
     // then let the request proceed and cache the response
-    return next.handle(req)
-        .pipe(tap(event => {
-            if (event instanceof HttpResponse) {
-                this.cacheService.addToCache(req, event.clone());
-            }
-        }));
+    // console.log('sendRequest', req);
+    const shared = this.sendRequest(req, next).pipe(
+      tap(event => {
+        if (event instanceof HttpResponse) {
+          this.cacheService.addToCache(req, event.clone());
+        }
+      }),
+      finalize(() => {
+        // delete pending request
+        this.cacheService.deleteFromQueue(req);
+      }),
+      share()
+    );
+
+    // add pending request to queue for cache parallell request
+    this.cacheService.addToQueue(req, shared);
+
+    return shared;
+  }
+
+  /**
+   * Send http request (next handler)
+   */
+  sendRequest(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    let cloned: HttpRequest<any> = req;
+    // trim custom headers before send request
+    Object.values(NgHttpCachingHeaders).forEach(ngHttpCachingHeaders => {
+      if ( cloned.headers.has(ngHttpCachingHeaders) ) {
+        cloned = cloned.clone({ headers: cloned.headers.delete(ngHttpCachingHeaders) });
+      }
+    });
+    return next.handle(cloned);
   }
 }

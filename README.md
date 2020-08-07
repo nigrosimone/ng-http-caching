@@ -8,6 +8,12 @@ Sometime there is a need to cache the HTTP requests so that browser doesn’t ha
 
 See the [stackblitz demo](https://stackblitz.com/edit/demo-ng-http-caching?file=src%2Fapp%2Fapp.component.ts).
 
+## Features
+
+✅ HTTP caching<br>
+✅ Handles simultaneous/parallel requests<br>
+✅ Automatic garbage collector of cache<br>
+✅ More than 90% unit tested<br>
 
 # Get Started
 

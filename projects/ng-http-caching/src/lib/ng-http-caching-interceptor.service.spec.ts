@@ -1,14 +1,27 @@
 import { TestBed } from '@angular/core/testing';
-import { HTTP_INTERCEPTORS, HttpRequest, HttpHandler, HttpResponse, HttpEvent } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, HttpRequest, HttpHandler, HttpResponse, HttpEvent, HttpHeaders } from '@angular/common/http';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { of, Observable } from 'rxjs';
-import { NgHttpCachingService, NG_HTTP_CACHING_CONFIG } from './ng-http-caching.service';
+import { delay } from 'rxjs/operators';
+import { NgHttpCachingService, NG_HTTP_CACHING_CONFIG, NgHttpCachingHeaders } from './ng-http-caching.service';
 import { NgHttpCachingInterceptorService } from './ng-http-caching-interceptor.service';
 
-export class MockHandler extends HttpHandler {
+const DELAY = 50;
+
+class MockHandler extends HttpHandler {
   handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
-    return of(new HttpResponse({status: 200, body: {date: new Date()}}));
+    return of(new HttpResponse({status: 200, body: {date: new Date().toJSON()}})).pipe(delay(DELAY));
   }
+}
+
+class EchoMockHandler extends HttpHandler {
+  handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
+    return of(new HttpResponse({status: 200, body: req})).pipe(delay(DELAY));
+  }
+}
+
+function sleep(time: number): Promise<any> {
+  return new Promise((resolve) => setTimeout(resolve, time));
 }
 
 describe('NgHttpCachingInterceptorService', () => {
@@ -37,13 +50,15 @@ describe('NgHttpCachingInterceptorService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should cached', (done) => {
+  it('should cached', async (done) => {
     const url = 'https://angular.io/docs?foo=bar';
-    service.intercept(new HttpRequest('GET', url), new MockHandler()).subscribe(response1 => {
+    service.intercept(new HttpRequest('GET', url), new MockHandler()).subscribe(async (response1) => {
       expect(response1).toBeTruthy();
 
       const cached1 = httpCacheService.store.get(url);
       expect(cached1).toBeTruthy();
+
+      await sleep(DELAY / 3);
 
       service.intercept(new HttpRequest('GET', url), new MockHandler()).subscribe(response2 => {
         expect(response2).toBeTruthy();
@@ -52,6 +67,7 @@ describe('NgHttpCachingInterceptorService', () => {
         expect(cached2).toEqual(cached1);
 
         done();
+
       });
     });
   }, 1000);
@@ -63,5 +79,116 @@ describe('NgHttpCachingInterceptorService', () => {
       expect(httpCacheService.store.get(url)).toBeUndefined();
       done();
     });
+  }, 1000);
+
+  it('sendRequest trim headers', (done) => {
+
+    const req = new HttpRequest('GET', 'https://angular.io/docs?foo=bar', null, {
+      headers: new HttpHeaders({
+        CHECK: '1',
+        [NgHttpCachingHeaders.ALLOW_CACHE]: '1',
+        [NgHttpCachingHeaders.DISALLOW_CACHE]: '1',
+        [NgHttpCachingHeaders.LIFETIME]: '1',
+      })
+    });
+
+    expect(req.headers.has(NgHttpCachingHeaders.ALLOW_CACHE)).toBeTrue();
+    expect(req.headers.has(NgHttpCachingHeaders.DISALLOW_CACHE)).toBeTrue();
+    expect(req.headers.has(NgHttpCachingHeaders.LIFETIME)).toBeTrue();
+    expect(req.headers.has('CHECK')).toBeTrue();
+
+    service.sendRequest(req, new EchoMockHandler()).subscribe(response => {
+      expect(response).toBeTruthy();
+
+      const body: HttpResponse<any> = (response as any).body;
+
+      expect(body).toBeTruthy();
+
+      const headers: HttpHeaders = body.headers;
+
+      expect(headers).toBeTruthy();
+
+      console.log(headers);
+
+      expect(body.headers.has(NgHttpCachingHeaders.ALLOW_CACHE)).toBeFalse();
+      expect(body.headers.has(NgHttpCachingHeaders.DISALLOW_CACHE)).toBeFalse();
+      expect(body.headers.has(NgHttpCachingHeaders.LIFETIME)).toBeFalse();
+      expect(body.headers.has('CHECK')).toBeTrue();
+
+      done();
+    });
+  }, 1000);
+
+  it('parallell requests', async (done) => {
+
+    const req = new HttpRequest('GET', 'https://angular.io/docs?foo=parallell');
+
+    const responses: HttpEvent<any>[] = [];
+
+    expect(httpCacheService.getFromQueue(req)).toBeUndefined();
+
+    service.intercept(req, new MockHandler()).subscribe(response => {
+      expect(response).toBeTruthy();
+      responses.push(response);
+    });
+    await sleep(DELAY / 3);
+    expect(httpCacheService.getFromQueue(req)).toBeTruthy();
+
+    service.intercept(req, new MockHandler()).subscribe(response => {
+      expect(response).toBeTruthy();
+      responses.push(response);
+    });
+    expect(httpCacheService.getFromQueue(req)).toBeTruthy();
+
+    service.intercept(req, new MockHandler()).subscribe(response => {
+      expect(response).toBeTruthy();
+      responses.push(response);
+    });
+    expect(httpCacheService.getFromQueue(req)).toBeTruthy();
+
+    setTimeout(() => {
+      expect(httpCacheService.getFromQueue(req)).toBeUndefined();
+
+      expect(responses[0]).toEqual(responses[1]);
+      expect(responses[0]).toEqual(responses[2]);
+
+      done();
+    }, 500);
+  }, 1000);
+
+  it('nested requests', async (done) => {
+
+    const req = new HttpRequest('GET', 'https://angular.io/docs?foo=nested');
+
+    const responses: HttpEvent<any>[] = [];
+
+    expect(httpCacheService.getFromQueue(req)).toBeUndefined();
+
+    service.intercept(req, new MockHandler()).subscribe(async (response1) => {
+      expect(response1).toBeTruthy();
+
+      await sleep(DELAY / 3);
+      expect(httpCacheService.getFromQueue(req)).toBeUndefined();
+
+      service.intercept(req, new MockHandler()).subscribe(async (response2) => {
+        expect(response2).toBeTruthy();
+        expect(response1).toEqual(response2);
+
+        await sleep(DELAY / 3);
+        expect(httpCacheService.getFromQueue(req)).toBeUndefined();
+
+        service.intercept(req, new MockHandler()).subscribe(async (response3) => {
+          expect(response3).toBeTruthy();
+          expect(response1).toEqual(response3);
+
+          await sleep(DELAY / 3);
+          expect(httpCacheService.getFromQueue(req)).toBeUndefined();
+
+          done();
+        });
+      });
+    });
+    expect(httpCacheService.getFromQueue(req)).toBeTruthy();
+
   }, 1000);
 });

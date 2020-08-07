@@ -1,5 +1,6 @@
 import { Injectable, InjectionToken, Inject, Optional } from '@angular/core';
-import { HttpRequest, HttpResponse } from '@angular/common/http';
+import { HttpRequest, HttpResponse, HttpEvent } from '@angular/common/http';
+import { Observable } from 'rxjs/internal/Observable';
 
 export interface NgHttpCachingEntry {
   url: string;
@@ -39,7 +40,11 @@ export const NgHttpCachingConfigDefault: NgHttpCachingConfig = {
 
 @Injectable()
 export class NgHttpCachingService {
+
   public readonly store = new Map<string, NgHttpCachingEntry>();
+
+  public readonly queue = new Map<string, Observable<HttpEvent<any>>>();
+
   private config: NgHttpCachingConfig;
 
   constructor(
@@ -194,5 +199,35 @@ export class NgHttpCachingService {
     }
     // default key id is url with query parameters
     return req.urlWithParams;
+  }
+
+  /**
+   * Return observable from cache
+   */
+  getFromQueue(req: HttpRequest<any>): Observable<HttpEvent<any>> | undefined {
+    const key: string = this.getKey(req);
+    const cached: Observable<HttpEvent<any>> = this.queue.get(key);
+
+    if (!cached) {
+      return undefined;
+    }
+
+    return cached;
+  }
+
+  /**
+   * Add observable to cache
+   */
+  addToQueue(req: HttpRequest<any>, obs: Observable<HttpEvent<any>>): void {
+    const key: string = this.getKey(req);
+    this.queue.set(key, obs);
+  }
+
+  /**
+   * Delete observable from cache
+   */
+  deleteFromQueue(req: HttpRequest<any>): boolean {
+    const key: string = this.getKey(req);
+    return this.queue.delete(key);
   }
 }

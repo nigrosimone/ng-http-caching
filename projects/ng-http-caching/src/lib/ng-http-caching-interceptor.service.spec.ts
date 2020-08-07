@@ -26,6 +26,12 @@ class ErrorMockHandler extends HttpHandler {
   }
 }
 
+class NullMockHandler extends HttpHandler {
+  handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
+    return of(null);
+  }
+}
+
 
 function sleep(time: number): Promise<any> {
   return new Promise((resolve) => setTimeout(resolve, time));
@@ -210,6 +216,20 @@ describe('NgHttpCachingInterceptorService', () => {
       },
       error => {
         expect(error).toBe('This is an error!');
+        expect(httpCacheService.getFromCache(req)).toBeUndefined();
+        done();
+      }
+    );
+
+  }, 1000);
+
+  it('null requests', (done) => {
+
+    const req = new HttpRequest('GET', 'https://angular.io/docs?foo=null');
+
+    service.intercept(req, new NullMockHandler()).subscribe(
+      response => {
+        expect(response).toBeNull();
         expect(httpCacheService.getFromCache(req)).toBeUndefined();
         done();
       }

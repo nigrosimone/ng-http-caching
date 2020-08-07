@@ -26,7 +26,12 @@ npm i ng-http-caching
 *Step 2*: Import `NgHttpCachingModule` into your app module, eg.:
 
 ```ts
+import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
+import { HttpClientModule } from '@angular/common/http';
+import { AppRoutingModule } from './app-routing.module';
+import { AppComponent } from './app.component';
+
 import { NgHttpCachingModule } from 'ng-http-caching';
 
 @NgModule({
@@ -47,7 +52,12 @@ export class AppModule { }
 if you want configure `NgHttpCachingModule`, you can pass a configuration to the module, eg.:
 
 ```ts
+import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
+import { HttpClientModule } from '@angular/common/http';
+import { AppRoutingModule } from './app-routing.module';
+import { AppComponent } from './app.component';
+
 import { NgHttpCachingModule, NgHttpCachingConfig } from 'ng-http-caching';
 
 // your config...
@@ -113,8 +123,14 @@ import { NgHttpCachingConfig, NgHttpCachingEntry } from 'ng-http-caching';
 
 const ngHttpCachingConfig: NgHttpCachingConfig = {
   isExpired: (entry: NgHttpCachingEntry): boolean => {
-      // all cache entry with empty body are always expired
-      return !entry.response.body;
+      // In this example a special API endpoint (/my-endpoint) send into the body response
+      // an expireAt Date property. Only for this endpoit the expiration is provided by expireAt value.
+      // For all the other endpoint normal behaviour is provided.
+      if( entry.request.urlWithParams.indexOf('/my-endpoint') !== -1 ){
+        return entry.response.body.expireAt > Date.now();
+      }
+      // by returning "undefined" normal "ng-http-caching" workflow is applied
+      return undefined;
     },
 };
 ```
@@ -129,8 +145,13 @@ import { NgHttpCachingConfig } from 'ng-http-caching';
 
 const ngHttpCachingConfig: NgHttpCachingConfig = {
   isCacheable: (req: HttpRequest<any>): boolean => {
-      // login endpoint isn't cacheable
-      return req.urlWithParams.indexOf('/login') !== -1;
+      // In this example the /my-endpoint isn't cacheable.
+      // For all the other endpoint normal behaviour is provided.
+      if( req.urlWithParams.indexOf('/my-endpoint') !== -1 ){
+        return false;
+      }
+      // by returning "undefined" normal "ng-http-caching" workflow is applied
+      return undefined;
     },
 };
 ```
@@ -143,11 +164,18 @@ Example of customization:
 
 ```ts
 import { NgHttpCachingConfig } from 'ng-http-caching';
+import * as hash from 'object-hash';  // install object-hash with: npm i object-hash
+
+const hashOptions = {
+  algorithm: 'md5',
+  encoding: 'hex'
+};
 
 const ngHttpCachingConfig: NgHttpCachingConfig = {
   getKey: (req: HttpRequest<any>): string => {
-    // add method to the key
-    return req.method + req.urlWithParams;
+    // In this example the full request is hashed for provide an unique key for the cache.
+    // This is important if you want support method like POST or PUT.
+    return req.method + '@' + req.urlWithParams + '@' + hash(req.params, hashOptions) + '@' + hash(req.body, hashOptions);
   },
 };
 ```
@@ -171,7 +199,8 @@ export class AppComponent implements OnInit {
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
-    // this request will never cache
+    // This request will never cache.
+    // Note: all the "special" headers in NgHttpCachingHeaders are removed before send the request to the backend.
     this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
       headers: {
          [NgHttpCachingHeaders.DISALLOW_CACHE]: '1',
@@ -200,7 +229,8 @@ export class AppComponent implements OnInit {
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
-    // this request will expire from 365 days
+    // This request will expire from 365 days.
+    // Note: all the "special" headers in NgHttpCachingHeaders are removed before send the request to the backend.
     this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
       headers: {
          [NgHttpCachingHeaders.LIFETIME]: (1000 * 60 * 60 * 24 * 365).toString(),
@@ -229,8 +259,8 @@ export class AppComponent implements OnInit {
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
-    // this request is marked as cacheable
-    // (this is necessary only if cache strategy is DISALLOW_ALL)
+    // This request is marked as cacheable (this is necessary only if cache strategy is DISALLOW_ALL)
+    // Note: all the "special" headers in NgHttpCachingHeaders are removed before send the request to the backend.
     this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
       headers: {
          [NgHttpCachingHeaders.ALLOW_ALL]: '1',

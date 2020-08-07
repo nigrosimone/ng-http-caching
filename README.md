@@ -62,7 +62,7 @@ import { NgHttpCachingModule, NgHttpCachingConfig } from 'ng-http-caching';
 
 // your config...
 const ngHttpCachingConfig: NgHttpCachingConfig = {
-  lifetime: 1000;
+  lifetime: 1000 * 10; // cache expire after 10 seconds
 };
 
 @NgModule({
@@ -98,7 +98,7 @@ export interface NgHttpCachingConfig {
 
 ### lifetime (number - default: 3.600.000)
 Number of millisecond that a response is stored in the cache. 
-You can set specific "lifetime" for each request by add the header `X-NG-HTTP-CACHING-LIFETIME` (see examble below).
+You can set specific "lifetime" for each request by add the header `X-NG-HTTP-CACHING-LIFETIME` (see example below).
 
 ### allowedMethod (string[] - default: ['GET'])
 Array of allowed HTTP methods to cache. 

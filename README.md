@@ -294,3 +294,27 @@ export class AppComponent {
   }
 }
 ```
+
+## Example: clear/flush specific cache entry
+
+If you want delete some cache entry, you can access to the cache storage, eg.:
+
+```ts
+import { Component } from '@angular/core';
+import { NgHttpCachingService } from 'ng-http-caching';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.scss']
+})
+export class AppComponent {
+
+  constructor(private ngHttpCachingService: NgHttpCachingService) {}
+
+  clearCache(key: string): boolean {
+    // Clear the cache for the provided key
+    return this.ngHttpCachingService.store.delete(key);
+  }
+}
+```

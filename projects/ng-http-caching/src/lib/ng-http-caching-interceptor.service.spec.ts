@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HTTP_INTERCEPTORS, HttpRequest, HttpHandler, HttpResponse, HttpEvent, HttpHeaders } from '@angular/common/http';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { of, Observable } from 'rxjs';
+import { of, Observable, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import { NgHttpCachingService, NG_HTTP_CACHING_CONFIG, NgHttpCachingHeaders } from './ng-http-caching.service';
 import { NgHttpCachingInterceptorService } from './ng-http-caching-interceptor.service';
@@ -19,6 +19,13 @@ class EchoMockHandler extends HttpHandler {
     return of(new HttpResponse({status: 200, body: req})).pipe(delay(DELAY));
   }
 }
+
+class ErrorMockHandler extends HttpHandler {
+  handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
+    return throwError('This is an error!').pipe(delay(DELAY));
+  }
+}
+
 
 function sleep(time: number): Promise<any> {
   return new Promise((resolve) => setTimeout(resolve, time));
@@ -189,6 +196,24 @@ describe('NgHttpCachingInterceptorService', () => {
       });
     });
     expect(httpCacheService.getFromQueue(req)).toBeTruthy();
+
+  }, 1000);
+
+  it('error requests', (done) => {
+
+    const req = new HttpRequest('GET', 'https://angular.io/docs?foo=error');
+
+    service.intercept(req, new ErrorMockHandler()).subscribe(
+      () => {
+        expect(false).toBe(true);
+        done();
+      },
+      error => {
+        expect(error).toBe('This is an error!');
+        expect(httpCacheService.getFromCache(req)).toBeUndefined();
+        done();
+      }
+    );
 
   }, 1000);
 });

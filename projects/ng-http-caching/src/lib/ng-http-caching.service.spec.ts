@@ -228,6 +228,40 @@ describe('NgHttpCachingService: default isCacheable allow ALL', () => {
   });
 });
 
+describe('NgHttpCachingService: default isCacheable allow two', () => {
+  let service: NgHttpCachingService;
+  const config: NgHttpCachingConfig = {
+    allowedMethod: ['GET', 'DELETE']
+  };
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        NgHttpCachingService,
+        { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
+      ],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+
+  it('GET is cacheable', () => {
+    const httpRequest = new HttpRequest(
+      'GET',
+      'https://angular.io/docs?foo=bar'
+    );
+    expect(service.isCacheable(httpRequest)).toBeTrue();
+  });
+
+  it('DELETE is cacheable', () => {
+    const httpRequest = new HttpRequest('DELETE', 'https://angular.io/docs');
+    expect(service.isCacheable(httpRequest)).toBeTrue();
+  });
+});
+
 describe('NgHttpCachingService: override isCacheable', () => {
   let service: NgHttpCachingService;
 

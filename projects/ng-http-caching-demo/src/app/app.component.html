@@ -1,2 +1,22 @@
-<button (click)="dump()">Dump</button>
+<button (click)="updateCachedKeys()">Dump</button>
 <button (click)="getRequest()">GET</button>
+<button (click)="clearCache()">Clear Cache</button>
+<button (click)="clearCacheByTag()">Clear Cache TAG</button>
+<button (click)="clearCacheByRegex()">Clear Cache REGEX</button>
+<br /><br />
+<label>
+    ENDPOINT: </label>
+    <input type="text" [(ngModel)]="url">
+
+<br /><br />
+<label>
+    TAG: </label>
+    <input type="text" [(ngModel)]="tag">
+
+<br /><br />
+<label>
+    REGEX:</label>
+    <input type="text" [(ngModel)]="regex">
+
+<br /><br />
+<pre>{{ cachedKeys | json }}</pre>

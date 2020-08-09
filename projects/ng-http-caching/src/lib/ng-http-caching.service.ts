@@ -141,7 +141,8 @@ export class NgHttpCachingService {
    */
   clearCacheByTag(tag: string): void {
     this.store.forEach((entry: NgHttpCachingEntry, key: string) => {
-      if ( entry.request.headers.get(NgHttpCachingHeaders.TAG) === tag ){
+      const tagHeader = entry.request.headers.get(NgHttpCachingHeaders.TAG);
+      if ( tagHeader && tagHeader.split(',').includes(tag) ){
         this.clearCacheByKey(key);
       }
     });

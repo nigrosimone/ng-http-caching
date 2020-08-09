@@ -388,10 +388,11 @@ export class AppComponent {
       }
     }).subscribe(e => console.log);
 
-    // This request is also tagged with "foo" keyword.
+    // This request is also tagged with "foo" keyword, and has another tag "baz".
+    // You can add multiple tags comma separated.
     this.http.get('https://my-json-server.typicode.com/typicode/demo/db?id=2', {
       headers: {
-         [NgHttpCachingHeaders.TAG]: 'foo',
+         [NgHttpCachingHeaders.TAG]: 'foo,baz',
       }
     }).subscribe(e => console.log);
   }

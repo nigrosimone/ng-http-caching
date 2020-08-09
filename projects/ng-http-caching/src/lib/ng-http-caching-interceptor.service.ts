@@ -59,7 +59,7 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
    * Send http request (next handler)
    */
   sendRequest(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    let cloned: HttpRequest<any> = req;
+    let cloned: HttpRequest<any> = req.clone();
     // trim custom headers before send request
     Object.values(NgHttpCachingHeaders).forEach(ngHttpCachingHeaders => {
       if ( cloned.headers.has(ngHttpCachingHeaders) ) {

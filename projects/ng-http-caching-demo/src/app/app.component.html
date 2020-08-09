@@ -1,33 +1,34 @@
-<button (click)="getRequest()">GET</button> - 
+<button (click)="getRequest()">GET</button> -
 <button (click)="clearCache()">Clear Cache</button>
-<button (click)="clearCacheByTag()">Clear Cache TAG</button>
-<button (click)="clearCacheByRegex()">Clear Cache REGEX</button>
 <br />
 
 <span *ngIf="timeSpan !== null">
-    HTTP server respond in ({{ timeSpan }}) ms
+  HTTP server respond in ({{ timeSpan }}) ms
 </span>
 <br /><br />
 
-<label>URL: </label>
-<input type="text" [(ngModel)]="url">
-<br /><br />
+<div style="border: 1px solid grey; padding: 10px 10px 10px 10px;">
+  <label>URL: </label>
+  <input type="text" [(ngModel)]="url" />
+  <br /><br />
 
-<label>TAG: </label>
-<input type="text" [(ngModel)]="tag">
-<br /><br />
+  <label>TAG: </label>
+  <input type="text" [(ngModel)]="tag" /> <button (click)="clearCacheByTag()">Clear Cache TAG</button>
+  <br /><br />
 
-<label>REGEX:</label>
-<input type="text" [(ngModel)]="regex">
-<br /><br />
+  <label>REGEX:</label>
+  <input type="text" [(ngModel)]="regex" /> <button (click)="clearCacheByRegex()">Clear Cache REGEX</button>
+  <br /><br />
 
-<label>NO CACHE:</label>
-<input type="checkbox" [checked]="nocache" (change)="nocache = !nocache" />
-<br /><br />
+  <label>NO CACHE:</label>
+  <input type="checkbox" [checked]="nocache" (change)="nocache = !nocache" />
+  <br /><br />
 
-<label>LIFETIME: </label>
-<input type="text" [(ngModel)]="filetime">
-<br /><br />
+  <label>LIFETIME: </label>
+  <input type="text" [(ngModel)]="filetime" />
+  <br /><br />
+
+</div>
 
 <pre>{{ cachedKeys | json }}</pre>
 <button (click)="updateCachedKeys()">Update cached keys</button>

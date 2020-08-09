@@ -5,6 +5,7 @@ main {
 pre {
   background-color: lightgray;
   padding: 10px 10px 10px 10px;
+  overflow: auto;
 }
 ul {
   margin: 0;

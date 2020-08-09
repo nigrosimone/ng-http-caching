@@ -1,34 +1,37 @@
-<button (click)="getRequest()">GET</button> -
-<button (click)="clearCache()">Clear Cache</button>
-<br />
+<main>
+  <ul class="form-style-1">
+    <li>
+      <label>URL <span class="required">*</span></label>
+      <input type="text" [(ngModel)]="url" style="width: 400px;" />
+      <button (click)="getRequest()">EXECUTE</button><br />
+      <span *ngIf="timeSpan !== null">
+        HTTP server respond in ({{ timeSpan }}) ms
+      </span>
+    </li>
+    <li>
+      <label>TAG </label>
+      <input type="text" [(ngModel)]="tag" />
+      <button (click)="clearCacheByTag()">Clear Cache TAG</button>
+    </li>
+    <li>
+      <label>REGEX</label>
+      <input type="text" [(ngModel)]="regex" />
+      <button (click)="clearCacheByRegex()">Clear Cache REGEX</button>
+    </li>
+    <li>
+      <label>NO CACHE</label>
+      <input
+        type="checkbox"
+        [checked]="nocache"
+        (change)="nocache = !nocache"
+      />
+    </li>
+    <li>
+      <label>LIFETIME</label>
+      <input type="text" [(ngModel)]="filetime" />
+    </li>
+  </ul>
 
-<span *ngIf="timeSpan !== null">
-  HTTP server respond in ({{ timeSpan }}) ms
-</span>
-<br /><br />
-
-<div style="border: 1px solid grey; padding: 10px 10px 10px 10px;">
-  <label>URL: </label>
-  <input type="text" [(ngModel)]="url" />
-  <br /><br />
-
-  <label>TAG: </label>
-  <input type="text" [(ngModel)]="tag" /> <button (click)="clearCacheByTag()">Clear Cache TAG</button>
-  <br /><br />
-
-  <label>REGEX:</label>
-  <input type="text" [(ngModel)]="regex" /> <button (click)="clearCacheByRegex()">Clear Cache REGEX</button>
-  <br /><br />
-
-  <label>NO CACHE:</label>
-  <input type="checkbox" [checked]="nocache" (change)="nocache = !nocache" />
-  <br /><br />
-
-  <label>LIFETIME: </label>
-  <input type="text" [(ngModel)]="filetime" />
-  <br /><br />
-
-</div>
-
-<pre>{{ cachedKeys | json }}</pre>
-<button (click)="updateCachedKeys()">Update cached keys</button>
+  <pre>{{ cachedKeys | json }}</pre>
+  <button (click)="updateCachedKeys()">Update cached keys</button> - <button (click)="clearCache()">Clear Cache</button>
+</main>

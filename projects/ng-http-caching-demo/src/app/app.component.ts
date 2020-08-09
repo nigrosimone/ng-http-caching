@@ -12,7 +12,7 @@ export class AppComponent {
   public url = 'https://my-json-server.typicode.com/typicode/demo/db';
   public tag = '';
   public regex: string = null;
-  public cachedKeys: any = null;
+  public cachedKeys: any = [];
   public timeSpan: number = null;
   public nocache = false;
   public filetime = '3600';

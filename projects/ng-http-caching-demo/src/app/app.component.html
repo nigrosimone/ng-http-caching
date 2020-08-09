@@ -3,6 +3,10 @@
 <button (click)="clearCache()">Clear Cache</button>
 <button (click)="clearCacheByTag()">Clear Cache TAG</button>
 <button (click)="clearCacheByRegex()">Clear Cache REGEX</button>
+<br />
+<span *ngIf="timeSpan !== null">
+    HTTP server respond in ({{ timeSpan }}) ms
+    </span>
 <br /><br />
 <label>
     ENDPOINT: </label>
@@ -19,4 +23,18 @@
     <input type="text" [(ngModel)]="regex">
 
 <br /><br />
+<label>
+    NO CACHE:</label>
+<input
+  type="checkbox"
+  [checked]="nocache"
+  (change)="nocache = !nocache"/>
+  <br /><br />
+
+  <label>
+    LIFETIME: </label>
+    <input type="text" [(ngModel)]="filetime">
+
+<br /><br />
+
 <pre>{{ cachedKeys | json }}</pre>

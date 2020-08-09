@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { NgHttpCachingService, NgHttpCachingHeaders} from '../../../ng-http-caching/src/lib/ng-http-caching.service';
+import { NgHttpCachingService, NgHttpCachingHeaders, NgHttpCachingConfig} from '../../../ng-http-caching/src/lib/ng-http-caching.service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 
@@ -13,26 +13,49 @@ export class AppComponent {
   public tag = '';
   public regex: string = null;
   public cachedKeys: any = null;
+  public timeSpan: number = null;
+  public nocache = false;
+  public filetime = '3600';
+
+  private config: NgHttpCachingConfig;
 
   constructor(
     private ngHttpCachingService: NgHttpCachingService,
-    private http: HttpClient){}
+    private http: HttpClient){
+      this.config = this.ngHttpCachingService.getConfig();
+      this.filetime = this.config.lifetime.toString();
+    }
 
     updateCachedKeys(): void {
       const keys = [];
       this.ngHttpCachingService.store.forEach((value, key) => {
-        keys.push({key});
+        const headers = [];
+        Object.values(NgHttpCachingHeaders).forEach(ngHttpCachingHeaders => {
+          if ( value.request.headers.has(ngHttpCachingHeaders) ) {
+            headers.push({[ngHttpCachingHeaders]: value.request.headers.get(ngHttpCachingHeaders)});
+          }
+        });
+        keys.push({key, headers});
       });
       this.cachedKeys = keys;
     }
 
   getRequest(): void {
-    this.http.get(this.url, {
-      withCredentials: true,
-      headers: {
-        [NgHttpCachingHeaders.TAG]: this.tag
-      }
-    }).subscribe(result => {
+    this.timeSpan = null;
+    const timeStart = new Date();
+
+    let headers = new HttpHeaders();
+    if ( this.tag ) {
+      headers = headers.set(NgHttpCachingHeaders.TAG, this.tag);
+    }
+    if ( this.nocache ) {
+      headers = headers.set(NgHttpCachingHeaders.DISALLOW_CACHE, '1');
+    }
+    if ( Number(this.filetime) !== this.config.lifetime ) {
+      headers = headers.set(NgHttpCachingHeaders.LIFETIME, this.filetime);
+    }
+    this.http.get(this.url, { headers }).subscribe(result => {
+      this.timeSpan = new Date().getTime() - timeStart.getTime();
       this.updateCachedKeys();
       console.log('response', result);
     });

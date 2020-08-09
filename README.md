@@ -91,6 +91,7 @@ export interface NgHttpCachingConfig {
   allowedMethod?: string[];
   cacheStrategy?: NgHttpCachingStrategy;
   isExpired?: (entry: NgHttpCachingEntry) => boolean | undefined;
+  isValid?: (entry: NgHttpCachingEntry) => boolean | undefined;
   isCacheable?: (req: HttpRequest<any>) => boolean | undefined;
   getKey?: (req: HttpRequest<any>) => string | undefined;
 }
@@ -131,6 +132,22 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
       }
       // by returning "undefined" normal "ng-http-caching" workflow is applied
       return undefined;
+    },
+};
+```
+
+### isValid (function - default see NgHttpCachingService.isValid());
+If this function return `true` the cache entry is valid and can be strored, if return `false` isn't valid. 
+If the result is `undefined`, the normal behaviour is provided.
+Example of customization:
+
+```ts
+import { NgHttpCachingConfig, NgHttpCachingEntry } from 'ng-http-caching';
+
+const ngHttpCachingConfig: NgHttpCachingConfig = {
+  isValid: (entry: NgHttpCachingEntry): boolean | undefined => {
+      // In this example only response with status code 200 can be stored into the cache
+      return entry.response.status === 200;
     },
 };
 ```

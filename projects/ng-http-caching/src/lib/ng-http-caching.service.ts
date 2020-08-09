@@ -31,6 +31,7 @@ export class NgHttpCachingConfig {
   isExpired?: (entry: NgHttpCachingEntry) => boolean | undefined;
   isCacheable?: (req: HttpRequest<any>) => boolean | undefined;
   getKey?: (req: HttpRequest<any>) => string | undefined;
+  isValid?: (entry: NgHttpCachingEntry) => boolean | undefined;
 }
 
 export const NgHttpCachingConfigDefault: NgHttpCachingConfig = {
@@ -87,7 +88,7 @@ export class NgHttpCachingService {
   /**
    * Add response to cache
    */
-  addToCache(req: HttpRequest<any>, res: HttpResponse<any>): void {
+  addToCache(req: HttpRequest<any>, res: HttpResponse<any>): boolean {
     const key: string = this.getKey(req);
     const entry: NgHttpCachingEntry = {
       url: req.urlWithParams,
@@ -95,7 +96,11 @@ export class NgHttpCachingService {
       request: req,
       addedTime: Date.now(),
     };
-    this.store.set(key, entry);
+    if ( this.isValid(entry) ) {
+      this.store.set(key, entry);
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -180,6 +185,21 @@ export class NgHttpCachingService {
       throw new Error('lifetime must be greater than or equal 0');
     }
     return entry.addedTime + lifetime < Date.now();
+  }
+
+  /**
+   * Return true if cache entry is valid for store in the cache
+   */
+  isValid(entry: NgHttpCachingEntry): boolean {
+    // if user provide custom method, use it
+    if (typeof this.config.isValid === 'function') {
+      const result = this.config.isValid(entry);
+      // if result is undefined, normal behaviour is provided
+      if (typeof result !== 'undefined') {
+        return result;
+      }
+    }
+    return true;
   }
 
   /**

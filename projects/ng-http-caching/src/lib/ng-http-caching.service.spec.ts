@@ -695,7 +695,7 @@ describe('NgHttpCachingService: ADD and GET and DELETE', () => {
       }),
     });
     const res = new HttpResponse({ body: { foo: true } });
-    service.addToCache(req, res);
+    expect(service.addToCache(req, res)).toBeTrue();
     expect(service.getFromCache(req)).toEqual(res);
 
     setTimeout(() => {
@@ -708,7 +708,7 @@ describe('NgHttpCachingService: ADD and GET and DELETE', () => {
   it('ADD and GET and DELETE', () => {
     const req = new HttpRequest('GET', 'https://angular.io/docs?foo=bar');
     const res = new HttpResponse({ body: { foo: true } });
-    service.addToCache(req, res);
+    expect(service.addToCache(req, res)).toBeTrue();
     expect(service.getFromCache(req)).toEqual(res);
     expect(service.deleteFromCache(req)).toBeTrue();
     expect(service.getFromCache(req)).toBeUndefined();
@@ -779,7 +779,7 @@ describe('NgHttpCachingService: clearCache', () => {
   it('after clearCache no cached entry', () => {
     const req = new HttpRequest('GET', 'https://angular.io/docs?foo=bar');
     const res = new HttpResponse({ body: { foo: true } });
-    service.addToCache(req, res);
+    expect(service.addToCache(req, res)).toBeTrue();
     expect(service.getFromCache(req)).toEqual(res);
     service.clearCache();
     expect(service.getFromCache(req)).toBeUndefined();
@@ -812,8 +812,8 @@ describe('NgHttpCachingService: runGc', () => {
     const reqFresh = new HttpRequest('GET', 'https://angular.io/docs?foo=fresh');
     const res = new HttpResponse({ body: { foo: true } });
 
-    service.addToCache(reqExp, res);
-    service.addToCache(reqFresh, res);
+    expect(service.addToCache(reqExp, res)).toBeTrue();
+    expect(service.addToCache(reqFresh, res)).toBeTrue();
 
     expect(service.getFromCache(reqExp)).toEqual(res);
     expect(service.getFromCache(reqFresh)).toEqual(res);
@@ -850,8 +850,8 @@ describe('NgHttpCachingService: clearCacheByRegex', () => {
     const req2 = new HttpRequest('GET', 'https://angular.io/docs?foo=regex2');
     const res = new HttpResponse({ body: { foo: true } });
 
-    service.addToCache(req1, res);
-    service.addToCache(req2, res);
+    expect(service.addToCache(req1, res)).toBeTrue();
+    expect(service.addToCache(req2, res)).toBeTrue();
 
     expect(service.getFromCache(req1)).toEqual(res);
     expect(service.getFromCache(req2)).toEqual(res);
@@ -868,8 +868,8 @@ describe('NgHttpCachingService: clearCacheByRegex', () => {
     const req2 = new HttpRequest('GET', 'https://angular.io/docs?foo=regex2');
     const res = new HttpResponse({ body: { foo: true } });
 
-    service.addToCache(req1, res);
-    service.addToCache(req2, res);
+    expect(service.addToCache(req1, res)).toBeTrue();
+    expect(service.addToCache(req2, res)).toBeTrue();
 
     expect(service.getFromCache(req1)).toEqual(res);
     expect(service.getFromCache(req2)).toEqual(res);
@@ -903,8 +903,8 @@ describe('NgHttpCachingService: clearCacheByKey', () => {
     const req2 = new HttpRequest('GET', 'https://angular.io/docs?foo=bykey2');
     const res = new HttpResponse({ body: { foo: true } });
 
-    service.addToCache(req1, res);
-    service.addToCache(req2, res);
+    expect(service.addToCache(req1, res)).toBeTrue();
+    expect(service.addToCache(req2, res)).toBeTrue();
 
     expect(service.getFromCache(req1)).toEqual(res);
     expect(service.getFromCache(req2)).toEqual(res);
@@ -952,9 +952,9 @@ describe('NgHttpCachingService: clearCacheByTag', () => {
     });
     const res = new HttpResponse({ body: { foo: true } });
 
-    service.addToCache(req1, res);
-    service.addToCache(req2, res);
-    service.addToCache(req3, res);
+    expect(service.addToCache(req1, res)).toBeTrue();
+    expect(service.addToCache(req2, res)).toBeTrue();
+    expect(service.addToCache(req3, res)).toBeTrue();
 
     expect(service.getFromCache(req1)).toEqual(res);
     expect(service.getFromCache(req2)).toEqual(res);
@@ -968,4 +968,74 @@ describe('NgHttpCachingService: clearCacheByTag', () => {
 
   });
 
+});
+
+describe('NgHttpCachingService: default isValid', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        NgHttpCachingService
+      ],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+
+  it('valid', () => {
+    const cacheEntry: NgHttpCachingEntry = {
+      url: 'https://angular.io/docs?foo=bar',
+      addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
+      response: new HttpResponse({}),
+      request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
+    };
+    expect(service.isValid(cacheEntry)).toBeTrue();
+  });
+});
+
+describe('NgHttpCachingService: override isValid', () => {
+  let service: NgHttpCachingService;
+  const config: NgHttpCachingConfig = {
+    isValid: (entry: NgHttpCachingEntry): boolean => {
+      return entry.response.status === 200;
+    },
+  };
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        NgHttpCachingService,
+        { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
+      ],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+
+  it('valid', () => {
+    const cacheEntry: NgHttpCachingEntry = {
+      url: 'https://angular.io/docs?foo=bar',
+      addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
+      response: new HttpResponse({status: 200}),
+      request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
+    };
+    expect(service.isValid(cacheEntry)).toBeTrue();
+  });
+
+  it('invalid', () => {
+    const cacheEntry: NgHttpCachingEntry = {
+      url: 'https://angular.io/docs?foo=bar',
+      addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
+      response: new HttpResponse({status: 500}),
+      request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
+    };
+    expect(service.isValid(cacheEntry)).toBeFalse();
+  });
 });

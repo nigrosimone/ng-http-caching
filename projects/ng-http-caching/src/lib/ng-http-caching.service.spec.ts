@@ -1039,3 +1039,37 @@ describe('NgHttpCachingService: override isValid', () => {
     expect(service.isValid(cacheEntry)).toBeFalse();
   });
 });
+
+describe('NgHttpCachingService: override isValid return undefined', () => {
+  let service: NgHttpCachingService;
+  const config: NgHttpCachingConfig = {
+    isValid: (entry: NgHttpCachingEntry): undefined => {
+      return undefined;
+    },
+  };
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        NgHttpCachingService,
+        { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
+      ],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+
+  it('valid', () => {
+    const cacheEntry: NgHttpCachingEntry = {
+      url: 'https://angular.io/docs?foo=bar',
+      addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
+      response: new HttpResponse({status: 200}),
+      request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
+    };
+    expect(service.isValid(cacheEntry)).toBeTrue();
+  });
+
+});

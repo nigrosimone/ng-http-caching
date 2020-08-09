@@ -4,3 +4,6 @@ label {
 input {
     width: 400px;
 }
+pre {
+    background-color: lightgray;
+}

@@ -10,7 +10,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 })
 export class AppComponent {
   public url = 'https://my-json-server.typicode.com/typicode/demo/db';
-  public tag: string = null;
+  public tag = '';
   public regex: string = null;
   public cachedKeys: any = null;
 
@@ -21,7 +21,7 @@ export class AppComponent {
     updateCachedKeys(): void {
       const keys = [];
       this.ngHttpCachingService.store.forEach((value, key) => {
-        keys.push({key, headers: value.request.headers});
+        keys.push({key});
       });
       this.cachedKeys = keys;
     }

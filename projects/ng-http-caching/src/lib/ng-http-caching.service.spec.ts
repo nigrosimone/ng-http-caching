@@ -1020,23 +1020,29 @@ describe('NgHttpCachingService: override isValid', () => {
   });
 
   it('valid', () => {
+    const req = new HttpRequest('GET', 'https://angular.io/docs?foo=isValid');
+    const res = new HttpResponse({status: 200});
     const cacheEntry: NgHttpCachingEntry = {
-      url: 'https://angular.io/docs?foo=bar',
+      url: 'https://angular.io/docs?foo=isValid',
       addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
-      response: new HttpResponse({status: 200}),
-      request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
+      response: res,
+      request: req,
     };
     expect(service.isValid(cacheEntry)).toBeTrue();
+    expect(service.addToCache(req, res)).toBeTrue();
   });
 
   it('invalid', () => {
+    const req = new HttpRequest('GET', 'https://angular.io/docs?foo=isValid');
+    const res = new HttpResponse({status: 500});
     const cacheEntry: NgHttpCachingEntry = {
-      url: 'https://angular.io/docs?foo=bar',
+      url: 'https://angular.io/docs?foo=isValid',
       addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
-      response: new HttpResponse({status: 500}),
-      request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
+      response: res,
+      request: req,
     };
     expect(service.isValid(cacheEntry)).toBeFalse();
+    expect(service.addToCache(req, res)).toBeFalse();
   });
 });
 

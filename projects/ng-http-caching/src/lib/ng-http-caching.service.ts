@@ -120,6 +120,17 @@ export class NgHttpCachingService {
   }
 
   /**
+   * Clear the cache by regex
+   */
+  clearCacheByRegex(regex: RegExp): void {
+    this.store.forEach((entry: NgHttpCachingEntry, key: string) => {
+      if ( regex.test(key) ){
+        this.clearCacheByKey(key);
+      }
+    });
+  }
+
+  /**
    * Run garbage collector (delete expired cache entry)
    */
   runGc(): void {

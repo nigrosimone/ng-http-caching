@@ -318,3 +318,27 @@ export class AppComponent {
   }
 }
 ```
+
+## Example: clear/flush specific cache entry by RegEx
+
+If you want delete some cache entry by RegEx, eg.:
+
+```ts
+import { Component } from '@angular/core';
+import { NgHttpCachingService } from 'ng-http-caching';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.scss']
+})
+export class AppComponent {
+
+  constructor(private ngHttpCachingService: NgHttpCachingService) {}
+
+  clearCacheByRegex(regEx: RegExp): void {
+    // Clear the cache for the key that match regex
+    this.ngHttpCachingService.clearCacheByRegex(regEx);
+  }
+}
+```

@@ -828,3 +828,91 @@ describe('NgHttpCachingService: runGc', () => {
     }, 50);
   }, 1000);
 });
+
+describe('NgHttpCachingService: clearCacheByRegex', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        NgHttpCachingService
+      ],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+
+  it('clearCacheByRegex', () => {
+    const req1 = new HttpRequest('GET', 'https://angular.io/docs?foo=regex1');
+    const req2 = new HttpRequest('GET', 'https://angular.io/docs?foo=regex2');
+    const res = new HttpResponse({ body: { foo: true } });
+
+    service.addToCache(req1, res);
+    service.addToCache(req2, res);
+
+    expect(service.getFromCache(req1)).toEqual(res);
+    expect(service.getFromCache(req2)).toEqual(res);
+
+    service.clearCacheByRegex(/regex1$/);
+
+    expect(service.getFromCache(req1)).toBeUndefined();
+    expect(service.getFromCache(req2)).toEqual(res);
+
+  });
+
+  it('clearCacheByRegex RegExp object', () => {
+    const req1 = new HttpRequest('GET', 'https://angular.io/docs?foo=regex1');
+    const req2 = new HttpRequest('GET', 'https://angular.io/docs?foo=regex2');
+    const res = new HttpResponse({ body: { foo: true } });
+
+    service.addToCache(req1, res);
+    service.addToCache(req2, res);
+
+    expect(service.getFromCache(req1)).toEqual(res);
+    expect(service.getFromCache(req2)).toEqual(res);
+
+    service.clearCacheByRegex(new RegExp('regex1$'));
+
+    expect(service.getFromCache(req1)).toBeUndefined();
+    expect(service.getFromCache(req2)).toEqual(res);
+
+  });
+});
+
+describe('NgHttpCachingService: clearCacheByKey', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        NgHttpCachingService
+      ],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+
+  it('clearCacheByKey', () => {
+    const req1 = new HttpRequest('GET', 'https://angular.io/docs?foo=bykey1');
+    const req2 = new HttpRequest('GET', 'https://angular.io/docs?foo=bykey2');
+    const res = new HttpResponse({ body: { foo: true } });
+
+    service.addToCache(req1, res);
+    service.addToCache(req2, res);
+
+    expect(service.getFromCache(req1)).toEqual(res);
+    expect(service.getFromCache(req2)).toEqual(res);
+
+    expect(service.clearCacheByKey('https://angular.io/docs?foo=bykey1')).toBeTrue();
+
+    expect(service.getFromCache(req1)).toBeUndefined();
+    expect(service.getFromCache(req2)).toEqual(res);
+
+  });
+});

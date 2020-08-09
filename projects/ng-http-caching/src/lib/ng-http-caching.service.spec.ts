@@ -916,3 +916,56 @@ describe('NgHttpCachingService: clearCacheByKey', () => {
 
   });
 });
+
+
+describe('NgHttpCachingService: clearCacheByTag', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        NgHttpCachingService
+      ],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+
+  it('clearCacheByTag', () => {
+    const req1 = new HttpRequest('GET', 'https://angular.io/docs?foo=tag1', null, {
+      headers: new HttpHeaders({
+        [NgHttpCachingHeaders.TAG]: 'foo',
+      }),
+    });
+    const req2 = new HttpRequest('GET', 'https://angular.io/docs?foo=tag2', null, {
+      headers: new HttpHeaders({
+        [NgHttpCachingHeaders.TAG]: 'foo',
+      }),
+    });
+    const req3 = new HttpRequest('GET', 'https://angular.io/docs?foo=notag', null, {
+      headers: new HttpHeaders({
+        [NgHttpCachingHeaders.TAG]: 'bar',
+      }),
+    });
+    const res = new HttpResponse({ body: { foo: true } });
+
+    service.addToCache(req1, res);
+    service.addToCache(req2, res);
+    service.addToCache(req3, res);
+
+    expect(service.getFromCache(req1)).toEqual(res);
+    expect(service.getFromCache(req2)).toEqual(res);
+    expect(service.getFromCache(req3)).toEqual(res);
+
+    service.clearCacheByTag('foo');
+
+    expect(service.getFromCache(req1)).toBeUndefined();
+    expect(service.getFromCache(req2)).toBeUndefined();
+    expect(service.getFromCache(req3)).toEqual(res);
+
+  });
+
+});

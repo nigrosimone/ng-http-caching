@@ -22,6 +22,7 @@ export enum NgHttpCachingHeaders {
   ALLOW_CACHE = 'X-NG-HTTP-CACHING-ALLOW-CACHE',
   DISALLOW_CACHE = 'X-NG-HTTP-CACHING-DISALLOW-CACHE',
   LIFETIME = 'X-NG-HTTP-CACHING-LIFETIME',
+  TAG = 'X-NG-HTTP-CACHING-TAG',
 }
 export class NgHttpCachingConfig {
   lifetime?: number;
@@ -125,6 +126,17 @@ export class NgHttpCachingService {
   clearCacheByRegex(regex: RegExp): void {
     this.store.forEach((entry: NgHttpCachingEntry, key: string) => {
       if ( regex.test(key) ){
+        this.clearCacheByKey(key);
+      }
+    });
+  }
+
+  /**
+   * Clear the cache by TAG
+   */
+  clearCacheByTag(tag: string): void {
+    this.store.forEach((entry: NgHttpCachingEntry, key: string) => {
+      if ( entry.request.headers.get(NgHttpCachingHeaders.TAG) === tag ){
         this.clearCacheByKey(key);
       }
     });

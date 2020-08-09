@@ -342,3 +342,46 @@ export class AppComponent {
   }
 }
 ```
+
+## Example: TAG request and clear/flush specific cache entry by TAG
+
+You can tag multiple request by adding special header `'X-NG-HTTP-CACHING-TAG'` with the same tag and 
+using `NgHttpCachingService.clearCacheByTag(tag: syting)` for delete all the tagged request. Eg.:
+
+```ts
+import { Component, OnInit } from '@angular/core';
+import { HttpClient } from "@angular/common/http";
+import { NgHttpCachingService } from 'ng-http-caching';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.scss']
+})
+export class AppComponent {
+
+  constructor(private ngHttpCachingService: NgHttpCachingService) {}
+
+  ngOnInit(): void {
+    // This request is tagged with "foo" keyword. You can tag multiple requests with the same tag and 
+    // using NgHttpCachingService.clearCacheByTag("foo") for delete all the tagged request.
+    this.http.get('https://my-json-server.typicode.com/typicode/demo/db?id=1', {
+      headers: {
+         [NgHttpCachingHeaders.TAG]: 'foo',
+      }
+    }).subscribe(e => console.log);
+
+    // This request is also tagged with "foo" keyword.
+    this.http.get('https://my-json-server.typicode.com/typicode/demo/db?id=2', {
+      headers: {
+         [NgHttpCachingHeaders.TAG]: 'foo',
+      }
+    }).subscribe(e => console.log);
+  }
+
+  clearCacheForFoo(): void {
+    // Clear the cache for all the entry have the tag 'foo'
+    this.ngHttpCachingService.clearCacheByTag('foo');
+  }
+}
+```

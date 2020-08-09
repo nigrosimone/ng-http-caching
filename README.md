@@ -114,7 +114,7 @@ Set the cache strategy, possible strategies are:
 - `NgHttpCachingStrategy.DISALLOW_ALL`: Only the request with `X-NG-HTTP-CACHING-ALLOW-CACHE` header are cacheable if HTTP method is into `allowedMethod`;
 
 ### isExpired (function - default see NgHttpCachingService.isExpired());
-If this function return `true` the request is expired and a new request is send to backend. 
+If this function return `true` the request is expired and a new request is send to backend, if return `false` isn't expired. 
 If the result is `undefined`, the normal behaviour is provided.
 Example of customization:
 
@@ -136,7 +136,7 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
 ```
 
 ### isCacheable (function - default see NgHttpCachingService.isCacheable());
-If this function return `true` the request is cacheable. 
+If this function return `true` the request is cacheable, if return `false` isn't cacheable. 
 If the result is `undefined`, the normal behaviour is provided.
 Example of customization:
 
@@ -297,7 +297,7 @@ export class AppComponent {
 
 ## Example: clear/flush specific cache entry
 
-If you want delete some cache entry, you can access to the cache storage, eg.:
+If you want delete some cache entry, eg.:
 
 ```ts
 import { Component } from '@angular/core';
@@ -314,7 +314,7 @@ export class AppComponent {
 
   clearCache(key: string): boolean {
     // Clear the cache for the provided key
-    return this.ngHttpCachingService.store.delete(key);
+    return this.ngHttpCachingService.clearCacheByKey(key);
   }
 }
 ```

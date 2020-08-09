@@ -76,7 +76,7 @@ export class NgHttpCachingService {
     }
 
     if (this.isExpired(cached)) {
-      this.store.delete(key);
+      this.clearCacheByKey(key);
       return undefined;
     }
 
@@ -102,7 +102,7 @@ export class NgHttpCachingService {
    */
   deleteFromCache(req: HttpRequest<any>): boolean {
     const key: string = this.getKey(req);
-    return this.store.delete(key);
+    return this.clearCacheByKey(key);
   }
 
   /**
@@ -113,12 +113,19 @@ export class NgHttpCachingService {
   }
 
   /**
+   * Clear the cache by key
+   */
+  clearCacheByKey(key: string): boolean {
+    return this.store.delete(key);
+  }
+
+  /**
    * Run garbage collector (delete expired cache entry)
    */
   runGc(): void {
     this.store.forEach((entry: NgHttpCachingEntry, key: string) => {
       if ( this.isExpired(entry) ){
-        this.store.delete(key);
+        this.clearCacheByKey(key);
       }
     });
   }

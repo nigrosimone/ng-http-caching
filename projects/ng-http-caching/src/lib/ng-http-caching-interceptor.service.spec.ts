@@ -68,14 +68,14 @@ describe('NgHttpCachingInterceptorService', () => {
     service.intercept(new HttpRequest('GET', url), new MockHandler()).subscribe(async (response1) => {
       expect(response1).toBeTruthy();
 
-      const cached1 = httpCacheService.store.get(url);
+      const cached1 = httpCacheService.getStore().get(url);
       expect(cached1).toBeTruthy();
 
       await sleep(DELAY / 3);
 
       service.intercept(new HttpRequest('GET', url), new MockHandler()).subscribe(response2 => {
         expect(response2).toBeTruthy();
-        const cached2 = httpCacheService.store.get(url);
+        const cached2 = httpCacheService.getStore().get(url);
         expect(cached2).toBeTruthy();
         expect(cached2).toEqual(cached1);
 
@@ -89,7 +89,7 @@ describe('NgHttpCachingInterceptorService', () => {
     const url = 'https://angular.io/docs?foo=bar';
     service.intercept(new HttpRequest('DELETE', url), new MockHandler()).subscribe(response => {
       expect(response).toBeTruthy();
-      expect(httpCacheService.store.get(url)).toBeUndefined();
+      expect(httpCacheService.getStore().get(url)).toBeUndefined();
       done();
     });
   }, 1000);

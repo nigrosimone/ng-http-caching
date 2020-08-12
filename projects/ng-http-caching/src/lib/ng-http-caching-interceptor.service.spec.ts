@@ -5,6 +5,7 @@ import { of, Observable, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import { NgHttpCachingService, NG_HTTP_CACHING_CONFIG, NgHttpCachingHeaders } from './ng-http-caching.service';
 import { NgHttpCachingInterceptorService } from './ng-http-caching-interceptor.service';
+import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
 
 const DELAY = 50;
 

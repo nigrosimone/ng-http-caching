@@ -102,6 +102,21 @@ describe('NgHttpCachingService: getStore()', () => {
   it('should return object', () => {
     expect(service.getStore()).toBeDefined();
   });
+
+  it('has', () => {
+    const keyUrl = 'https://angular.io/docs?foo=has';
+    const store = service.getStore();
+    const cacheEntry: NgHttpCachingEntry = {
+      url: keyUrl,
+      addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
+      response: new HttpResponse({}),
+      request: new HttpRequest('GET', keyUrl),
+    };
+    store.set(keyUrl, cacheEntry);
+    expect(store.has(keyUrl)).toBeTrue();
+    expect(store.delete(keyUrl)).toBeTrue();
+    expect(store.has(keyUrl)).toBeFalse();
+  });
 });
 
 describe('NgHttpCachingService: getQueue()', () => {

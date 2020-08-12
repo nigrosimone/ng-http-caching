@@ -217,7 +217,7 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
 
 ## Headers
 
-NgHttpCaching use some custom headers for customize the caching behaviour.
+`NgHttpCaching` use some custom headers for customize the caching behaviour.
 The supported headers are exported from the enum `NgHttpCachingHeaders`:
 
 ```ts
@@ -229,16 +229,18 @@ export enum NgHttpCachingHeaders {
 }
 ```
 
+All those headers are removed before send the request to the backend.
+
 ### X-NG-HTTP-CACHING-ALLOW-CACHE (string: any value);
 
 If you have choose the `DISALLOW_ALL` cache strategy, you can mark specific request as cacheable by adding the header `X-NG-HTTP-CACHING-ALLOW-CACHE`, eg.:
 
 ```ts
-  this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
-    headers: {
-      [NgHttpCachingHeaders.ALLOW_ALL]: '1',
-    }
-  }).subscribe(e => console.log);
+this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
+  headers: {
+    [NgHttpCachingHeaders.ALLOW_ALL]: '1',
+  }
+}).subscribe(e => console.log);
 ```
 
 ### X-NG-HTTP-CACHING-DISALLOW-CACHE (string: any value);
@@ -246,11 +248,11 @@ If you have choose the `DISALLOW_ALL` cache strategy, you can mark specific requ
 You can disallow specific request by add the header `X-NG-HTTP-CACHING-DISALLOW-CACHE`, eg.:
 
 ```ts
-  this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
-    headers: { 
-      [NgHttpCachingHeaders.DISALLOW_CACHE]: '1',
-    }
-  }).subscribe(e => console.log);
+this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
+  headers: { 
+    [NgHttpCachingHeaders.DISALLOW_CACHE]: '1',
+  }
+}).subscribe(e => console.log);
 ```
 
 ### X-NG-HTTP-CACHING-LIFETIME (string: number of millisecond);
@@ -258,11 +260,11 @@ You can disallow specific request by add the header `X-NG-HTTP-CACHING-DISALLOW-
 You can set specific lifetime for request by add the header `X-NG-HTTP-CACHING-LIFETIME` with a string value as the number of millisecond, eg.:
 
 ```ts
-  this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
-    headers: {
-     [NgHttpCachingHeaders.LIFETIME]: (1000 * 60 * 60 * 24 * 365).toString(), // one year
-    }
-  }).subscribe(e => console.log);
+this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
+  headers: {
+    [NgHttpCachingHeaders.LIFETIME]: (1000 * 60 * 60 * 24 * 365).toString(), // one year
+  }
+}).subscribe(e => console.log);
 ```
 
 ### X-NG-HTTP-CACHING-TAG (string: tag name);
@@ -271,11 +273,11 @@ You can tag multiple request by adding special header `X-NG-HTTP-CACHING-TAG` wi
 using `NgHttpCachingService.clearCacheByTag(tag: syting)` for delete all the tagged request. Eg.:
 
 ```ts
-  this.http.get('https://my-json-server.typicode.com/typicode/demo/db?id=1', {
-    headers: {
-      [NgHttpCachingHeaders.TAG]: 'foo',
-    }
-  }).subscribe(e => console.log);
+this.http.get('https://my-json-server.typicode.com/typicode/demo/db?id=1', {
+  headers: {
+    [NgHttpCachingHeaders.TAG]: 'foo',
+  }
+}).subscribe(e => console.log);
 ```
 
 ## Cache service

@@ -128,8 +128,6 @@ describe('NgHttpCachingInterceptorService', () => {
 
       expect(headers).toBeTruthy();
 
-      console.log(headers);
-
       expect(body.headers.has(NgHttpCachingHeaders.ALLOW_CACHE)).toBeFalse();
       expect(body.headers.has(NgHttpCachingHeaders.DISALLOW_CACHE)).toBeFalse();
       expect(body.headers.has(NgHttpCachingHeaders.LIFETIME)).toBeFalse();

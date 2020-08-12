@@ -1,6 +1,8 @@
 import { Injectable, InjectionToken, Inject, Optional } from '@angular/core';
 import { HttpRequest, HttpResponse, HttpEvent } from '@angular/common/http';
 import { Observable } from 'rxjs/internal/Observable';
+import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
+import { NgHttpCachingMemoryStorage } from './storage/ng-http-caching-memory-storage';
 
 export interface NgHttpCachingEntry {
   url: string;
@@ -25,6 +27,7 @@ export enum NgHttpCachingHeaders {
   TAG = 'X-NG-HTTP-CACHING-TAG',
 }
 export class NgHttpCachingConfig {
+  store?: NgHttpCachingStorageInterface;
   lifetime?: number;
   allowedMethod?: string[];
   cacheStrategy?: NgHttpCachingStrategy;
@@ -35,6 +38,7 @@ export class NgHttpCachingConfig {
 }
 
 export const NgHttpCachingConfigDefault: NgHttpCachingConfig = {
+  store: new NgHttpCachingMemoryStorage(),
   lifetime: 60 * 60 * 100,
   allowedMethod: ['GET'],
   cacheStrategy: NgHttpCachingStrategy.ALLOW_ALL,
@@ -43,9 +47,7 @@ export const NgHttpCachingConfigDefault: NgHttpCachingConfig = {
 @Injectable()
 export class NgHttpCachingService {
 
-  public readonly store = new Map<string, NgHttpCachingEntry>();
-
-  public readonly queue = new Map<string, Observable<HttpEvent<any>>>();
+  private queue = new Map<string, Observable<HttpEvent<any>>>();
 
   private config: NgHttpCachingConfig;
 
@@ -67,11 +69,25 @@ export class NgHttpCachingService {
   }
 
   /**
+   * Return the queue map
+   */
+  getQueue(): Map<string, Observable<HttpEvent<any>>> {
+    return this.queue;
+  }
+
+  /**
+   * Return the cache store
+   */
+  getStore(): NgHttpCachingStorageInterface {
+    return this.config.store;
+  }
+
+  /**
    * Return response from cache
    */
   getFromCache(req: HttpRequest<any>): HttpResponse<any> | undefined {
     const key: string = this.getKey(req);
-    const cached: NgHttpCachingEntry = this.store.get(key);
+    const cached: NgHttpCachingEntry = this.config.store.get(key);
 
     if (!cached) {
       return undefined;
@@ -97,7 +113,7 @@ export class NgHttpCachingService {
       addedTime: Date.now(),
     };
     if ( this.isValid(entry) ) {
-      this.store.set(key, entry);
+      this.config.store.set(key, entry);
       return true;
     }
     return false;
@@ -115,21 +131,21 @@ export class NgHttpCachingService {
    * Clear the cache
    */
   clearCache(): void {
-    this.store.clear();
+    this.config.store.clear();
   }
 
   /**
    * Clear the cache by key
    */
   clearCacheByKey(key: string): boolean {
-    return this.store.delete(key);
+    return this.config.store.delete(key);
   }
 
   /**
    * Clear the cache by regex
    */
   clearCacheByRegex(regex: RegExp): void {
-    this.store.forEach((entry: NgHttpCachingEntry, key: string) => {
+    this.config.store.forEach((entry: NgHttpCachingEntry, key: string) => {
       if ( regex.test(key) ){
         this.clearCacheByKey(key);
       }
@@ -140,7 +156,7 @@ export class NgHttpCachingService {
    * Clear the cache by TAG
    */
   clearCacheByTag(tag: string): void {
-    this.store.forEach((entry: NgHttpCachingEntry, key: string) => {
+    this.config.store.forEach((entry: NgHttpCachingEntry, key: string) => {
       const tagHeader = entry.request.headers.get(NgHttpCachingHeaders.TAG);
       if ( tagHeader && tagHeader.split(',').includes(tag) ){
         this.clearCacheByKey(key);
@@ -152,7 +168,7 @@ export class NgHttpCachingService {
    * Run garbage collector (delete expired cache entry)
    */
   runGc(): void {
-    this.store.forEach((entry: NgHttpCachingEntry, key: string) => {
+    this.config.store.forEach((entry: NgHttpCachingEntry, key: string) => {
       if ( this.isExpired(entry) ){
         this.clearCacheByKey(key);
       }

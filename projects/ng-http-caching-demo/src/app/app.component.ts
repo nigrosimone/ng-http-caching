@@ -1,34 +1,50 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import {
   NgHttpCachingService,
   NgHttpCachingHeaders,
-  NgHttpCachingConfig,
+  NgHttpCachingConfig
 } from '../../../ng-http-caching/src/lib/ng-http-caching.service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+
+interface CachedKey {
+  key: string;
+  headers: {[key: string]: string}[];
+  status: 'cached' | 'queue';
+}
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
 })
-export class AppComponent {
+export class AppComponent implements OnInit, OnDestroy {
   public url = 'https://my-json-server.typicode.com/typicode/demo/db';
   public tag = '';
   public regex: string = null;
-  public cachedKeys: any = [];
+  public cachedKeys: CachedKey[] = [];
   public timeSpan: number = null;
   public nocache = false;
-  public filetime = null;
+  public lifetime = null;
 
   private config: NgHttpCachingConfig;
+  private timerUpdateCachedKeys: number;
 
   constructor(
     private ngHttpCachingService: NgHttpCachingService,
     private http: HttpClient
   ) {
     this.config = this.ngHttpCachingService.getConfig();
-    this.filetime = null;
+    this.lifetime = null;
   }
+
+  ngOnInit(): void {
+    this.timerUpdateCachedKeys = window.setInterval(() => this.updateCachedKeys(), 100);
+  }
+
+  ngOnDestroy(): void {
+    clearInterval(this.timerUpdateCachedKeys);
+  }
+
 
   getRequest(): void {
     this.timeSpan = null;
@@ -41,8 +57,8 @@ export class AppComponent {
     if (this.nocache) {
       headers = headers.set(NgHttpCachingHeaders.DISALLOW_CACHE, '1');
     }
-    if (this.filetime && Number(this.filetime) !== this.config.lifetime) {
-      headers = headers.set(NgHttpCachingHeaders.LIFETIME, this.filetime);
+    if (this.lifetime && Number(this.lifetime) !== this.config.lifetime) {
+      headers = headers.set(NgHttpCachingHeaders.LIFETIME, this.lifetime);
     }
     this.http.get(this.url, { headers }).subscribe((result) => {
       this.timeSpan = new Date().getTime() - timeStart.getTime();
@@ -72,9 +88,10 @@ export class AppComponent {
   }
 
   updateCachedKeys(): void {
-    const keys = [];
-    this.ngHttpCachingService.store.forEach((value, key) => {
-      const headers = [];
+    const keys: CachedKey[] = [];
+
+    this.ngHttpCachingService.getStore().forEach((value, key) => {
+      const headers: {[key: string]: string}[] = [];
       Object.values(NgHttpCachingHeaders).forEach((ngHttpCachingHeaders) => {
         if (value.request.headers.has(ngHttpCachingHeaders)) {
           headers.push({
@@ -84,8 +101,15 @@ export class AppComponent {
           });
         }
       });
-      keys.push({ key, headers });
+      keys.push({ key, headers, status: 'cached' });
+    });
+    this.ngHttpCachingService.getQueue().forEach((value, key) => {
+      keys.push({ key, headers: [], status: 'queue' });
     });
     this.cachedKeys = keys;
+  }
+
+  trackByCachedKey(index: number, cachedKey: CachedKey): string {
+    return cachedKey.key + '@' + cachedKey.status;
   }
 }

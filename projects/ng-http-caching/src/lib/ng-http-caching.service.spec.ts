@@ -85,6 +85,44 @@ describe('NgHttpCachingService: override config', () => {
   });
 });
 
+describe('NgHttpCachingService: getStore()', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [NgHttpCachingService],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+
+  it('should return object', () => {
+    expect(service.getStore()).toBeDefined();
+  });
+});
+
+describe('NgHttpCachingService: getQueue()', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [NgHttpCachingService],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+
+  it('should return object', () => {
+    expect(service.getQueue()).toBeDefined();
+  });
+});
+
 describe('NgHttpCachingService: default getKey', () => {
   let service: NgHttpCachingService;
 

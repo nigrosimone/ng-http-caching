@@ -2,7 +2,7 @@
 
 Cache for HTTP requests in Angular application.
 
-# Description
+## Description
 
 Sometime there is a need to cache the HTTP requests so that browser doesn’t have to hit server to fetch same data when same service is invoked serially or in parallel. `NgHttpCaching` intercept all request are made, try to retrieve a cached instance of the response and then return the cached response or send the request to the backend. Once the operation has completed cache the response.
 
@@ -14,8 +14,9 @@ See the [stackblitz demo](https://stackblitz.com/edit/demo-ng-http-caching?file=
 ✅ Handles simultaneous/parallel requests<br>
 ✅ Automatic garbage collector of cache<br>
 ✅ More than 90% unit tested<br>
+✅ Custom cache storage<br>
 
-# Get Started
+## Get Started
 
 *Step 1*: intall `ng-http-caching`
 
@@ -62,7 +63,7 @@ import { NgHttpCachingModule, NgHttpCachingConfig } from 'ng-http-caching';
 
 // your config...
 const ngHttpCachingConfig: NgHttpCachingConfig = {
-  lifetime: 1000 * 10; // cache expire after 10 seconds
+  lifetime: 1000 * 10 // cache expire after 10 seconds
 };
 
 @NgModule({
@@ -80,7 +81,7 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
 export class AppModule { }
 ```
 
-### Config
+## Config
 
 This is all the configuration interface, see below for the detail of each config.
 
@@ -90,6 +91,7 @@ export interface NgHttpCachingConfig {
   lifetime?: number;
   allowedMethod?: string[];
   cacheStrategy?: NgHttpCachingStrategy;
+  store?: NgHttpCachingStorageInterface;
   isExpired?: (entry: NgHttpCachingEntry) => boolean | undefined;
   isValid?: (entry: NgHttpCachingEntry) => boolean | undefined;
   isCacheable?: (req: HttpRequest<any>) => boolean | undefined;
@@ -113,6 +115,21 @@ You can set a different "key" by customizing the `getKey` config method (see `ge
 Set the cache strategy, possible strategies are:
 - `NgHttpCachingStrategy.ALLOW_ALL`: All request are cacheable if HTTP method is into `allowedMethod`;
 - `NgHttpCachingStrategy.DISALLOW_ALL`: Only the request with `X-NG-HTTP-CACHING-ALLOW-CACHE` header are cacheable if HTTP method is into `allowedMethod`;
+
+### store (class of NgHttpCachingStorageInterface - default: NgHttpCachingMemoryStorage)
+Set the cache store. You can imlement your custom store by implement the `NgHttpCachingStorageInterface` interface, eg.:
+
+```ts
+import { NgHttpCachingConfig, NgHttpCachingStorageInterface } from 'ng-http-caching';
+
+class MyCustomStore implements NgHttpCachingStorageInterface {
+  // ... your logic
+}
+
+const ngHttpCachingConfig: NgHttpCachingConfig = {
+  store: new MyCustomStore(),
+};
+```
 
 ### isExpired (function - default see NgHttpCachingService.isExpired());
 If this function return `true` the request is expired and a new request is send to backend, if return `false` isn't expired. 
@@ -198,7 +215,174 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
 };
 ```
 
-## Example: exclude specific request from cache
+## Headers
+
+NgHttpCaching use some custom headers for customize the caching behaviour.
+The supported headers are exported from the enum `NgHttpCachingHeaders`:
+
+```ts
+export enum NgHttpCachingHeaders {
+  ALLOW_CACHE = 'X-NG-HTTP-CACHING-ALLOW-CACHE',
+  DISALLOW_CACHE = 'X-NG-HTTP-CACHING-DISALLOW-CACHE',
+  LIFETIME = 'X-NG-HTTP-CACHING-LIFETIME',
+  TAG = 'X-NG-HTTP-CACHING-TAG',
+}
+```
+
+### X-NG-HTTP-CACHING-ALLOW-CACHE (string: any value);
+
+If you have choose the `DISALLOW_ALL` cache strategy, you can mark specific request as cacheable by adding the header `X-NG-HTTP-CACHING-ALLOW-CACHE`, eg.:
+
+```ts
+  this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
+    headers: {
+      [NgHttpCachingHeaders.ALLOW_ALL]: '1',
+    }
+  }).subscribe(e => console.log);
+```
+
+### X-NG-HTTP-CACHING-DISALLOW-CACHE (string: any value);
+
+You can disallow specific request by add the header `X-NG-HTTP-CACHING-DISALLOW-CACHE`, eg.:
+
+```ts
+  this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
+    headers: { 
+      [NgHttpCachingHeaders.DISALLOW_CACHE]: '1',
+    }
+  }).subscribe(e => console.log);
+```
+
+### X-NG-HTTP-CACHING-LIFETIME (string: number of millisecond);
+
+You can set specific lifetime for request by add the header `X-NG-HTTP-CACHING-LIFETIME` with a string value as the number of millisecond, eg.:
+
+```ts
+  this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
+    headers: {
+     [NgHttpCachingHeaders.LIFETIME]: (1000 * 60 * 60 * 24 * 365).toString(), // one year
+    }
+  }).subscribe(e => console.log);
+```
+
+### X-NG-HTTP-CACHING-TAG (string: tag name);
+
+You can tag multiple request by adding special header `X-NG-HTTP-CACHING-TAG` with the same tag and 
+using `NgHttpCachingService.clearCacheByTag(tag: syting)` for delete all the tagged request. Eg.:
+
+```ts
+  this.http.get('https://my-json-server.typicode.com/typicode/demo/db?id=1', {
+    headers: {
+      [NgHttpCachingHeaders.TAG]: 'foo',
+    }
+  }).subscribe(e => console.log);
+```
+
+## Cache service
+
+You can inject into your component the `NgHttpCachingService` that expose some utils methods:
+
+```ts
+export class NgHttpCachingService {
+
+  /**
+   * Return the config
+   */
+  getConfig(): NgHttpCachingConfig;
+
+  /**
+   * Return the queue map
+   */
+  getQueue(): Map<string, Observable<HttpEvent<any>>>;
+
+  /**
+   * Return the cache store
+   */
+  getStore(): NgHttpCachingStorageInterface;
+
+  /**
+   * Return response from cache
+   */
+  getFromCache(req: HttpRequest<any>): HttpResponse<any> | undefined;
+
+  /**
+   * Add response to cache
+   */
+  addToCache(req: HttpRequest<any>, res: HttpResponse<any>): boolean;
+
+  /**
+   * Delete response from cache
+   */
+  deleteFromCache(req: HttpRequest<any>): boolean;
+
+  /**
+   * Clear the cache
+   */
+  clearCache(): void;
+
+  /**
+   * Clear the cache by key
+   */
+  clearCacheByKey(key: string): boolean;
+
+  /**
+   * Clear the cache by regex
+   */
+  clearCacheByRegex(regex: RegExp): void;
+
+  /**
+   * Clear the cache by TAG
+   */
+  clearCacheByTag(tag: string): void;
+
+  /**
+   * Run garbage collector (delete expired cache entry)
+   */
+  runGc(): void;
+
+  /**
+   * Return true if cache entry is expired
+   */
+  isExpired(entry: NgHttpCachingEntry): boolean;
+
+  /**
+   * Return true if cache entry is valid for store in the cache
+   */
+  isValid(entry: NgHttpCachingEntry): boolean;
+
+  /**
+   * Return true if the request is cacheable
+   */
+  isCacheable(req: HttpRequest<any>): boolean;
+
+  /**
+   * Return the cache key
+   */
+  getKey(req: HttpRequest<any>): string;
+
+  /**
+   * Return observable from cache
+   */
+  getFromQueue(req: HttpRequest<any>): Observable<HttpEvent<any>> | undefined;
+
+  /**
+   * Add observable to cache
+   */
+  addToQueue(req: HttpRequest<any>, obs: Observable<HttpEvent<any>>): void;
+
+  /**
+   * Delete observable from cache
+   */
+  deleteFromQueue(req: HttpRequest<any>): boolean;
+
+}
+```
+
+## Examples
+
+Below there are some examples of use case.
+
+### Example: exclude specific request from cache
 
 You can disallow specific request by add the header `X-NG-HTTP-CACHING-DISALLOW-CACHE`, eg.:
 
@@ -228,7 +412,7 @@ export class AppComponent implements OnInit {
 }
 ```
 
-## Example: set specific lifetime for request
+### Example: set specific lifetime for request
 
 You can set specific lifetime for request by add the header `X-NG-HTTP-CACHING-LIFETIME` with a string value as the number of millisecond, eg.:
 
@@ -258,7 +442,7 @@ export class AppComponent implements OnInit {
 }
 ```
 
-## Example: mark specific request as cacheable (if cache strategy is DISALLOW_ALL)
+### Example: mark specific request as cacheable (if cache strategy is DISALLOW_ALL)
 
 If you have choose the `DISALLOW_ALL` cache strategy, you can mark specific request as cacheable by adding the header `X-NG-HTTP-CACHING-ALLOW-CACHE`, eg.:
 
@@ -288,7 +472,7 @@ export class AppComponent implements OnInit {
 }
 ```
 
-## Example: clear/flush all the cache
+### Example: clear/flush all the cache
 
 If user switch the account (logout/login) or the application language, maybe ca be necessary clear all the cache, eg.:
 
@@ -312,7 +496,7 @@ export class AppComponent {
 }
 ```
 
-## Example: clear/flush specific cache entry
+### Example: clear/flush specific cache entry
 
 If you want delete some cache entry, eg.:
 
@@ -336,7 +520,7 @@ export class AppComponent {
 }
 ```
 
-## Example: clear/flush specific cache entry by RegEx
+### Example: clear/flush specific cache entry by RegEx
 
 If you want delete some cache entry by RegEx, eg.:
 
@@ -360,9 +544,9 @@ export class AppComponent {
 }
 ```
 
-## Example: TAG request and clear/flush specific cache entry by TAG
+### Example: TAG request and clear/flush specific cache entry by TAG
 
-You can tag multiple request by adding special header `'X-NG-HTTP-CACHING-TAG'` with the same tag and 
+You can tag multiple request by adding special header `X-NG-HTTP-CACHING-TAG` with the same tag and 
 using `NgHttpCachingService.clearCacheByTag(tag: syting)` for delete all the tagged request. Eg.:
 
 ```ts
@@ -403,3 +587,16 @@ export class AppComponent {
   }
 }
 ```
+
+## Alternatives
+
+Aren't you satisfied? there are some valid alternatives:
+
+ - [cashew](https://www.npmjs.com/package/cashew)
+ - [p3x-angular-http-cache-interceptor](https://www.npmjs.com/package/p3x-angular-http-cache-interceptor)
+ - [@d4h/angular-http-cache](https://www.npmjs.com/package/@d4h/angular-http-cache/v/1.0.0)
+
+
+## Support
+
+This is an open-source project. Star this [repository](https://github.com/nigrosimone/ng-http-caching), if you like it, or even [donate](https://www.paypal.com/paypalme/snwp). Thank you so much!

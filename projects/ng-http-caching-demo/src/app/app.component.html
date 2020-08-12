@@ -10,7 +10,7 @@
     </li>
     <li>
       <label>Add LIFETIME to request</label>
-      <input type="text" [(ngModel)]="filetime" />
+      <input type="text" [(ngModel)]="lifetime" />
     </li>
     <li>
       <label>Mark request as "NO CACHEABLE"</label>
@@ -53,6 +53,35 @@
     </li>
   </ul>
 
-  <pre>{{ cachedKeys | json }}</pre>
+  <table>
+    <thead>
+      <th>Key</th>
+      <th>Headers</th>
+      <th>Status</th>
+    </thead>
+    <tbody *ngIf="cachedKeys && cachedKeys.length > 0; else noCachedKeys">
+      <tr *ngFor="let cachedKey of cachedKeys; trackBy:trackByCachedKey" [ngClass]="cachedKey.status === 'queue' ? 'queue' : ''">
+        <td style="width: 30%; text-align: left;">
+          {{ cachedKey.key }}
+        </td>
+        <td style="width: 60%; text-align: left;">
+          {{ cachedKey.headers | json }}
+        </td>
+        <td style="width: 10%; text-align: left;">
+          {{ cachedKey.status }}
+        </td>
+      </tr>
+    </tbody>
+    <ng-template #noCachedKeys>
+      <tbody>
+        <tr>
+          <td style="text-align: center;" colspan="3">
+            No cached keys
+          </td>
+        </tr>
+      </tbody>
+    </ng-template>
+  </table>
+  <br>
   <button (click)="updateCachedKeys()">Update cached keys</button>
 </main>

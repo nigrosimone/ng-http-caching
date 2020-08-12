@@ -59,6 +59,12 @@ describe('NgHttpCachingInterceptorService', () => {
     httpCacheService = TestBed.inject(NgHttpCachingService);
   });
 
+  afterEach(() => {
+    const store = httpCacheService.getStore();
+    store.clear();
+    expect(store.size).toBe(0);
+  });
+
   it('should be created', () => {
     expect(service).toBeTruthy();
   });

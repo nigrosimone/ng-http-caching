@@ -594,7 +594,7 @@ export class AppComponent {
 
 Aren't you satisfied? there are some valid alternatives:
 
- - [cashew](https://www.npmjs.com/package/cashew)
+ - [@ngneat/cashew](https://www.npmjs.com/package/@ngneat/cashew)
  - [p3x-angular-http-cache-interceptor](https://www.npmjs.com/package/p3x-angular-http-cache-interceptor)
  - [@d4h/angular-http-cache](https://www.npmjs.com/package/@d4h/angular-http-cache)
 

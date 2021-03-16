@@ -18,7 +18,7 @@ See the [stackblitz demo](https://stackblitz.com/edit/demo-ng-http-caching?file=
 
 ## Get Started
 
-*Step 1*: intall `ng-http-caching`
+*Step 1*: install `ng-http-caching`
 
 ```bash
 npm i ng-http-caching

@@ -3,7 +3,7 @@ import {
   NgHttpCachingService,
   NgHttpCachingHeaders,
   NgHttpCachingConfig
-} from '../../../ng-http-caching/src/lib/ng-http-caching.service';
+} from '../../../ng-http-caching/src/public-api';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 interface CachedKey {

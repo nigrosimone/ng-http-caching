@@ -62,7 +62,6 @@
             "main": "projects/ng-http-caching-demo/src/main.ts",
             "polyfills": "projects/ng-http-caching-demo/src/polyfills.ts",
             "tsConfig": "projects/ng-http-caching-demo/tsconfig.app.json",
-            "aot": true,
             "assets": [
               "projects/ng-http-caching-demo/src/favicon.ico",
               "projects/ng-http-caching-demo/src/assets"
@@ -70,7 +69,13 @@
             "styles": [
               "projects/ng-http-caching-demo/src/styles.sass"
             ],
-            "scripts": []
+            "scripts": [],
+            "vendorChunk": true,
+            "extractLicenses": false,
+            "buildOptimizer": false,
+            "sourceMap": true,
+            "optimization": false,
+            "namedChunks": true
           },
           "configurations": {
             "production": {

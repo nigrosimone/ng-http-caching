@@ -270,7 +270,7 @@ this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
 ### X-NG-HTTP-CACHING-TAG (string: tag name);
 
 You can tag multiple request by adding special header `X-NG-HTTP-CACHING-TAG` with the same tag and 
-using `NgHttpCachingService.clearCacheByTag(tag: syting)` for delete all the tagged request. Eg.:
+using `NgHttpCachingService.clearCacheByTag(tag: string)` for delete all the tagged request. Eg.:
 
 ```ts
 this.http.get('https://my-json-server.typicode.com/typicode/demo/db?id=1', {
@@ -549,7 +549,8 @@ export class AppComponent {
 ### Example: TAG request and clear/flush specific cache entry by TAG
 
 You can tag multiple request by adding special header `X-NG-HTTP-CACHING-TAG` with the same tag and 
-using `NgHttpCachingService.clearCacheByTag(tag: syting)` for delete all the tagged request. Eg.:
+using `NgHttpCachingService.clearCacheByTag(tag: 
+)` for delete all the tagged request. Eg.:
 
 ```ts
 import { Component, OnInit } from '@angular/core';

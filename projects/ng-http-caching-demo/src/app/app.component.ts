@@ -13,6 +13,7 @@ interface CachedKey {
 }
 
 @Component({
+  // eslint-disable-next-line @angular-eslint/component-selector
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
@@ -20,17 +21,19 @@ interface CachedKey {
 export class AppComponent implements OnInit, OnDestroy {
   public url = 'https://my-json-server.typicode.com/typicode/demo/db';
   public tag = '';
-  public regex: string = null;
+  public regex = '';
   public cachedKeys: CachedKey[] = [];
-  public timeSpan: number = null;
+  public timeSpan = 0;
   public nocache = false;
   public lifetime = null;
 
   private config: NgHttpCachingConfig;
-  private timerUpdateCachedKeys: number;
+  private timerUpdateCachedKeys = 0;
 
   constructor(
+    // eslint-disable-next-line no-unused-vars
     private ngHttpCachingService: NgHttpCachingService,
+    // eslint-disable-next-line no-unused-vars
     private http: HttpClient
   ) {
     this.config = this.ngHttpCachingService.getConfig();
@@ -47,7 +50,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
 
   getRequest(): void {
-    this.timeSpan = null;
+    this.timeSpan = 0;
     const timeStart = new Date();
 
     let headers = new HttpHeaders();
@@ -92,12 +95,12 @@ export class AppComponent implements OnInit, OnDestroy {
 
     this.ngHttpCachingService.getStore().forEach((value, key) => {
       const headers: {[key: string]: string}[] = [];
-      Object.values(NgHttpCachingHeaders).forEach((ngHttpCachingHeaders) => {
+      Object.values(NgHttpCachingHeaders).forEach((ngHttpCachingHeaders: string) => {
         if (value.request.headers.has(ngHttpCachingHeaders)) {
           headers.push({
             [ngHttpCachingHeaders]: value.request.headers.get(
               ngHttpCachingHeaders
-            ),
+            ) as string,
           });
         }
       });

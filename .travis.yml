@@ -1,13 +1,14 @@
 language: node_js
 node_js:
-  - "14"
+  - "16"
 
 addons:
   chrome: stable
 
 cache:
   directories:
-     - ./node_modules
+    - ./node_modules
+    - ./.angular
 
 install:
   - npm install

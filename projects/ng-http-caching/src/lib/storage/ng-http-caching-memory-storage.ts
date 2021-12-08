@@ -17,6 +17,7 @@ export class NgHttpCachingMemoryStorage implements NgHttpCachingStorageInterface
         return this.store.delete(key);
     }
 
+    // eslint-disable-next-line no-unused-vars
     forEach(callbackfn: (value: NgHttpCachingEntry, key: string) => void): void {
         return this.store.forEach(callbackfn);
     }

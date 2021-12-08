@@ -1,0 +1,59 @@
+{
+  "ignorePatterns": [
+    "!**/*",
+    "**/test.ts",
+    "**/main.ts"
+  ],
+  "env": {
+    "jest": true,
+    "browser": true
+  },
+  "overrides": [
+    {
+      "files": [
+        "*.ts"
+      ],
+      "parserOptions": {
+        "project": [
+          "projects/ng-http-caching/tsconfig.lib.json",
+          "projects/ng-http-caching/tsconfig.spec.json",
+          "projects/ng-http-caching-demo/tsconfig.app.json",
+          "projects/ng-http-caching-demo/tsconfig.spec.json"
+        ],
+        "createDefaultProgram": true
+      },
+      "extends": [
+        "eslint:recommended",
+        "plugin:@angular-eslint/recommended",
+        "plugin:@angular-eslint/template/process-inline-templates"
+      ],
+      "rules": {
+        "@angular-eslint/directive-selector": [
+          "error",
+          {
+            "type": "attribute",
+            "prefix": "ng",
+            "style": "camelCase"
+          }
+        ],
+        "@angular-eslint/component-selector": [
+          "error",
+          {
+            "type": "element",
+            "prefix": "ng",
+            "style": "kebab-case"
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "*.html"
+      ],
+      "extends": [
+        "plugin:@angular-eslint/template/recommended"
+      ],
+      "rules": {}
+    }
+  ]
+}

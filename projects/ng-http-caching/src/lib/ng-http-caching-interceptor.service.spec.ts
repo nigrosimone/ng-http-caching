@@ -5,31 +5,33 @@ import { of, Observable, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import { NgHttpCachingService, NG_HTTP_CACHING_CONFIG, NgHttpCachingHeaders } from './ng-http-caching.service';
 import { NgHttpCachingInterceptorService } from './ng-http-caching-interceptor.service';
-import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
 
 const DELAY = 50;
 
 class MockHandler extends HttpHandler {
+  // eslint-disable-next-line no-unused-vars
   handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
-    return of(new HttpResponse({status: 200, body: {date: new Date().toJSON()}})).pipe(delay(DELAY));
+    return of(new HttpResponse({ status: 200, body: { date: new Date().toJSON() } })).pipe(delay(DELAY));
   }
 }
 
 class EchoMockHandler extends HttpHandler {
   handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
-    return of(new HttpResponse({status: 200, body: req})).pipe(delay(DELAY));
+    return of(new HttpResponse({ status: 200, body: req })).pipe(delay(DELAY));
   }
 }
 
 class ErrorMockHandler extends HttpHandler {
+  // eslint-disable-next-line no-unused-vars
   handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
     return throwError('This is an error!').pipe(delay(DELAY));
   }
 }
 
 class NullMockHandler extends HttpHandler {
+  // eslint-disable-next-line no-unused-vars
   handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
-    return of(null);
+    return of(null as any);
   }
 }
 
@@ -70,7 +72,7 @@ describe('NgHttpCachingInterceptorService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should cached', async (done) => {
+  it('should cached', (done) => {
     const url = 'https://angular.io/docs?foo=bar';
     service.intercept(new HttpRequest('GET', url), new MockHandler()).subscribe(async (response1) => {
       expect(response1).toBeTruthy();
@@ -137,7 +139,7 @@ describe('NgHttpCachingInterceptorService', () => {
     });
   }, 1000);
 
-  it('parallell requests', async (done) => {
+  it('parallell requests', (done) => {
 
     const req = new HttpRequest('GET', 'https://angular.io/docs?foo=parallell');
 
@@ -149,36 +151,37 @@ describe('NgHttpCachingInterceptorService', () => {
       expect(response).toBeTruthy();
       responses.push(response);
     });
-    await sleep(DELAY / 3);
-    expect(httpCacheService.getFromQueue(req)).toBeTruthy();
 
-    service.intercept(req, new MockHandler()).subscribe(response => {
-      expect(response).toBeTruthy();
-      responses.push(response);
+    sleep(DELAY / 3).then(() => {
+      expect(httpCacheService.getFromQueue(req)).toBeTruthy();
+
+      service.intercept(req, new MockHandler()).subscribe(response => {
+        expect(response).toBeTruthy();
+        responses.push(response);
+      });
+      expect(httpCacheService.getFromQueue(req)).toBeTruthy();
+
+      service.intercept(req, new MockHandler()).subscribe(response => {
+        expect(response).toBeTruthy();
+        responses.push(response);
+      });
+      expect(httpCacheService.getFromQueue(req)).toBeTruthy();
+
+      setTimeout(() => {
+        expect(httpCacheService.getFromQueue(req)).toBeUndefined();
+
+        expect(responses[0]).toEqual(responses[1]);
+        expect(responses[0]).toEqual(responses[2]);
+
+        done();
+      }, 500);
+
     });
-    expect(httpCacheService.getFromQueue(req)).toBeTruthy();
-
-    service.intercept(req, new MockHandler()).subscribe(response => {
-      expect(response).toBeTruthy();
-      responses.push(response);
-    });
-    expect(httpCacheService.getFromQueue(req)).toBeTruthy();
-
-    setTimeout(() => {
-      expect(httpCacheService.getFromQueue(req)).toBeUndefined();
-
-      expect(responses[0]).toEqual(responses[1]);
-      expect(responses[0]).toEqual(responses[2]);
-
-      done();
-    }, 500);
   }, 1000);
 
-  it('nested requests', async (done) => {
+  it('nested requests', (done) => {
 
     const req = new HttpRequest('GET', 'https://angular.io/docs?foo=nested');
-
-    const responses: HttpEvent<any>[] = [];
 
     expect(httpCacheService.getFromQueue(req)).toBeUndefined();
 

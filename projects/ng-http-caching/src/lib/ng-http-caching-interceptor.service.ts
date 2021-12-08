@@ -8,6 +8,7 @@ import { NgHttpCachingService, NgHttpCachingHeaders } from './ng-http-caching.se
 @Injectable()
 export class NgHttpCachingInterceptorService implements HttpInterceptor {
 
+  // eslint-disable-next-line no-unused-vars
   constructor(private readonly cacheService: NgHttpCachingService) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
@@ -20,14 +21,14 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
     }
 
     // Checked if there is pending response for this request
-    const cachedObservable: Observable<HttpEvent<any>> = this.cacheService.getFromQueue(req);
+    const cachedObservable: Observable<HttpEvent<any>> | undefined = this.cacheService.getFromQueue(req);
     if ( cachedObservable ) {
       // console.log('cachedObservable', req);
       return cachedObservable;
     }
 
     // Checked if there is cached response for this request
-    const cachedResponse: HttpResponse<any> = this.cacheService.getFromCache(req);
+    const cachedResponse: HttpResponse<any> | undefined = this.cacheService.getFromCache(req);
     if (cachedResponse) {
       // console.log('cachedResponse', req);
       return of(cachedResponse.clone());

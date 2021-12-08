@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { NgHttpCachingEntry } from '../ng-http-caching.service';
 
 export interface NgHttpCachingStorageInterface {

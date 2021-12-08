@@ -16,24 +16,34 @@ export const NG_HTTP_CACHING_CONFIG = new InjectionToken<NgHttpCachingConfig>(
 );
 
 export enum NgHttpCachingStrategy {
+  // eslint-disable-next-line no-unused-vars
   ALLOW_ALL = 'ALLOW_ALL',
+  // eslint-disable-next-line no-unused-vars
   DISALLOW_ALL = 'DISALLOW_ALL',
 }
 
 export enum NgHttpCachingHeaders {
+  // eslint-disable-next-line no-unused-vars
   ALLOW_CACHE = 'X-NG-HTTP-CACHING-ALLOW-CACHE',
+  // eslint-disable-next-line no-unused-vars
   DISALLOW_CACHE = 'X-NG-HTTP-CACHING-DISALLOW-CACHE',
+  // eslint-disable-next-line no-unused-vars
   LIFETIME = 'X-NG-HTTP-CACHING-LIFETIME',
+  // eslint-disable-next-line no-unused-vars
   TAG = 'X-NG-HTTP-CACHING-TAG',
 }
-export class NgHttpCachingConfig {
+export interface NgHttpCachingConfig {
   store?: NgHttpCachingStorageInterface;
   lifetime?: number;
   allowedMethod?: string[];
   cacheStrategy?: NgHttpCachingStrategy;
+  // eslint-disable-next-line no-unused-vars
   isExpired?: (entry: NgHttpCachingEntry) => boolean | undefined;
+  // eslint-disable-next-line no-unused-vars
   isCacheable?: (req: HttpRequest<any>) => boolean | undefined;
+  // eslint-disable-next-line no-unused-vars
   getKey?: (req: HttpRequest<any>) => string | undefined;
+  // eslint-disable-next-line no-unused-vars
   isValid?: (entry: NgHttpCachingEntry) => boolean | undefined;
 }
 
@@ -49,15 +59,13 @@ export class NgHttpCachingService {
 
   private queue = new Map<string, Observable<HttpEvent<any>>>();
 
-  private config: NgHttpCachingConfig;
+  private config: NgHttpCachingConfig = NgHttpCachingConfigDefault;
 
   constructor(
     @Inject(NG_HTTP_CACHING_CONFIG) @Optional() config: NgHttpCachingConfig
   ) {
     if (config) {
       this.config = { ...NgHttpCachingConfigDefault, ...config };
-    } else {
-      this.config = NgHttpCachingConfigDefault;
     }
   }
 
@@ -79,7 +87,7 @@ export class NgHttpCachingService {
    * Return the cache store
    */
   getStore(): NgHttpCachingStorageInterface {
-    return this.config.store;
+    return this.config.store as NgHttpCachingStorageInterface;
   }
 
   /**
@@ -87,7 +95,7 @@ export class NgHttpCachingService {
    */
   getFromCache(req: HttpRequest<any>): HttpResponse<any> | undefined {
     const key: string = this.getKey(req);
-    const cached: NgHttpCachingEntry = this.config.store.get(key);
+    const cached: NgHttpCachingEntry | undefined = this.config.store?.get(key);
 
     if (!cached) {
       return undefined;
@@ -112,8 +120,8 @@ export class NgHttpCachingService {
       request: req,
       addedTime: Date.now(),
     };
-    if ( this.isValid(entry) ) {
-      this.config.store.set(key, entry);
+    if (this.isValid(entry)) {
+      this.config.store?.set(key, entry);
       return true;
     }
     return false;
@@ -131,22 +139,22 @@ export class NgHttpCachingService {
    * Clear the cache
    */
   clearCache(): void {
-    this.config.store.clear();
+    this.config.store?.clear();
   }
 
   /**
    * Clear the cache by key
    */
   clearCacheByKey(key: string): boolean {
-    return this.config.store.delete(key);
+    return (this.config.store as NgHttpCachingStorageInterface).delete(key);
   }
 
   /**
    * Clear the cache by regex
    */
   clearCacheByRegex(regex: RegExp): void {
-    this.config.store.forEach((entry: NgHttpCachingEntry, key: string) => {
-      if ( regex.test(key) ){
+    (this.config.store as NgHttpCachingStorageInterface).forEach((entry: NgHttpCachingEntry, key: string) => {
+      if (regex.test(key)) {
         this.clearCacheByKey(key);
       }
     });
@@ -156,9 +164,9 @@ export class NgHttpCachingService {
    * Clear the cache by TAG
    */
   clearCacheByTag(tag: string): void {
-    this.config.store.forEach((entry: NgHttpCachingEntry, key: string) => {
+    (this.config.store as NgHttpCachingStorageInterface).forEach((entry: NgHttpCachingEntry, key: string) => {
       const tagHeader = entry.request.headers.get(NgHttpCachingHeaders.TAG);
-      if ( tagHeader && tagHeader.split(',').includes(tag) ){
+      if (tagHeader && tagHeader.split(',').includes(tag)) {
         this.clearCacheByKey(key);
       }
     });
@@ -168,8 +176,8 @@ export class NgHttpCachingService {
    * Run garbage collector (delete expired cache entry)
    */
   runGc(): void {
-    this.config.store.forEach((entry: NgHttpCachingEntry, key: string) => {
-      if ( this.isExpired(entry) ){
+    (this.config.store as NgHttpCachingStorageInterface).forEach((entry: NgHttpCachingEntry, key: string) => {
+      if (this.isExpired(entry)) {
         this.clearCacheByKey(key);
       }
     });
@@ -191,17 +199,17 @@ export class NgHttpCachingService {
     let lifetime = this.config.lifetime;
     // request has own lifetime
     if (entry.request.headers.has(NgHttpCachingHeaders.LIFETIME)) {
-      lifetime = +entry.request.headers.get(NgHttpCachingHeaders.LIFETIME);
+      lifetime = +(entry.request.headers.get(NgHttpCachingHeaders.LIFETIME) || '');
     }
     // never expire if 0
     if (lifetime === 0) {
       return false;
     }
     // wrong lifetime
-    if (lifetime < 0) {
+    if ((lifetime as number) < 0) {
       throw new Error('lifetime must be greater than or equal 0');
     }
-    return entry.addedTime + lifetime < Date.now();
+    return entry.addedTime + (lifetime as number) < Date.now();
   }
 
   /**
@@ -243,13 +251,16 @@ export class NgHttpCachingService {
       }
     }
     // if allowed method is only ALL, allow all http methos
-    if ( this.config.allowedMethod.length === 1) {
-      if (this.config.allowedMethod[0] === 'ALL'){
-        return true;
+    if (this.config.allowedMethod) {
+      if (this.config.allowedMethod.length === 1) {
+        if (this.config.allowedMethod[0] === 'ALL') {
+          return true;
+        }
       }
+      // request is allowed if method is in allowedMethod
+      return this.config.allowedMethod.indexOf(req.method) !== -1;
     }
-    // request is allowed if method is in allowedMethod
-    return this.config.allowedMethod.indexOf(req.method) !== -1;
+    return true;
   }
 
   /**
@@ -273,7 +284,7 @@ export class NgHttpCachingService {
    */
   getFromQueue(req: HttpRequest<any>): Observable<HttpEvent<any>> | undefined {
     const key: string = this.getKey(req);
-    const cached: Observable<HttpEvent<any>> = this.queue.get(key);
+    const cached: Observable<HttpEvent<any>> | undefined = this.queue.get(key);
 
     if (!cached) {
       return undefined;

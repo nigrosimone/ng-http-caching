@@ -10,16 +10,19 @@
       "prefix": "ng",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-ng-packagr:build",
+          "builder": "@angular-devkit/build-angular:ng-packagr",
           "options": {
-            "tsConfig": "projects/ng-http-caching/tsconfig.lib.json",
             "project": "projects/ng-http-caching/ng-package.json"
           },
           "configurations": {
             "production": {
               "tsConfig": "projects/ng-http-caching/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/ng-http-caching/tsconfig.lib.json"
             }
-          }
+          },
+          "defaultConfiguration": "production"
         },
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
@@ -30,14 +33,11 @@
           }
         },
         "lint": {
-          "builder": "@angular-devkit/build-angular:tslint",
+          "builder": "@angular-eslint/builder:lint",
           "options": {
-            "tsConfig": [
-              "projects/ng-http-caching/tsconfig.lib.json",
-              "projects/ng-http-caching/tsconfig.spec.json"
-            ],
-            "exclude": [
-              "**/node_modules/**"
+            "lintFilePatterns": [
+              "projects/ng-http-caching/**/*.ts",
+              "projects/ng-http-caching/**/*.html"
             ]
           }
         }
@@ -48,6 +48,9 @@
       "schematics": {
         "@schematics/angular:component": {
           "style": "sass"
+        },
+        "@schematics/angular:application": {
+          "strict": true
         }
       },
       "root": "projects/ng-http-caching-demo",
@@ -62,6 +65,7 @@
             "main": "projects/ng-http-caching-demo/src/main.ts",
             "polyfills": "projects/ng-http-caching-demo/src/polyfills.ts",
             "tsConfig": "projects/ng-http-caching-demo/tsconfig.app.json",
+            "inlineStyleLanguage": "sass",
             "assets": [
               "projects/ng-http-caching-demo/src/favicon.ico",
               "projects/ng-http-caching-demo/src/assets"
@@ -69,60 +73,57 @@
             "styles": [
               "projects/ng-http-caching-demo/src/styles.sass"
             ],
-            "scripts": [],
-            "vendorChunk": true,
-            "extractLicenses": false,
-            "buildOptimizer": false,
-            "sourceMap": true,
-            "optimization": false,
-            "namedChunks": true
+            "scripts": []
           },
           "configurations": {
             "production": {
-              "fileReplacements": [
-                {
-                  "replace": "projects/ng-http-caching-demo/src/environments/environment.ts",
-                  "with": "projects/ng-http-caching-demo/src/environments/environment.prod.ts"
-                }
-              ],
-              "optimization": true,
-              "outputHashing": "all",
-              "sourceMap": false,
-              "extractCss": true,
-              "namedChunks": false,
-              "extractLicenses": true,
-              "vendorChunk": false,
-              "buildOptimizer": true,
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "2mb",
-                  "maximumError": "5mb"
+                  "maximumWarning": "500kb",
+                  "maximumError": "1mb"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "6kb",
-                  "maximumError": "10kb"
+                  "maximumWarning": "2kb",
+                  "maximumError": "4kb"
                 }
-              ]
+              ],
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "buildOptimizer": false,
+              "optimization": false,
+              "vendorChunk": true,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "namedChunks": true
             }
-          }
+          },
+          "defaultConfiguration": "production"
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
-          "options": {
-            "browserTarget": "ng-http-caching-demo:build"
-          },
           "configurations": {
             "production": {
               "browserTarget": "ng-http-caching-demo:build:production"
+            },
+            "development": {
+              "browserTarget": "ng-http-caching-demo:build:development"
             }
-          }
+          },
+          "defaultConfiguration": "development"
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "ng-http-caching-demo:build"
+            "browserTarget": "ng-http-caching-demochio:build"
           }
         },
         "test": {
@@ -132,6 +133,7 @@
             "polyfills": "projects/ng-http-caching-demo/src/polyfills.ts",
             "tsConfig": "projects/ng-http-caching-demo/tsconfig.spec.json",
             "karmaConfig": "projects/ng-http-caching-demo/karma.conf.js",
+            "inlineStyleLanguage": "sass",
             "assets": [
               "projects/ng-http-caching-demo/src/favicon.ico",
               "projects/ng-http-caching-demo/src/assets"
@@ -143,31 +145,19 @@
           }
         },
         "lint": {
-          "builder": "@angular-devkit/build-angular:tslint",
+          "builder": "@angular-eslint/builder:lint",
           "options": {
-            "tsConfig": [
-              "projects/ng-http-caching-demo/tsconfig.app.json",
-              "projects/ng-http-caching-demo/tsconfig.spec.json",
-              "projects/ng-http-caching-demo/e2e/tsconfig.json"
-            ],
-            "exclude": [
-              "**/node_modules/**"
+            "lintFilePatterns": [
+              "projects/ng-http-caching-demo/**/*.ts",
+              "projects/ng-http-caching-demo/**/*.html"
             ]
-          }
-        },
-        "e2e": {
-          "builder": "@angular-devkit/build-angular:protractor",
-          "options": {
-            "protractorConfig": "projects/ng-http-caching-demo/e2e/protractor.conf.js",
-            "devServerTarget": "ng-http-caching-demo:serve"
-          },
-          "configurations": {
-            "production": {
-              "devServerTarget": "ng-http-caching-demo:serve:production"
-            }
           }
         }
       }
-    }},
-  "defaultProject": "ng-http-caching"
+    }
+  },
+  "defaultProject": "ng-http-caching",
+  "cli": {
+    "defaultCollection": "@angular-eslint/schematics"
+  }
 }

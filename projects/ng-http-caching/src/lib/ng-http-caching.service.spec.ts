@@ -193,8 +193,9 @@ describe('NgHttpCachingService: override getKey return undefined', () => {
   let service: NgHttpCachingService;
 
   const config: NgHttpCachingConfig = {
+    // eslint-disable-next-line no-unused-vars
     getKey: (req: HttpRequest<any>): string => {
-      return undefined;
+      return undefined as any;
     },
   };
 
@@ -357,8 +358,9 @@ describe('NgHttpCachingService: override isCacheable return undefined', () => {
   let service: NgHttpCachingService;
 
   const config: NgHttpCachingConfig = {
+    // eslint-disable-next-line no-unused-vars
     isCacheable: (req: HttpRequest<any>): boolean => {
-      return undefined;
+      return undefined as any;
     },
   };
 
@@ -515,6 +517,7 @@ describe('NgHttpCachingService: default isExpired', () => {
 describe('NgHttpCachingService: override isExpired', () => {
   let service: NgHttpCachingService;
   const config: NgHttpCachingConfig = {
+    // eslint-disable-next-line no-unused-vars
     isExpired: (entry: NgHttpCachingEntry): boolean => {
       return true;
     },
@@ -558,8 +561,9 @@ describe('NgHttpCachingService: override isExpired', () => {
 describe('NgHttpCachingService: override isExpired return undefined', () => {
   let service: NgHttpCachingService;
   const config: NgHttpCachingConfig = {
+    // eslint-disable-next-line no-unused-vars
     isExpired: (entry: NgHttpCachingEntry): boolean => {
-      return undefined;
+      return undefined as any;
     },
   };
 
@@ -1102,6 +1106,7 @@ describe('NgHttpCachingService: override isValid', () => {
 describe('NgHttpCachingService: override isValid return undefined', () => {
   let service: NgHttpCachingService;
   const config: NgHttpCachingConfig = {
+    // eslint-disable-next-line no-unused-vars
     isValid: (entry: NgHttpCachingEntry): undefined => {
       return undefined;
     },

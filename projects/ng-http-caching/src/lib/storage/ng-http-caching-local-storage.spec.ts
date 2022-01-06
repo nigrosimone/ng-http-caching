@@ -7,11 +7,15 @@ describe('NgHttpCachingLocalStorage', () => {
 
     beforeEach(() => {
         store = new NgHttpCachingLocalStorage();
+        localStorage.setItem('NgHttpCachingLocalStorageTEST', 'TEST');
     });
 
     afterEach(() => {
         store.clear();
         expect(store.size).toBe(0);
+
+        expect(localStorage.getItem('NgHttpCachingLocalStorageTEST')).toBe('TEST');
+        localStorage.removeItem('NgHttpCachingLocalStorageTEST');
     });
 
     it('should be created', () => {
@@ -24,9 +28,13 @@ describe('NgHttpCachingLocalStorage', () => {
             url: 'http://example.com',
             request: new HttpRequest('GET', 'http://example.com', {
                 context: new HttpContext(),
-                headers: new HttpHeaders(),
+                headers: new HttpHeaders({
+                    'content-type': 'application/json'
+                }),
             }),
-            response: new HttpResponse({headers: new HttpHeaders(), status: 200, body: { OK: true } }),
+            response: new HttpResponse({headers: new HttpHeaders({
+                'content-type': 'application/json'
+            }), status: 200, body: { OK: true } }),
         };
         store.set(entry.url, entry);
 

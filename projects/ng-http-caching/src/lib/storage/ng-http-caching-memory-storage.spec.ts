@@ -37,7 +37,7 @@ describe('NgHttpCachingMemoryStorage', () => {
         expect(cache?.addedTime).toEqual(entry.addedTime);
         expect(cache?.url).toEqual(entry.url);
         expect(cache?.response).toBeTruthy();
-        expect(cache?.response.body.body).toEqual(entry.response.body);
+        expect(cache?.response.body).toEqual(entry.response.body);
         store.delete(entry.url);
         expect(store.get(entry.url)).toBeUndefined();
         expect(store.size).toBe(0);

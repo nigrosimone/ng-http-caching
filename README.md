@@ -117,7 +117,7 @@ Set the cache strategy, possible strategies are:
 - `NgHttpCachingStrategy.DISALLOW_ALL`: Only the request with `X-NG-HTTP-CACHING-ALLOW-CACHE` header are cacheable if HTTP method is into `allowedMethod`;
 
 ### store (class of NgHttpCachingStorageInterface - default: NgHttpCachingMemoryStorage)
-Set the cache store. You can imlement your custom store by implement the `NgHttpCachingStorageInterface` interface, eg.:
+Set the cache store. You can implement your custom store by implement the `NgHttpCachingStorageInterface` interface, eg.:
 
 ```ts
 import { NgHttpCachingConfig, NgHttpCachingStorageInterface } from 'ng-http-caching';
@@ -130,6 +130,8 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
   store: new MyCustomStore(),
 };
 ```
+
+there is also a `NgHttpCachingLocalStorage` a cache store with persistence into localStorage.
 
 ### isExpired (function - default see NgHttpCachingService.isExpired());
 If this function return `true` the request is expired and a new request is send to backend, if return `false` isn't expired. 

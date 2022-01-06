@@ -1,12 +1,12 @@
 import { HttpContext, HttpHeaders, HttpRequest, HttpResponse } from '@angular/common/http';
-import { NgHttpCachingLocalStorage } from './ng-http-caching-local-storage';
+import { NgHttpCachingMemoryStorage } from './ng-http-caching-memory-storage';
 import { NgHttpCachingStorageInterface } from './ng-http-caching-storage.interface';
 
-describe('NgHttpCachingLocalStorage', () => {
+describe('NgHttpCachingMemoryStorage', () => {
     let store: NgHttpCachingStorageInterface;
 
     beforeEach(() => {
-        store = new NgHttpCachingLocalStorage();
+        store = new NgHttpCachingMemoryStorage();
     });
 
     afterEach(() => {

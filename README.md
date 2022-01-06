@@ -131,7 +131,15 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
 };
 ```
 
-there is also a `NgHttpCachingLocalStorage` a cache store with persistence into localStorage.
+there is also a `NgHttpCachingLocalStorage` a cache store with persistence into `localStorage`:
+
+```ts
+import { NgHttpCachingConfig, NgHttpCachingStorageInterface, NgHttpCachingLocalStorage } from 'ng-http-caching';
+
+const ngHttpCachingConfig: NgHttpCachingConfig = {
+  store: new NgHttpCachingLocalStorage(),
+};
+```
 
 ### isExpired (function - default see NgHttpCachingService.isExpired());
 If this function return `true` the request is expired and a new request is send to backend, if return `false` isn't expired. 

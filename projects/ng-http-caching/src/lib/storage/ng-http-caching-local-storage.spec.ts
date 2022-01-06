@@ -53,5 +53,10 @@ describe('NgHttpCachingLocalStorage', () => {
         store.delete(entry.url);
         expect(store.get(entry.url)).toBeUndefined();
         expect(store.size).toBe(0);
+
+        store.set(entry.url, entry);
+        expect(store.size).toBe(1);
+        store.clear();
+        expect(store.size).toBe(0);
     });
 });

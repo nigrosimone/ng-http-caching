@@ -1,4 +1,4 @@
-import { HttpContext, HttpHeaders, HttpRequest, HttpResponse } from '@angular/common/http';
+import { HttpContext, HttpHeaders, HttpParams, HttpRequest, HttpResponse } from '@angular/common/http';
 import { NgHttpCachingLocalStorage } from './ng-http-caching-local-storage';
 import { NgHttpCachingStorageInterface } from './ng-http-caching-storage.interface';
 
@@ -28,6 +28,7 @@ describe('NgHttpCachingLocalStorage', () => {
             url: 'http://example.com',
             request: new HttpRequest('GET', 'http://example.com', {
                 context: new HttpContext(),
+                params: new HttpParams(),
                 headers: new HttpHeaders({
                     'content-type': 'application/json'
                 }),
@@ -46,6 +47,9 @@ describe('NgHttpCachingLocalStorage', () => {
         expect(cache?.url).toEqual(entry.url);
         expect(cache?.response).toBeTruthy();
         expect(cache?.response.body.body).toEqual(entry.response.body);
+        store.forEach((value, key) => {
+            expect(key).toBe('NgHttpCaching::' + entry.url);
+        });
         store.delete(entry.url);
         expect(store.get(entry.url)).toBeUndefined();
         expect(store.size).toBe(0);

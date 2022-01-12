@@ -1,6 +1,6 @@
 {
   "name": "ng-http-caching",
-  "version": "13.0.2",
+  "version": "13.0.3",
   "description": "Cache for HTTP requests in Angular application.",
   "repository": {
     "type": "git",

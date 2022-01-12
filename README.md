@@ -141,6 +141,16 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
 };
 ```
 
+and a `NgHttpCachingSessionStorage` a cache store with persistence into `sessionStorage`:
+
+```ts
+import { NgHttpCachingConfig, NgHttpCachingStorageInterface, NgHttpCachingSessionStorage } from 'ng-http-caching';
+
+const ngHttpCachingConfig: NgHttpCachingConfig = {
+  store: new NgHttpCachingSessionStorage(),
+};
+```
+
 ### isExpired (function - default see NgHttpCachingService.isExpired());
 If this function return `true` the request is expired and a new request is send to backend, if return `false` isn't expired. 
 If the result is `undefined`, the normal behaviour is provided.

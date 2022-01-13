@@ -14,7 +14,7 @@ See the [stackblitz demo](https://stackblitz.com/edit/demo-ng-http-caching?file=
 ✅ Handles simultaneous/parallel requests<br>
 ✅ Automatic garbage collector of cache<br>
 ✅ More than 90% unit tested<br>
-✅ Custom cache storage<br>
+✅ LocalStorage, SessionStorage, MemoryStorage and custom cache storage<br>
 
 ## Get Started
 

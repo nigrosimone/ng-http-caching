@@ -2,6 +2,7 @@ import { HttpContext, HttpHeaders, HttpParams, HttpRequest, HttpResponse } from 
 import { NgHttpCachingLocalStorage } from './ng-http-caching-local-storage';
 import { NgHttpCachingStorageInterface } from './ng-http-caching-storage.interface';
 
+
 describe('NgHttpCachingLocalStorage', () => {
     let store: NgHttpCachingStorageInterface;
 
@@ -36,6 +37,7 @@ describe('NgHttpCachingLocalStorage', () => {
             response: new HttpResponse({headers: new HttpHeaders({
                 'content-type': 'application/json'
             }), status: 200, body: { OK: true } }),
+            version: '1'
         };
         store.set(entry.url, entry);
 

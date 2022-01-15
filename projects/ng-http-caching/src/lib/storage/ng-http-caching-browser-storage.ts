@@ -4,7 +4,7 @@ import { HttpHeaders, HttpParams, HttpRequest, HttpResponse } from '@angular/com
 
 const KEY_PREFIX = 'NgHttpCaching::';
 
-function serializeRequest(req: HttpRequest<any>): string {
+export function serializeRequest(req: HttpRequest<any>): string {
     const request = req.clone(); // Make a clone, useful for doing destructive things
     return JSON.stringify({
         headers: Object.fromEntries( // Just a helper to make this into an object, not really required but makes the output nicer
@@ -25,7 +25,7 @@ function serializeRequest(req: HttpRequest<any>): string {
     });
 }
 
-function serializeResponse(res: HttpResponse<any>): string {
+export function serializeResponse(res: HttpResponse<any>): string {
     const response = res.clone();
     return JSON.stringify({
         headers: Object.fromEntries( // Just a helper to make this into an object, not really required but makes the output nicer
@@ -40,7 +40,7 @@ function serializeResponse(res: HttpResponse<any>): string {
     });
 }
 
-function deserializeRequest<T = any>(req: string): HttpRequest<T> {
+export function deserializeRequest<T = any>(req: string): HttpRequest<T> {
     const request = JSON.parse(req);
     const headers = new HttpHeaders(request.headers);
     const params = new HttpParams(); // Probably some way to make this a one-liner, but alas, there are no good docs
@@ -56,7 +56,7 @@ function deserializeRequest<T = any>(req: string): HttpRequest<T> {
     });
 }
 
-function deserializeResponse<T = any>(res: string): HttpResponse<T> {
+export function deserializeResponse<T = any>(res: string): HttpResponse<T> {
     const response = JSON.parse(res);
     return new HttpResponse<T>({
         url: response.url,
@@ -115,12 +115,13 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
     get(key: string): NgHttpCachingEntry | undefined {
         const item = this.storage.getItem(KEY_PREFIX + key);
         if (item) {
-            const parsedItem: NgHttpCachingEntry = JSON.parse(item);
+            const parsedItem: StorageEntry = JSON.parse(item);
             return {
                 url: parsedItem.url,
-                response: deserializeResponse(parsedItem.response as unknown as string),
-                request: deserializeRequest(parsedItem.request as unknown as string),
-                addedTime: parsedItem.addedTime
+                response: deserializeResponse(parsedItem.response),
+                request: deserializeRequest(parsedItem.request),
+                addedTime: parsedItem.addedTime,
+                version: parsedItem.version
             };
         }
         return undefined;
@@ -136,6 +137,14 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
             response: serializeResponse(value.response),
             request: serializeRequest(value.request),
             addedTime: value.addedTime
-        }));
+        } as StorageEntry));
     }
+}
+
+interface StorageEntry {
+    url: string;
+    response: string;
+    request: string;
+    addedTime: number;
+    version: string;
 }

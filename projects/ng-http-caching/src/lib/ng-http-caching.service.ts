@@ -9,6 +9,7 @@ export interface NgHttpCachingEntry {
   response: HttpResponse<any>;
   request: HttpRequest<any>;
   addedTime: number;
+  version: string;
 }
 
 export const NG_HTTP_CACHING_CONFIG = new InjectionToken<NgHttpCachingConfig>(
@@ -37,6 +38,7 @@ export interface NgHttpCachingConfig {
   lifetime?: number;
   allowedMethod?: string[];
   cacheStrategy?: NgHttpCachingStrategy;
+  version?: string;
   // eslint-disable-next-line no-unused-vars
   isExpired?: (entry: NgHttpCachingEntry) => boolean | undefined;
   // eslint-disable-next-line no-unused-vars
@@ -47,9 +49,18 @@ export interface NgHttpCachingConfig {
   isValid?: (entry: NgHttpCachingEntry) => boolean | undefined;
 }
 
-export const NgHttpCachingConfigDefault: NgHttpCachingConfig = {
+export interface NgHttpCachingDefaultConfig extends NgHttpCachingConfig {
+  store: NgHttpCachingStorageInterface;
+  lifetime: number;
+  allowedMethod: string[];
+  cacheStrategy: NgHttpCachingStrategy;
+  version: string;
+}
+
+export const NgHttpCachingConfigDefault: NgHttpCachingDefaultConfig = {
   store: new NgHttpCachingMemoryStorage(),
   lifetime: 60 * 60 * 100,
+  version: '1',
   allowedMethod: ['GET'],
   cacheStrategy: NgHttpCachingStrategy.ALLOW_ALL,
 };
@@ -59,7 +70,7 @@ export class NgHttpCachingService {
 
   private queue = new Map<string, Observable<HttpEvent<any>>>();
 
-  private config: NgHttpCachingConfig = NgHttpCachingConfigDefault;
+  private config: NgHttpCachingDefaultConfig = NgHttpCachingConfigDefault;
 
   constructor(
     @Inject(NG_HTTP_CACHING_CONFIG) @Optional() config: NgHttpCachingConfig
@@ -119,6 +130,7 @@ export class NgHttpCachingService {
       response: res,
       request: req,
       addedTime: Date.now(),
+      version: this.config.version,
     };
     if (this.isValid(entry)) {
       this.config.store?.set(key, entry);
@@ -223,6 +235,10 @@ export class NgHttpCachingService {
       if (typeof result !== 'undefined') {
         return result;
       }
+    }
+    // different version
+    if (this.config.version !== entry.version) {
+      return false;
     }
     return true;
   }

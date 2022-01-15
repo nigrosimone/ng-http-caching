@@ -37,6 +37,7 @@ describe('NgHttpCachingSessionStorage', () => {
             response: new HttpResponse({headers: new HttpHeaders({
                 'content-type': 'application/json'
             }), status: 200, body: { OK: true } }),
+            version: '1'
         };
         store.set(entry.url, entry);
 

@@ -111,6 +111,7 @@ describe('NgHttpCachingService: getStore()', () => {
       addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', keyUrl),
+      version: '1'
     };
     store.set(keyUrl, cacheEntry);
     expect(store.has(keyUrl)).toBeTrue();
@@ -498,6 +499,7 @@ describe('NgHttpCachingService: default isExpired', () => {
       addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
+      version: '1'
     };
     expect(service.isExpired(cacheEntry)).toBeFalse();
   });
@@ -508,6 +510,7 @@ describe('NgHttpCachingService: default isExpired', () => {
       addedTime: Date.now() - 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
+      version: '1'
     };
     expect(service.isExpired(cacheEntry)).toBeTrue();
   });
@@ -543,6 +546,7 @@ describe('NgHttpCachingService: override isExpired', () => {
       addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
+      version: '1'
     };
     expect(service.isExpired(cacheEntry)).toBeTrue();
   });
@@ -553,6 +557,7 @@ describe('NgHttpCachingService: override isExpired', () => {
       addedTime: Date.now() - 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
+      version: '1'
     };
     expect(service.isExpired(cacheEntry)).toBeTrue();
   });
@@ -587,6 +592,7 @@ describe('NgHttpCachingService: override isExpired return undefined', () => {
       addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
+      version: '1'
     };
     expect(service.isExpired(cacheEntry)).toBeFalse();
   });
@@ -597,6 +603,7 @@ describe('NgHttpCachingService: override isExpired return undefined', () => {
       addedTime: Date.now() - 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
+      version: '1'
     };
     expect(service.isExpired(cacheEntry)).toBeTrue();
   });
@@ -628,6 +635,7 @@ describe('NgHttpCachingService: default isExpired with long lifetime', () => {
       addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
+      version: '1'
     };
     expect(service.isExpired(cacheEntry)).toBeFalse();
   });
@@ -638,6 +646,7 @@ describe('NgHttpCachingService: default isExpired with long lifetime', () => {
       addedTime: Date.now() - 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
+      version: '1'
     };
     expect(service.isExpired(cacheEntry)).toBeFalse();
   });
@@ -669,6 +678,7 @@ describe('NgHttpCachingService: default isExpired with infinite lifetime', () =>
       addedTime: Date.now() - 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
+      version: '1'
     };
     expect(service.isExpired(cacheEntry)).toBeFalse();
   });
@@ -698,6 +708,7 @@ describe('NgHttpCachingService: default isExpired with request lifetime', () => 
           [NgHttpCachingHeaders.LIFETIME]: (1000 * 60 * 60 * 24 * 365).toString(),
         }),
       }),
+      version: '1'
     };
     expect(service.isExpired(cacheEntry)).toBeTrue();
   });
@@ -712,6 +723,7 @@ describe('NgHttpCachingService: default isExpired with request lifetime', () => 
           [NgHttpCachingHeaders.LIFETIME]: (1000 * 60 * 60 * 24 * 365).toString(),
         }),
       }),
+      version: '1'
     };
     expect(service.isExpired(cacheEntry)).toBeFalse();
   });
@@ -726,8 +738,52 @@ describe('NgHttpCachingService: default isExpired with request lifetime', () => 
           [NgHttpCachingHeaders.LIFETIME]: '-1',
         }),
       }),
+      version: '1'
     };
     expect(() => service.isExpired(cacheEntry)).toThrow(new Error('lifetime must be greater than or equal 0'));
+  });
+});
+
+describe('NgHttpCachingService: change of version', () => {
+  let service: NgHttpCachingService;
+  const config: NgHttpCachingConfig = {
+    version: '1',
+  };
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        NgHttpCachingService,
+        { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
+      ],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+
+  it('isExpired', () => {
+    const cacheEntry: NgHttpCachingEntry = {
+      url: 'https://angular.io/docs?foo=bar',
+      addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
+      response: new HttpResponse({}),
+      request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
+      version: '2'
+    };
+    expect(service.isExpired(cacheEntry)).toBeFalse();
+  });
+
+  it('isValid', () => {
+    const cacheEntry: NgHttpCachingEntry = {
+      url: 'https://angular.io/docs?foo=bar',
+      addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
+      response: new HttpResponse({}),
+      request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
+      version: '2'
+    };
+    expect(service.isValid(cacheEntry)).toBeFalse();
   });
 });
 
@@ -1049,6 +1105,7 @@ describe('NgHttpCachingService: default isValid', () => {
       addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
+      version: '1'
     };
     expect(service.isValid(cacheEntry)).toBeTrue();
   });
@@ -1078,12 +1135,13 @@ describe('NgHttpCachingService: override isValid', () => {
 
   it('valid', () => {
     const req = new HttpRequest('GET', 'https://angular.io/docs?foo=isValid');
-    const res = new HttpResponse({status: 200});
+    const res = new HttpResponse({ status: 200 });
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=isValid',
       addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
       response: res,
       request: req,
+      version: '1'
     };
     expect(service.isValid(cacheEntry)).toBeTrue();
     expect(service.addToCache(req, res)).toBeTrue();
@@ -1091,12 +1149,13 @@ describe('NgHttpCachingService: override isValid', () => {
 
   it('invalid', () => {
     const req = new HttpRequest('GET', 'https://angular.io/docs?foo=isValid');
-    const res = new HttpResponse({status: 500});
+    const res = new HttpResponse({ status: 500 });
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=isValid',
       addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
       response: res,
       request: req,
+      version: '1'
     };
     expect(service.isValid(cacheEntry)).toBeFalse();
     expect(service.addToCache(req, res)).toBeFalse();
@@ -1130,8 +1189,9 @@ describe('NgHttpCachingService: override isValid return undefined', () => {
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
       addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
-      response: new HttpResponse({status: 200}),
+      response: new HttpResponse({ status: 200 }),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
+      version: '1'
     };
     expect(service.isValid(cacheEntry)).toBeTrue();
   });

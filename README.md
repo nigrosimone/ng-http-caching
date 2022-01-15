@@ -88,6 +88,7 @@ This is all the configuration interface, see below for the detail of each config
 ```ts
 // all configuration are optionally
 export interface NgHttpCachingConfig {
+  version?: string;
   lifetime?: number;
   allowedMethod?: string[];
   cacheStrategy?: NgHttpCachingStrategy;
@@ -98,6 +99,9 @@ export interface NgHttpCachingConfig {
   getKey?: (req: HttpRequest<any>) => string | undefined;
 }
 ```
+
+### version (string - default: '1')
+Cache version. When you have a breaking change, change the version, and it'll delete the current cache automatically.
 
 ### lifetime (number - default: 3.600.000)
 Number of millisecond that a response is stored in the cache. 

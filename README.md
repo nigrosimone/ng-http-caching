@@ -262,7 +262,7 @@ If you have choose the `DISALLOW_ALL` cache strategy, you can mark specific requ
 ```ts
 this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
   headers: {
-    [NgHttpCachingHeaders.ALLOW_ALL]: '1',
+    [NgHttpCachingHeaders.ALLOW_CACHE]: '1',
   }
 }).subscribe(e => console.log);
 ```
@@ -491,7 +491,7 @@ export class AppComponent implements OnInit {
     // Note: all the "special" headers in NgHttpCachingHeaders are removed before send the request to the backend.
     this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
       headers: {
-         [NgHttpCachingHeaders.ALLOW_ALL]: '1',
+         [NgHttpCachingHeaders.ALLOW_CACHE]: '1',
       }
     }).subscribe(e => console.log);
   }

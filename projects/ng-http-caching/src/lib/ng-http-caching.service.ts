@@ -33,6 +33,7 @@ export enum NgHttpCachingHeaders {
   // eslint-disable-next-line no-unused-vars
   TAG = 'X-NG-HTTP-CACHING-TAG',
 }
+export const NgHttpCachingHeadersList = Object.values(NgHttpCachingHeaders);
 export interface NgHttpCachingConfig {
   store?: NgHttpCachingStorageInterface;
   lifetime?: number;
@@ -188,7 +189,7 @@ export class NgHttpCachingService {
    * Run garbage collector (delete expired cache entry)
    */
   runGc(): void {
-    (this.config.store as NgHttpCachingStorageInterface).forEach((entry: NgHttpCachingEntry, key: string) => {
+    this.config.store.forEach((entry: NgHttpCachingEntry, key: string) => {
       if (this.isExpired(entry)) {
         this.clearCacheByKey(key);
       }

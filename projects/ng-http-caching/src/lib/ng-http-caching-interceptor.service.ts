@@ -2,7 +2,7 @@ import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest, HttpResponse } fr
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { tap, finalize, share } from 'rxjs/operators';
-import { NgHttpCachingService, NgHttpCachingHeaders } from './ng-http-caching.service';
+import { NgHttpCachingService, NgHttpCachingHeadersList } from './ng-http-caching.service';
 
 
 @Injectable()
@@ -62,7 +62,7 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
   sendRequest(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     let cloned: HttpRequest<any> = req.clone();
     // trim custom headers before send request
-    Object.values(NgHttpCachingHeaders).forEach(ngHttpCachingHeaders => {
+    NgHttpCachingHeadersList.forEach(ngHttpCachingHeaders => {
       if ( cloned.headers.has(ngHttpCachingHeaders) ) {
         cloned = cloned.clone({ headers: cloned.headers.delete(ngHttpCachingHeaders) });
       }

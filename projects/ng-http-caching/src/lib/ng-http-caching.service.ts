@@ -136,7 +136,7 @@ export class NgHttpCachingService {
       version: this.config.version,
     };
     if (this.isValid(entry)) {
-      this.config.store?.set(key, entry);
+      this.config.store.set(key, entry);
       return true;
     }
     return false;
@@ -214,7 +214,7 @@ export class NgHttpCachingService {
     let lifetime = this.config.lifetime;
     // request has own lifetime
     if (entry.request.headers.has(NgHttpCachingHeaders.LIFETIME)) {
-      lifetime = +(entry.request.headers.get(NgHttpCachingHeaders.LIFETIME) || '');
+      lifetime = +(entry.request.headers.get(NgHttpCachingHeaders.LIFETIME) as string);
     }
     // never expire if 0
     if (lifetime === 0) {

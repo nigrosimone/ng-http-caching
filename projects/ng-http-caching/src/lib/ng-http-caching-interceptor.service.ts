@@ -9,20 +9,20 @@ import { NgHttpCachingService, NgHttpCachingHeadersList } from './ng-http-cachin
 export class NgHttpCachingInterceptorService implements HttpInterceptor {
 
   // eslint-disable-next-line no-unused-vars
-  constructor(private readonly cacheService: NgHttpCachingService) {}
+  constructor(private readonly cacheService: NgHttpCachingService) { }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     // run garbage collector
     this.cacheService.runGc();
 
     // Don't cache if it's not cacheable
-    if ( !this.cacheService.isCacheable(req) ) {
+    if (!this.cacheService.isCacheable(req)) {
       return this.sendRequest(req, next);
     }
 
     // Checked if there is pending response for this request
     const cachedObservable: Observable<HttpEvent<any>> | undefined = this.cacheService.getFromQueue(req);
-    if ( cachedObservable ) {
+    if (cachedObservable) {
       // console.log('cachedObservable', req);
       return cachedObservable;
     }
@@ -63,7 +63,7 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
     let cloned: HttpRequest<any> = req.clone();
     // trim custom headers before send request
     NgHttpCachingHeadersList.forEach(ngHttpCachingHeaders => {
-      if ( cloned.headers.has(ngHttpCachingHeaders) ) {
+      if (cloned.headers.has(ngHttpCachingHeaders)) {
         cloned = cloned.clone({ headers: cloned.headers.delete(ngHttpCachingHeaders) });
       }
     });

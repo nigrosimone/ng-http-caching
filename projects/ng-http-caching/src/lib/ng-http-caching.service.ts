@@ -211,20 +211,21 @@ export class NgHttpCachingService {
       }
     }
     // config/default lifetime
-    let lifetime = this.config.lifetime;
+    let lifetime: number = this.config.lifetime;
     // request has own lifetime
-    if (entry.request.headers.has(NgHttpCachingHeaders.LIFETIME)) {
-      lifetime = +(entry.request.headers.get(NgHttpCachingHeaders.LIFETIME) as string);
+    const headerLifetime = entry.request.headers.get(NgHttpCachingHeaders.LIFETIME);
+    if (headerLifetime) {
+      lifetime = +headerLifetime;
     }
     // never expire if 0
     if (lifetime === 0) {
       return false;
     }
     // wrong lifetime
-    if ((lifetime as number) < 0) {
+    if (lifetime < 0) {
       throw new Error('lifetime must be greater than or equal 0');
     }
-    return entry.addedTime + (lifetime as number) < Date.now();
+    return entry.addedTime + lifetime < Date.now();
   }
 
   /**

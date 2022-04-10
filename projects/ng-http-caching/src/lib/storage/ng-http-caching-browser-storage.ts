@@ -70,7 +70,7 @@ export function deserializeResponse<T = any>(res: string): HttpResponse<T> {
 export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterface {
 
     // eslint-disable-next-line no-unused-vars
-    constructor(private storage: Storage){}
+    constructor(private storage: Storage) { }
 
     get size(): number {
         let count = 0;

@@ -270,16 +270,13 @@ export class NgHttpCachingService {
       }
     }
     // if allowed method is only ALL, allow all http methos
-    if (this.config.allowedMethod) {
-      if (this.config.allowedMethod.length === 1) {
-        if (this.config.allowedMethod[0] === 'ALL') {
-          return true;
-        }
+    if (this.config.allowedMethod.length === 1) {
+      if (this.config.allowedMethod[0] === 'ALL') {
+        return true;
       }
-      // request is allowed if method is in allowedMethod
-      return this.config.allowedMethod.indexOf(req.method) !== -1;
     }
-    return true;
+    // request is allowed if method is in allowedMethod
+    return this.config.allowedMethod.indexOf(req.method) !== -1;
   }
 
   /**

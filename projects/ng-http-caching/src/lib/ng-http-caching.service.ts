@@ -71,13 +71,15 @@ export class NgHttpCachingService {
 
   private queue = new Map<string, Observable<HttpEvent<any>>>();
 
-  private config: NgHttpCachingDefaultConfig = NgHttpCachingConfigDefault;
+  private config: NgHttpCachingDefaultConfig;
 
   constructor(
     @Inject(NG_HTTP_CACHING_CONFIG) @Optional() config: NgHttpCachingConfig
   ) {
     if (config) {
       this.config = { ...NgHttpCachingConfigDefault, ...config };
+    } else {
+      this.config = { ...NgHttpCachingConfigDefault };
     }
   }
 
@@ -99,7 +101,7 @@ export class NgHttpCachingService {
    * Return the cache store
    */
   getStore(): NgHttpCachingStorageInterface {
-    return this.config.store as NgHttpCachingStorageInterface;
+    return this.config.store;
   }
 
   /**
@@ -107,7 +109,7 @@ export class NgHttpCachingService {
    */
   getFromCache(req: HttpRequest<any>): HttpResponse<any> | undefined {
     const key: string = this.getKey(req);
-    const cached: NgHttpCachingEntry | undefined = this.config.store?.get(key);
+    const cached: NgHttpCachingEntry | undefined = this.config.store.get(key);
 
     if (!cached) {
       return undefined;
@@ -152,21 +154,21 @@ export class NgHttpCachingService {
    * Clear the cache
    */
   clearCache(): void {
-    this.config.store?.clear();
+    this.config.store.clear();
   }
 
   /**
    * Clear the cache by key
    */
   clearCacheByKey(key: string): boolean {
-    return (this.config.store as NgHttpCachingStorageInterface).delete(key);
+    return this.config.store.delete(key);
   }
 
   /**
    * Clear the cache by regex
    */
   clearCacheByRegex(regex: RegExp): void {
-    (this.config.store as NgHttpCachingStorageInterface).forEach((entry: NgHttpCachingEntry, key: string) => {
+    this.config.store.forEach((entry: NgHttpCachingEntry, key: string) => {
       if (regex.test(key)) {
         this.clearCacheByKey(key);
       }
@@ -177,7 +179,7 @@ export class NgHttpCachingService {
    * Clear the cache by TAG
    */
   clearCacheByTag(tag: string): void {
-    (this.config.store as NgHttpCachingStorageInterface).forEach((entry: NgHttpCachingEntry, key: string) => {
+    this.config.store.forEach((entry: NgHttpCachingEntry, key: string) => {
       const tagHeader = entry.request.headers.get(NgHttpCachingHeaders.TAG);
       if (tagHeader && tagHeader.split(',').includes(tag)) {
         this.clearCacheByKey(key);

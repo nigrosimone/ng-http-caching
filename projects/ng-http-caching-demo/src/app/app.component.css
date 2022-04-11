@@ -7,22 +7,26 @@ pre {
   padding: 10px 10px 10px 10px;
   overflow: auto;
 }
+
 ul {
   margin: 0;
   padding: 0;
 }
+
 li {
   padding: 0;
   display: block;
   list-style: none;
   margin: 10px 0 0 0;
 }
+
 label {
   margin: 0 0 3px 0;
   padding: 0px;
   display: block;
   font-weight: bold;
 }
+
 input[type="text"],
 input[type="date"],
 input[type="datetime"],
@@ -41,6 +45,7 @@ select {
   margin: 0px;
   outline: none;
 }
+
 input[type="text"]:focus,
 input[type="date"]:focus,
 input[type="datetime"]:focus,
@@ -56,6 +61,7 @@ select:focus {
   box-shadow: 0 0 8px #88d5e9;
   border: 1px solid #88d5e9;
 }
+
 .field-divided {
   width: 49%;
 }
@@ -63,12 +69,15 @@ select:focus {
 .field-long {
   width: 100%;
 }
+
 .field-select {
   width: 100%;
 }
+
 .field-textarea {
   height: 100px;
 }
+
 input[type="submit"],
 input[type="button"],
 button {
@@ -77,6 +86,7 @@ button {
   border: none;
   color: #fff;
 }
+
 input[type="submit"]:hover,
 input[type="button"]:hover,
 button:hover {
@@ -85,6 +95,7 @@ button:hover {
   -moz-box-shadow: none;
   -webkit-box-shadow: none;
 }
+
 .required {
   color: red;
 }
@@ -94,12 +105,13 @@ table {
   width: 100%;
 }
 
-table td, table th {
+table td,
+table th {
   border: 1px solid #ddd;
   padding: 8px;
 }
 
-table tr:nth-child(even){
+table tr:nth-child(even) {
   background-color: #f2f2f2;
 }
 

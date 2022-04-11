@@ -14,11 +14,7 @@
     </li>
     <li>
       <label>Mark request as "NO CACHEABLE"</label>
-      <input
-        type="checkbox"
-        [checked]="nocache"
-        (change)="nocache = !nocache"
-      />
+      <input type="checkbox" [checked]="nocache" (change)="nocache = !nocache" />
     </li>
     <li>
       <button (click)="getRequest()">EXECUTE REQUEST</button>
@@ -60,7 +56,8 @@
       <th>Status</th>
     </thead>
     <tbody *ngIf="cachedKeys && cachedKeys.length > 0; else noCachedKeys">
-      <tr *ngFor="let cachedKey of cachedKeys; trackBy:trackByCachedKey" [ngClass]="cachedKey.status === 'queue' ? 'queue' : ''">
+      <tr *ngFor="let cachedKey of cachedKeys; trackBy:trackByCachedKey"
+        [ngClass]="cachedKey.status === 'queue' ? 'queue' : ''">
         <td style="width: 30%; text-align: left;">
           {{ cachedKey.key }}
         </td>

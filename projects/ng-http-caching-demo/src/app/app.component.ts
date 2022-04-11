@@ -8,7 +8,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 interface CachedKey {
   key: string;
-  headers: {[key: string]: string}[];
+  headers: { [key: string]: string }[];
   status: 'cached' | 'queue';
 }
 
@@ -31,9 +31,9 @@ export class AppComponent implements OnInit, OnDestroy {
   private timerUpdateCachedKeys = 0;
 
   constructor(
-    
+
     private ngHttpCachingService: NgHttpCachingService,
-    
+
     private http: HttpClient
   ) {
     this.config = this.ngHttpCachingService.getConfig();
@@ -94,7 +94,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const keys: CachedKey[] = [];
 
     this.ngHttpCachingService.getStore().forEach((value, key) => {
-      const headers: {[key: string]: string}[] = [];
+      const headers: { [key: string]: string }[] = [];
       Object.values(NgHttpCachingHeaders).forEach((ngHttpCachingHeaders: string) => {
         if (value.request.headers.has(ngHttpCachingHeaders)) {
           headers.push({

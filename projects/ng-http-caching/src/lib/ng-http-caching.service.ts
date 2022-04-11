@@ -34,6 +34,7 @@ export enum NgHttpCachingHeaders {
   TAG = 'X-NG-HTTP-CACHING-TAG',
 }
 export const NgHttpCachingHeadersList = Object.values(NgHttpCachingHeaders);
+
 export interface NgHttpCachingConfig {
   store?: NgHttpCachingStorageInterface;
   lifetime?: number;
@@ -72,6 +73,8 @@ export class NgHttpCachingService {
   private queue = new Map<string, Observable<HttpEvent<any>>>();
 
   private config: NgHttpCachingDefaultConfig;
+
+  private gcLock = false;
 
   constructor(
     @Inject(NG_HTTP_CACHING_CONFIG) @Optional() config: NgHttpCachingConfig
@@ -190,12 +193,18 @@ export class NgHttpCachingService {
   /**
    * Run garbage collector (delete expired cache entry)
    */
-  runGc(): void {
+  runGc(): boolean {
+    if (this.gcLock) {
+      return false;
+    }
+    this.gcLock = true;
     this.config.store.forEach((entry: NgHttpCachingEntry, key: string) => {
       if (this.isExpired(entry)) {
         this.clearCacheByKey(key);
       }
     });
+    this.gcLock = false;
+    return true;
   }
 
   /**

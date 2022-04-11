@@ -195,7 +195,7 @@ describe('NgHttpCachingService: override getKey return undefined', () => {
   let service: NgHttpCachingService;
 
   const config: NgHttpCachingConfig = {
-    
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getKey: (req: HttpRequest<any>): string => {
       return undefined as any;
     },
@@ -360,7 +360,7 @@ describe('NgHttpCachingService: override isCacheable return undefined', () => {
   let service: NgHttpCachingService;
 
   const config: NgHttpCachingConfig = {
-    
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     isCacheable: (req: HttpRequest<any>): boolean => {
       return undefined as any;
     },
@@ -521,7 +521,7 @@ describe('NgHttpCachingService: default isExpired', () => {
 describe('NgHttpCachingService: override isExpired', () => {
   let service: NgHttpCachingService;
   const config: NgHttpCachingConfig = {
-    
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     isExpired: (entry: NgHttpCachingEntry): boolean => {
       return true;
     },
@@ -567,7 +567,7 @@ describe('NgHttpCachingService: override isExpired', () => {
 describe('NgHttpCachingService: override isExpired return undefined', () => {
   let service: NgHttpCachingService;
   const config: NgHttpCachingConfig = {
-    
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     isExpired: (entry: NgHttpCachingEntry): boolean => {
       return undefined as any;
     },
@@ -938,6 +938,11 @@ describe('NgHttpCachingService: runGc', () => {
       expect(service.getFromCache(reqExp)).toBeUndefined();
       expect(service.getFromCache(reqFresh)).toEqual(res);
 
+      expect(service['gcLock']).toBeFalse();
+      service['gcLock'] = true;
+      expect(service.runGc()).toBeFalse();
+      service['gcLock'] = false;
+
       done();
     }, 50);
   }, 1000);
@@ -1166,7 +1171,7 @@ describe('NgHttpCachingService: override isValid', () => {
 describe('NgHttpCachingService: override isValid return undefined', () => {
   let service: NgHttpCachingService;
   const config: NgHttpCachingConfig = {
-    
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     isValid: (entry: NgHttpCachingEntry): undefined => {
       return undefined;
     },

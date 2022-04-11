@@ -100,8 +100,9 @@ export interface NgHttpCachingConfig {
 }
 ```
 
-### version (string - default: '1')
+### version (string - default: VERSION.major)
 Cache version. When you have a breaking change, change the version, and it'll delete the current cache automatically.
+The default value is Angular major version (eg. 13), in this way, the cache is invalitaded on every Angular upgrade.
 
 ### lifetime (number - default: 3.600.000)
 Number of millisecond that a response is stored in the cache. 

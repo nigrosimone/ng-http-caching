@@ -9,6 +9,7 @@ import {
   NgHttpCachingStrategy,
   NgHttpCachingHeaders,
 } from './ng-http-caching.service';
+import { VERSION } from '@angular/core';
 
 
 describe('NgHttpCachingService: no config', () => {
@@ -1105,7 +1106,7 @@ describe('NgHttpCachingService: default isValid', () => {
       addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
-      version: '1'
+      version: VERSION.major
     };
     expect(service.isValid(cacheEntry)).toBeTrue();
   });
@@ -1191,7 +1192,7 @@ describe('NgHttpCachingService: override isValid return undefined', () => {
       addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
       response: new HttpResponse({ status: 200 }),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
-      version: '1'
+      version: VERSION.major
     };
     expect(service.isValid(cacheEntry)).toBeTrue();
   });

@@ -1,4 +1,4 @@
-import { Injectable, InjectionToken, Inject, Optional } from '@angular/core';
+import { Injectable, InjectionToken, Inject, Optional, VERSION } from '@angular/core';
 import { HttpRequest, HttpResponse, HttpEvent } from '@angular/common/http';
 import { Observable } from 'rxjs/internal/Observable';
 import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
@@ -62,7 +62,7 @@ export interface NgHttpCachingDefaultConfig extends NgHttpCachingConfig {
 export const NgHttpCachingConfigDefault: NgHttpCachingDefaultConfig = {
   store: new NgHttpCachingMemoryStorage(),
   lifetime: 60 * 60 * 100,
-  version: '1',
+  version: VERSION.major,
   allowedMethod: ['GET'],
   cacheStrategy: NgHttpCachingStrategy.ALLOW_ALL,
 };

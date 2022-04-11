@@ -84,6 +84,8 @@ export class NgHttpCachingService {
     } else {
       this.config = { ...NgHttpCachingConfigDefault };
     }
+    // start cache clean
+    this.runGc();
   }
 
   /**

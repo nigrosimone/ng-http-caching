@@ -8,7 +8,7 @@ import { NgHttpCachingService, NgHttpCachingHeadersList } from './ng-http-cachin
 @Injectable()
 export class NgHttpCachingInterceptorService implements HttpInterceptor {
 
-  // eslint-disable-next-line no-unused-vars
+
   constructor(private readonly cacheService: NgHttpCachingService) { }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {

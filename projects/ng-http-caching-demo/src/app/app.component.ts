@@ -31,9 +31,9 @@ export class AppComponent implements OnInit, OnDestroy {
   private timerUpdateCachedKeys = 0;
 
   constructor(
-    // eslint-disable-next-line no-unused-vars
+    
     private ngHttpCachingService: NgHttpCachingService,
-    // eslint-disable-next-line no-unused-vars
+    
     private http: HttpClient
   ) {
     this.config = this.ngHttpCachingService.getConfig();

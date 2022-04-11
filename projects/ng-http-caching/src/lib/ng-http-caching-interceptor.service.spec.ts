@@ -9,7 +9,7 @@ import { NgHttpCachingInterceptorService } from './ng-http-caching-interceptor.s
 const DELAY = 50;
 
 class MockHandler extends HttpHandler {
-  // eslint-disable-next-line no-unused-vars
+
   handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
     return of(new HttpResponse({ status: 200, body: { date: new Date().toJSON() } })).pipe(delay(DELAY));
   }
@@ -22,14 +22,14 @@ class EchoMockHandler extends HttpHandler {
 }
 
 class ErrorMockHandler extends HttpHandler {
-  // eslint-disable-next-line no-unused-vars
+
   handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
     return throwError('This is an error!').pipe(delay(DELAY));
   }
 }
 
 class NullMockHandler extends HttpHandler {
-  // eslint-disable-next-line no-unused-vars
+
   handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
     return of(null as any);
   }

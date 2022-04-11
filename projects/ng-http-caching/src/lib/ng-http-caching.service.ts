@@ -17,20 +17,14 @@ export const NG_HTTP_CACHING_CONFIG = new InjectionToken<NgHttpCachingConfig>(
 );
 
 export enum NgHttpCachingStrategy {
-  // eslint-disable-next-line no-unused-vars
   ALLOW_ALL = 'ALLOW_ALL',
-  // eslint-disable-next-line no-unused-vars
   DISALLOW_ALL = 'DISALLOW_ALL',
 }
 
 export enum NgHttpCachingHeaders {
-  // eslint-disable-next-line no-unused-vars
   ALLOW_CACHE = 'X-NG-HTTP-CACHING-ALLOW-CACHE',
-  // eslint-disable-next-line no-unused-vars
   DISALLOW_CACHE = 'X-NG-HTTP-CACHING-DISALLOW-CACHE',
-  // eslint-disable-next-line no-unused-vars
   LIFETIME = 'X-NG-HTTP-CACHING-LIFETIME',
-  // eslint-disable-next-line no-unused-vars
   TAG = 'X-NG-HTTP-CACHING-TAG',
 }
 export const NgHttpCachingHeadersList = Object.values(NgHttpCachingHeaders);
@@ -41,13 +35,13 @@ export interface NgHttpCachingConfig {
   allowedMethod?: string[];
   cacheStrategy?: NgHttpCachingStrategy;
   version?: string;
-  // eslint-disable-next-line no-unused-vars
+
   isExpired?: (entry: NgHttpCachingEntry) => boolean | undefined;
-  // eslint-disable-next-line no-unused-vars
+
   isCacheable?: (req: HttpRequest<any>) => boolean | undefined;
-  // eslint-disable-next-line no-unused-vars
+
   getKey?: (req: HttpRequest<any>) => string | undefined;
-  // eslint-disable-next-line no-unused-vars
+
   isValid?: (entry: NgHttpCachingEntry) => boolean | undefined;
 }
 

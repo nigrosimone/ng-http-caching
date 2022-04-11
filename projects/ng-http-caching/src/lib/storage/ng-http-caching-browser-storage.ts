@@ -69,7 +69,7 @@ export function deserializeResponse<T = any>(res: string): HttpResponse<T> {
 
 export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterface {
 
-    // eslint-disable-next-line no-unused-vars
+
     constructor(private storage: Storage) { }
 
     get size(): number {
@@ -97,7 +97,7 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
         return true;
     }
 
-    // eslint-disable-next-line no-unused-vars
+
     forEach(callbackfn: (value: NgHttpCachingEntry, key: string) => void): void {
         // iterate this.storage
         const lenPrefix = KEY_PREFIX.length;

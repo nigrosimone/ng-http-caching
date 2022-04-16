@@ -2,7 +2,8 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import {
   NgHttpCachingService,
   NgHttpCachingHeaders,
-  NgHttpCachingConfig
+  NgHttpCachingConfig,
+  NgHttpCachingHeadersList
 } from '../../../ng-http-caching/src/public-api';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 
@@ -95,7 +96,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
     this.ngHttpCachingService.getStore().forEach((value, key) => {
       const headers: { [key: string]: string }[] = [];
-      Object.values(NgHttpCachingHeaders).forEach((ngHttpCachingHeaders: string) => {
+      NgHttpCachingHeadersList.forEach((ngHttpCachingHeaders: string) => {
         if (value.request.headers.has(ngHttpCachingHeaders)) {
           headers.push({
             [ngHttpCachingHeaders]: value.request.headers.get(

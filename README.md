@@ -139,7 +139,7 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
 there is also a `NgHttpCachingLocalStorage` a cache store with persistence into `localStorage`:
 
 ```ts
-import { NgHttpCachingConfig, NgHttpCachingStorageInterface, NgHttpCachingLocalStorage } from 'ng-http-caching';
+import { NgHttpCachingConfig, NgHttpCachingLocalStorage } from 'ng-http-caching';
 
 const ngHttpCachingConfig: NgHttpCachingConfig = {
   store: new NgHttpCachingLocalStorage(),
@@ -149,7 +149,7 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
 and a `NgHttpCachingSessionStorage` a cache store with persistence into `sessionStorage`:
 
 ```ts
-import { NgHttpCachingConfig, NgHttpCachingStorageInterface, NgHttpCachingSessionStorage } from 'ng-http-caching';
+import { NgHttpCachingConfig, NgHttpCachingSessionStorage } from 'ng-http-caching';
 
 const ngHttpCachingConfig: NgHttpCachingConfig = {
   store: new NgHttpCachingSessionStorage(),

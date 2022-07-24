@@ -156,8 +156,9 @@
       }
     }
   },
-  "defaultProject": "ng-http-caching",
   "cli": {
-    "defaultCollection": "@angular-eslint/schematics"
+    "schematicCollections": [
+      "@angular-eslint/schematics"
+    ]
   }
 }

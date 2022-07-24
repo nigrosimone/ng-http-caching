@@ -11,7 +11,7 @@ cache:
     - ./.angular
 
 install:
-  - npm install
+  - npm install --force
 
 script:
   - npm run test ng-http-caching -- --code-coverage --no-watch --no-progress --browsers=ChromeHeadlessCI

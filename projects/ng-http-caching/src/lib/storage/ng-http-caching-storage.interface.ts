@@ -9,11 +9,11 @@ export interface NgHttpCachingStorageInterface {
 
     delete(key: string): boolean;
 
-    forEach(callbackfn: (value: NgHttpCachingEntry, key: string) => void): void;
+    forEach<K = any, T = any>(callbackfn: (value: NgHttpCachingEntry<K, T>, key: string) => void): void;
 
-    get(key: string): NgHttpCachingEntry | undefined;
+    get<K = any, T = any>(key: string): NgHttpCachingEntry<K, T> | undefined;
 
     has(key: string): boolean;
 
-    set(key: string, value: NgHttpCachingEntry): void;
+    set<K = any, T = any>(key: string, value: NgHttpCachingEntry<K, T>): void;
 }

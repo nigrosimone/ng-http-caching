@@ -7,7 +7,7 @@ export class NgHttpCachingMemoryStorage implements NgHttpCachingStorageInterface
         return this.store.size;
     }
 
-    private store = new Map<string, NgHttpCachingEntry>();
+    private store = new Map<string, NgHttpCachingEntry<any, any>>();
 
     clear(): void {
         this.store.clear();
@@ -18,11 +18,11 @@ export class NgHttpCachingMemoryStorage implements NgHttpCachingStorageInterface
     }
 
 
-    forEach(callbackfn: (value: NgHttpCachingEntry, key: string) => void): void {
+    forEach<K, T>(callbackfn: (value: NgHttpCachingEntry<K, T>, key: string) => void): void {
         return this.store.forEach(callbackfn);
     }
 
-    get(key: string): NgHttpCachingEntry | undefined {
+    get<K, T>(key: string): NgHttpCachingEntry<K, T> | undefined {
         return this.store.get(key);
     }
 
@@ -30,7 +30,7 @@ export class NgHttpCachingMemoryStorage implements NgHttpCachingStorageInterface
         return this.store.has(key);
     }
 
-    set(key: string, value: NgHttpCachingEntry): void {
+    set<K, T>(key: string, value: NgHttpCachingEntry<K, T>): void {
         this.store.set(key, value);
     }
 }

@@ -4,10 +4,10 @@ import { Observable } from 'rxjs/internal/Observable';
 import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
 import { NgHttpCachingMemoryStorage } from './storage/ng-http-caching-memory-storage';
 
-export interface NgHttpCachingEntry {
+export interface NgHttpCachingEntry<K = any, T = any> {
   url: string;
-  response: HttpResponse<any>;
-  request: HttpRequest<any>;
+  response: HttpResponse<T>;
+  request: HttpRequest<K>;
   addedTime: number;
   version: string;
 }
@@ -36,13 +36,13 @@ export interface NgHttpCachingConfig {
   cacheStrategy?: NgHttpCachingStrategy;
   version?: string;
 
-  isExpired?: (entry: NgHttpCachingEntry) => boolean | undefined;
+  isExpired?: <K, T>(entry: NgHttpCachingEntry<K, T>) => boolean | undefined;
 
-  isCacheable?: (req: HttpRequest<any>) => boolean | undefined;
+  isCacheable?: <K>(req: HttpRequest<K>) => boolean | undefined;
 
-  getKey?: (req: HttpRequest<any>) => string | undefined;
+  getKey?: <K>(req: HttpRequest<K>) => string | undefined;
 
-  isValid?: (entry: NgHttpCachingEntry) => boolean | undefined;
+  isValid?: <K, T>(entry: NgHttpCachingEntry<K, T>) => boolean | undefined;
 }
 
 export interface NgHttpCachingDefaultConfig extends NgHttpCachingConfig {
@@ -106,9 +106,9 @@ export class NgHttpCachingService {
   /**
    * Return response from cache
    */
-  getFromCache(req: HttpRequest<any>): HttpResponse<any> | undefined {
+  getFromCache<K, T>(req: HttpRequest<K>): HttpResponse<T> | undefined {
     const key: string = this.getKey(req);
-    const cached: NgHttpCachingEntry | undefined = this.config.store.get(key);
+    const cached: NgHttpCachingEntry<K, T> | undefined = this.config.store.get<K, T>(key);
 
     if (!cached) {
       return undefined;
@@ -125,9 +125,9 @@ export class NgHttpCachingService {
   /**
    * Add response to cache
    */
-  addToCache(req: HttpRequest<any>, res: HttpResponse<any>): boolean {
+  addToCache<K, T>(req: HttpRequest<K>, res: HttpResponse<T>): boolean {
     const key: string = this.getKey(req);
-    const entry: NgHttpCachingEntry = {
+    const entry: NgHttpCachingEntry<K, T> = {
       url: req.urlWithParams,
       response: res,
       request: req,
@@ -144,7 +144,7 @@ export class NgHttpCachingService {
   /**
    * Delete response from cache
    */
-  deleteFromCache(req: HttpRequest<any>): boolean {
+  deleteFromCache<K>(req: HttpRequest<K>): boolean {
     const key: string = this.getKey(req);
     return this.clearCacheByKey(key);
   }
@@ -166,8 +166,8 @@ export class NgHttpCachingService {
   /**
    * Clear the cache by regex
    */
-  clearCacheByRegex(regex: RegExp): void {
-    this.config.store.forEach((entry: NgHttpCachingEntry, key: string) => {
+  clearCacheByRegex<K, T>(regex: RegExp): void {
+    this.config.store.forEach((entry: NgHttpCachingEntry<K, T>, key: string) => {
       if (regex.test(key)) {
         this.clearCacheByKey(key);
       }
@@ -177,8 +177,8 @@ export class NgHttpCachingService {
   /**
    * Clear the cache by TAG
    */
-  clearCacheByTag(tag: string): void {
-    this.config.store.forEach((entry: NgHttpCachingEntry, key: string) => {
+  clearCacheByTag<K, T>(tag: string): void {
+    this.config.store.forEach((entry: NgHttpCachingEntry<K, T>, key: string) => {
       const tagHeader = entry.request.headers.get(NgHttpCachingHeaders.TAG);
       if (tagHeader && tagHeader.split(',').includes(tag)) {
         this.clearCacheByKey(key);
@@ -189,12 +189,12 @@ export class NgHttpCachingService {
   /**
    * Run garbage collector (delete expired cache entry)
    */
-  runGc(): boolean {
+  runGc<K, T>(): boolean {
     if (this.gcLock) {
       return false;
     }
     this.gcLock = true;
-    this.config.store.forEach((entry: NgHttpCachingEntry, key: string) => {
+    this.config.store.forEach((entry: NgHttpCachingEntry<K, T>, key: string) => {
       if (this.isExpired(entry)) {
         this.clearCacheByKey(key);
       }
@@ -206,7 +206,7 @@ export class NgHttpCachingService {
   /**
    * Return true if cache entry is expired
    */
-  isExpired(entry: NgHttpCachingEntry): boolean {
+  isExpired<K, T>(entry: NgHttpCachingEntry<K, T>): boolean {
     // if user provide custom method, use it
     if (typeof this.config.isExpired === 'function') {
       const result = this.config.isExpired(entry);
@@ -236,7 +236,7 @@ export class NgHttpCachingService {
   /**
    * Return true if cache entry is valid for store in the cache
    */
-  isValid(entry: NgHttpCachingEntry): boolean {
+  isValid<K, T>(entry: NgHttpCachingEntry<K, T>): boolean {
     // if user provide custom method, use it
     if (typeof this.config.isValid === 'function') {
       const result = this.config.isValid(entry);
@@ -255,7 +255,7 @@ export class NgHttpCachingService {
   /**
    * Return true if the request is cacheable
    */
-  isCacheable(req: HttpRequest<any>): boolean {
+  isCacheable<K>(req: HttpRequest<K>): boolean {
     // if user provide custom method, use it
     if (typeof this.config.isCacheable === 'function') {
       const result = this.config.isCacheable(req);
@@ -288,7 +288,7 @@ export class NgHttpCachingService {
   /**
    * Return the cache key
    */
-  getKey(req: HttpRequest<any>): string {
+  getKey<K>(req: HttpRequest<K>): string {
     // if user provide custom method, use it
     if (typeof this.config.getKey === 'function') {
       const result = this.config.getKey(req);
@@ -304,9 +304,9 @@ export class NgHttpCachingService {
   /**
    * Return observable from cache
    */
-  getFromQueue(req: HttpRequest<any>): Observable<HttpEvent<any>> | undefined {
+  getFromQueue<K, T>(req: HttpRequest<K>): Observable<HttpEvent<T>> | undefined {
     const key: string = this.getKey(req);
-    const cached: Observable<HttpEvent<any>> | undefined = this.queue.get(key);
+    const cached: Observable<HttpEvent<T>> | undefined = this.queue.get(key);
 
     if (!cached) {
       return undefined;
@@ -318,7 +318,7 @@ export class NgHttpCachingService {
   /**
    * Add observable to cache
    */
-  addToQueue(req: HttpRequest<any>, obs: Observable<HttpEvent<any>>): void {
+  addToQueue<K, T>(req: HttpRequest<K>, obs: Observable<HttpEvent<T>>): void {
     const key: string = this.getKey(req);
     this.queue.set(key, obs);
   }
@@ -326,7 +326,7 @@ export class NgHttpCachingService {
   /**
    * Delete observable from cache
    */
-  deleteFromQueue(req: HttpRequest<any>): boolean {
+  deleteFromQueue<K>(req: HttpRequest<K>): boolean {
     const key: string = this.getKey(req);
     return this.queue.delete(key);
   }

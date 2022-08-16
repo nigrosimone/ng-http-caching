@@ -29,6 +29,16 @@ export enum NgHttpCachingHeaders {
 }
 export const NgHttpCachingHeadersList = Object.values(NgHttpCachingHeaders);
 
+
+
+export const NG_HTTP_CACHING_SECOND_IN_MS = 1000;
+export const NG_HTTP_CACHING_MINUTE_IN_MS = NG_HTTP_CACHING_SECOND_IN_MS * 60;
+export const NG_HTTP_CACHING_HOUR_IN_MS = NG_HTTP_CACHING_MINUTE_IN_MS * 60;
+export const NG_HTTP_CACHING_DAY_IN_MS = NG_HTTP_CACHING_HOUR_IN_MS * 24;
+export const NG_HTTP_CACHING_WEEK_IN_MS = NG_HTTP_CACHING_DAY_IN_MS * 7;
+export const NG_HTTP_CACHING_MONTH_IN_MS = NG_HTTP_CACHING_DAY_IN_MS * 30;
+export const NG_HTTP_CACHING_YEAR_IN_MS = NG_HTTP_CACHING_DAY_IN_MS * 365;
+
 export interface NgHttpCachingConfig {
   store?: NgHttpCachingStorageInterface;
   lifetime?: number;
@@ -55,7 +65,7 @@ export interface NgHttpCachingDefaultConfig extends NgHttpCachingConfig {
 
 export const NgHttpCachingConfigDefault: NgHttpCachingDefaultConfig = {
   store: new NgHttpCachingMemoryStorage(),
-  lifetime: 60 * 60 * 100,
+  lifetime: NG_HTTP_CACHING_HOUR_IN_MS,
   version: VERSION.major,
   allowedMethod: ['GET'],
   cacheStrategy: NgHttpCachingStrategy.ALLOW_ALL,

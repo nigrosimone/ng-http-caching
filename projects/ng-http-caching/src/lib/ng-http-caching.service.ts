@@ -177,7 +177,7 @@ export class NgHttpCachingService {
    * Clear the cache by regex
    */
   clearCacheByRegex<K, T>(regex: RegExp): void {
-    this.config.store.forEach((entry: NgHttpCachingEntry<K, T>, key: string) => {
+    this.config.store.forEach<K, T>((entry: NgHttpCachingEntry<K, T>, key: string) => {
       if (regex.test(key)) {
         this.clearCacheByKey(key);
       }
@@ -188,7 +188,7 @@ export class NgHttpCachingService {
    * Clear the cache by TAG
    */
   clearCacheByTag<K, T>(tag: string): void {
-    this.config.store.forEach((entry: NgHttpCachingEntry<K, T>, key: string) => {
+    this.config.store.forEach<K, T>((entry: NgHttpCachingEntry<K, T>, key: string) => {
       const tagHeader = entry.request.headers.get(NgHttpCachingHeaders.TAG);
       if (tagHeader && tagHeader.split(',').includes(tag)) {
         this.clearCacheByKey(key);
@@ -204,7 +204,7 @@ export class NgHttpCachingService {
       return false;
     }
     this.gcLock = true;
-    this.config.store.forEach((entry: NgHttpCachingEntry<K, T>, key: string) => {
+    this.config.store.forEach<K, T>((entry: NgHttpCachingEntry<K, T>, key: string) => {
       if (this.isExpired(entry)) {
         this.clearCacheByKey(key);
       }
@@ -221,7 +221,7 @@ export class NgHttpCachingService {
     if (typeof this.config.isExpired === 'function') {
       const result = this.config.isExpired(entry);
       // if result is undefined, normal behaviour is provided
-      if (typeof result !== 'undefined') {
+      if (result !== undefined) {
         return result;
       }
     }
@@ -251,7 +251,7 @@ export class NgHttpCachingService {
     if (typeof this.config.isValid === 'function') {
       const result = this.config.isValid(entry);
       // if result is undefined, normal behaviour is provided
-      if (typeof result !== 'undefined') {
+      if (result !== undefined) {
         return result;
       }
     }
@@ -270,7 +270,7 @@ export class NgHttpCachingService {
     if (typeof this.config.isCacheable === 'function') {
       const result = this.config.isCacheable(req);
       // if result is undefined, normal behaviour is provided
-      if (typeof result !== 'undefined') {
+      if (result !== undefined) {
         return result;
       }
     }
@@ -303,7 +303,7 @@ export class NgHttpCachingService {
     if (typeof this.config.getKey === 'function') {
       const result = this.config.getKey(req);
       // if result is undefined, normal behaviour is provided
-      if (typeof result !== 'undefined') {
+      if (result !== undefined) {
         return result;
       }
     }

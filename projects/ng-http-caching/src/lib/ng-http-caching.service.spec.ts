@@ -8,6 +8,13 @@ import {
   NgHttpCachingEntry,
   NgHttpCachingStrategy,
   NgHttpCachingHeaders,
+  NG_HTTP_CACHING_SECOND_IN_MS,
+  NG_HTTP_CACHING_MINUTE_IN_MS,
+  NG_HTTP_CACHING_HOUR_IN_MS,
+  NG_HTTP_CACHING_DAY_IN_MS,
+  NG_HTTP_CACHING_WEEK_IN_MS,
+  NG_HTTP_CACHING_MONTH_IN_MS,
+  NG_HTTP_CACHING_YEAR_IN_MS,
 } from './ng-http-caching.service';
 import { VERSION } from '@angular/core';
 
@@ -28,6 +35,17 @@ describe('NgHttpCachingService: no config', () => {
 
   it('should have: default value', () => {
     expect(service.getConfig()).toEqual(NgHttpCachingConfigDefault);
+  });
+
+  it('should have: correct value', () => {
+    expect(NG_HTTP_CACHING_SECOND_IN_MS).toBe(1000);
+    expect(NG_HTTP_CACHING_MINUTE_IN_MS).toBe(NG_HTTP_CACHING_SECOND_IN_MS * 60);
+    expect(NG_HTTP_CACHING_HOUR_IN_MS).toBe(NG_HTTP_CACHING_MINUTE_IN_MS * 60);
+    expect(NG_HTTP_CACHING_DAY_IN_MS).toBe(NG_HTTP_CACHING_HOUR_IN_MS * 24);
+    expect(NG_HTTP_CACHING_WEEK_IN_MS).toBe(NG_HTTP_CACHING_DAY_IN_MS * 7);
+    expect(NG_HTTP_CACHING_MONTH_IN_MS).toBe(NG_HTTP_CACHING_DAY_IN_MS * 30);
+    expect(NG_HTTP_CACHING_YEAR_IN_MS).toBe(NG_HTTP_CACHING_DAY_IN_MS * 365);
+    expect(NgHttpCachingConfigDefault.lifetime).toBe(NG_HTTP_CACHING_HOUR_IN_MS);
   });
 });
 

@@ -18,18 +18,17 @@ export const NG_HTTP_CACHING_CONFIG = new InjectionToken<NgHttpCachingConfig>(
 
 export enum NgHttpCachingStrategy {
   ALLOW_ALL = 'ALLOW_ALL',
-  DISALLOW_ALL = 'DISALLOW_ALL',
+  DISALLOW_ALL = 'DISALLOW_ALL'
 }
 
 export enum NgHttpCachingHeaders {
   ALLOW_CACHE = 'X-NG-HTTP-CACHING-ALLOW-CACHE',
   DISALLOW_CACHE = 'X-NG-HTTP-CACHING-DISALLOW-CACHE',
   LIFETIME = 'X-NG-HTTP-CACHING-LIFETIME',
-  TAG = 'X-NG-HTTP-CACHING-TAG',
+  TAG = 'X-NG-HTTP-CACHING-TAG'
 }
+
 export const NgHttpCachingHeadersList = Object.values(NgHttpCachingHeaders);
-
-
 
 export const NG_HTTP_CACHING_SECOND_IN_MS = 1000;
 export const NG_HTTP_CACHING_MINUTE_IN_MS = NG_HTTP_CACHING_SECOND_IN_MS * 60;

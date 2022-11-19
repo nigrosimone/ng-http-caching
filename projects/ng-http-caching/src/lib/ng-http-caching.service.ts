@@ -45,13 +45,9 @@ export interface NgHttpCachingConfig {
   allowedMethod?: string[];
   cacheStrategy?: NgHttpCachingStrategy;
   version?: string;
-
   isExpired?: <K, T>(entry: NgHttpCachingEntry<K, T>) => boolean | undefined;
-
   isCacheable?: <K>(req: HttpRequest<K>) => boolean | undefined;
-
   getKey?: <K>(req: HttpRequest<K>) => string | undefined;
-
   isValid?: <K, T>(entry: NgHttpCachingEntry<K, T>) => boolean | undefined;
 }
 

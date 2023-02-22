@@ -8,8 +8,6 @@ import {
 import { NgHttpCachingInterceptorService } from './ng-http-caching-interceptor.service';
 
 @NgModule({
-  declarations: [],
-  imports: [],
   providers: [
     NgHttpCachingService,
     {
@@ -17,8 +15,7 @@ import { NgHttpCachingInterceptorService } from './ng-http-caching-interceptor.s
       useClass: NgHttpCachingInterceptorService,
       multi: true,
     },
-  ],
-  exports: [],
+  ]
 })
 export class NgHttpCachingModule {
   static forRoot(

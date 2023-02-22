@@ -1,6 +1,6 @@
 import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { asapScheduler, Observable, of, scheduled } from 'rxjs';
 import { tap, finalize, share } from 'rxjs/operators';
 import { NgHttpCachingService, NgHttpCachingHeadersList } from './ng-http-caching.service';
 
@@ -31,7 +31,7 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
     const cachedResponse: HttpResponse<any> | undefined = this.cacheService.getFromCache(req);
     if (cachedResponse) {
       // console.log('cachedResponse', req);
-      return of(cachedResponse.clone());
+      return scheduled(of(cachedResponse.clone()), asapScheduler);
     }
 
     // If the request of going through for first time

@@ -64,11 +64,13 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.lifetime && Number(this.lifetime) !== this.config.lifetime) {
       headers = headers.set(NgHttpCachingHeaders.LIFETIME, this.lifetime);
     }
+    console.log('pre-request');
     this.http.get(this.url, { headers }).subscribe((result) => {
       this.timeSpan = new Date().getTime() - timeStart.getTime();
       this.updateCachedKeys();
       console.log('response', result);
     });
+    console.log('sent request');
   }
 
   clearCache(): void {

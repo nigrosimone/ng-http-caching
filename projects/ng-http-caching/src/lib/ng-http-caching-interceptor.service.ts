@@ -6,15 +6,13 @@ import { NgHttpCachingService, NgHttpCachingHeadersList } from './ng-http-cachin
 
 /**
  * Fix for https://github.com/ReactiveX/rxjs/issues/7241
- * @param response HttpResponse<any>
  */
-function* _of(response: HttpResponse<any>) {
-  yield response;
+function* _of<T>(value: T): Generator<T> {
+  yield value;
 }
 
 @Injectable()
 export class NgHttpCachingInterceptorService implements HttpInterceptor {
-
 
   constructor(private readonly cacheService: NgHttpCachingService) { }
 
@@ -30,15 +28,14 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
     // Checked if there is pending response for this request
     const cachedObservable: Observable<HttpEvent<any>> | undefined = this.cacheService.getFromQueue(req);
     if (cachedObservable) {
-      // console.log('cachedObservable', req);
+      // console.log('cachedObservable');
       return scheduled(cachedObservable, asapScheduler);
     }
 
     // Checked if there is cached response for this request
     const cachedResponse: HttpResponse<any> | undefined = this.cacheService.getFromCache(req);
     if (cachedResponse) {
-      // console.log('cachedResponse', req);
-
+      // console.log('cachedResponse');
       return scheduled(_of(cachedResponse.clone()), asapScheduler);
     }
 

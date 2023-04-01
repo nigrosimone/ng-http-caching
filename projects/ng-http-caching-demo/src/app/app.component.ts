@@ -6,6 +6,7 @@ import {
   NgHttpCachingHeadersList
 } from '../../../ng-http-caching/src/public-api';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { lastValueFrom } from 'rxjs';
 
 interface CachedKey {
   key: string;
@@ -50,7 +51,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
 
-  getRequest(): void {
+  async getRequest(): Promise<void> {
     this.timeSpan = 0;
     const timeStart = new Date();
 
@@ -65,12 +66,10 @@ export class AppComponent implements OnInit, OnDestroy {
       headers = headers.set(NgHttpCachingHeaders.LIFETIME, this.lifetime);
     }
     console.log('pre-request');
-    this.http.get(this.url, { headers }).subscribe((result) => {
-      this.timeSpan = new Date().getTime() - timeStart.getTime();
-      this.updateCachedKeys();
-      console.log('response', result);
-    });
-    console.log('sent request');
+    const result = await lastValueFrom(this.http.get(this.url, { headers }));
+    this.timeSpan = new Date().getTime() - timeStart.getTime();
+    this.updateCachedKeys();
+    console.log('response', result);
   }
 
   clearCache(): void {

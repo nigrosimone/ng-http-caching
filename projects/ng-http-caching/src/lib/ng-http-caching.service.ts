@@ -232,7 +232,7 @@ export class NgHttpCachingService {
       return false;
     }
     // wrong lifetime
-    if (lifetime < 0) {
+    if (lifetime < 0 || isNaN(lifetime)) {
       throw new Error('lifetime must be greater than or equal 0');
     }
     return entry.addedTime + lifetime < Date.now();

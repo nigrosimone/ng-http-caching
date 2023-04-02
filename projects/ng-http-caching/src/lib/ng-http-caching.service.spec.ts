@@ -750,7 +750,7 @@ describe('NgHttpCachingService: default isExpired with request lifetime', () => 
     expect(service.isExpired(cacheEntry)).toBeFalse();
   });
 
-  it('wrong expired', () => {
+  it('wrong negative expired', () => {
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
       addedTime: Date.now(),
@@ -758,6 +758,21 @@ describe('NgHttpCachingService: default isExpired with request lifetime', () => 
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar', null, {
         headers: new HttpHeaders({
           [NgHttpCachingHeaders.LIFETIME]: '-1',
+        }),
+      }),
+      version: '1'
+    };
+    expect(() => service.isExpired(cacheEntry)).toThrow(new Error('lifetime must be greater than or equal 0'));
+  });
+
+  it('wrong NaN expired', () => {
+    const cacheEntry: NgHttpCachingEntry = {
+      url: 'https://angular.io/docs?foo=bar',
+      addedTime: Date.now(),
+      response: new HttpResponse({}),
+      request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar', null, {
+        headers: new HttpHeaders({
+          [NgHttpCachingHeaders.LIFETIME]: 'test',
         }),
       }),
       version: '1'

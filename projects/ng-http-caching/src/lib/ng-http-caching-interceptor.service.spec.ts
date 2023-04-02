@@ -78,14 +78,14 @@ describe('NgHttpCachingInterceptorService', () => {
     service.intercept(new HttpRequest('GET', url), new MockHandler()).subscribe(async (response1) => {
       expect(response1).toBeTruthy();
 
-      const cached1 = httpCacheService.getStore().get(url);
+      const cached1 = httpCacheService.getStore().get('GET@' + url);
       expect(cached1).toBeTruthy();
 
       await sleep(DELAY / 3);
 
       service.intercept(new HttpRequest('GET', url), new MockHandler()).subscribe(response2 => {
         expect(response2).toBeTruthy();
-        const cached2 = httpCacheService.getStore().get(url);
+        const cached2 = httpCacheService.getStore().get('GET@' + url);
         expect(cached2).toBeTruthy();
         expect(cached2).toEqual(cached1);
 

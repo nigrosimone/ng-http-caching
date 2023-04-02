@@ -178,7 +178,7 @@ describe('NgHttpCachingService: default getKey', () => {
   it('default key is url with params', () => {
     const urlWithParams = 'https://angular.io/docs?foo=bar';
     const httpRequest = new HttpRequest('GET', urlWithParams);
-    expect(service.getKey(httpRequest)).toEqual(urlWithParams);
+    expect(service.getKey(httpRequest)).toEqual('GET@' + urlWithParams);
   });
 });
 
@@ -239,7 +239,7 @@ describe('NgHttpCachingService: override getKey return undefined', () => {
   it('override key is url with params', () => {
     const urlWithParams = 'https://angular.io/docs?foo=bar';
     const httpRequest = new HttpRequest('GET', urlWithParams);
-    expect(service.getKey(httpRequest)).toEqual(urlWithParams);
+    expect(service.getKey(httpRequest)).toEqual('GET@' + urlWithParams);
   });
 });
 
@@ -1049,7 +1049,7 @@ describe('NgHttpCachingService: clearCacheByKey', () => {
     expect(service.getFromCache(req1)).toEqual(res);
     expect(service.getFromCache(req2)).toEqual(res);
 
-    expect(service.clearCacheByKey('https://angular.io/docs?foo=bykey1')).toBeTrue();
+    expect(service.clearCacheByKey('GET@https://angular.io/docs?foo=bykey1')).toBeTrue();
 
     expect(service.getFromCache(req1)).toBeUndefined();
     expect(service.getFromCache(req2)).toEqual(res);

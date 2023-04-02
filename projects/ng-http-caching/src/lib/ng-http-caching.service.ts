@@ -302,8 +302,8 @@ export class NgHttpCachingService {
         return result;
       }
     }
-    // default key id is url with query parameters
-    return req.urlWithParams;
+    // default key id is req.method plus url with query parameters
+    return req.method + '@' + req.urlWithParams;
   }
 
   /**

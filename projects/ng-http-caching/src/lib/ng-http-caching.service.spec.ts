@@ -1239,3 +1239,39 @@ describe('NgHttpCachingService: override isValid return undefined', () => {
   });
 
 });
+
+describe('NgHttpCachingService: deep freeze', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        NgHttpCachingService
+      ],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+
+  it('deepFreeze: DEV', () => {
+    try {
+      const req = new HttpRequest('GET', 'https://angular.io/docs?foo=isValid');
+      const res = new HttpResponse({ status: 200, body: { count: 1 } });
+      expect(service.addToCache(req, res)).toBeTrue();
+      service['devMode'] = true;
+      expect(service['devMode']).toEqual(true);
+      const state = service.getFromCache(req);
+      expect(state?.body).toEqual({ count: 1 });
+      (state?.body as any).count = 2;
+      expect(true).toEqual(false);
+    } catch (error: any) {
+      expect(error.message).toEqual('Cannot assign to read only property \'count\' of object \'[object Object]\'');
+    } finally {
+      service['devMode'] = true;
+      expect(service['devMode']).toEqual(true);
+    }
+  });
+});

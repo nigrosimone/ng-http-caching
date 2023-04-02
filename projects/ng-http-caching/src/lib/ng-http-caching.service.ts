@@ -1,4 +1,4 @@
-import { Injectable, InjectionToken, Inject, Optional, VERSION } from '@angular/core';
+import { Injectable, InjectionToken, Inject, Optional, VERSION, isDevMode } from '@angular/core';
 import { HttpRequest, HttpResponse, HttpEvent } from '@angular/common/http';
 import { Observable } from 'rxjs/internal/Observable';
 import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
@@ -75,6 +75,8 @@ export class NgHttpCachingService {
 
   private gcLock = false;
 
+  private devMode: boolean = isDevMode();
+
   constructor(
     @Inject(NG_HTTP_CACHING_CONFIG) @Optional() config: NgHttpCachingConfig
   ) {
@@ -111,7 +113,7 @@ export class NgHttpCachingService {
   /**
    * Return response from cache
    */
-  getFromCache<K, T>(req: HttpRequest<K>): HttpResponse<T> | undefined {
+  getFromCache<K, T>(req: HttpRequest<K>): Readonly<HttpResponse<T>> | undefined {
     const key: string = this.getKey(req);
     const cached: NgHttpCachingEntry<K, T> | undefined = this.config.store.get<K, T>(key);
 
@@ -124,7 +126,7 @@ export class NgHttpCachingService {
       return undefined;
     }
 
-    return cached.response;
+    return this.deepFreeze(cached.response);
   }
 
   /**
@@ -334,5 +336,34 @@ export class NgHttpCachingService {
   deleteFromQueue<K>(req: HttpRequest<K>): boolean {
     const key: string = this.getKey(req);
     return this.queue.delete(key);
+  }
+
+  /**
+   * Recursively Object.freeze simple Javascript structures consisting of plain objects, arrays, and primitives.
+   * Make the data immutable.
+   * @returns immutable object
+   */
+  private deepFreeze<S>(object: S): Readonly<S> {
+    // No freezing in production (for better performance).
+    if (!this.devMode || !object || typeof object !== 'object') {
+      return object as Readonly<S>;
+    }
+
+    // When already frozen, we assume its children are frozen (for better performance).
+    // This should be true if you always use `deepFreeze` to freeze objects.
+    //
+    // Note that Object.isFrozen will also return `true` for primitives (numbers,
+    // strings, booleans, undefined, null), so there is no need to check for
+    // those explicitly.
+    if (Object.isFrozen(object)) {
+      return object as Readonly<S>;
+    }
+
+    // At this point we know that we're dealing with either an array or plain object, so
+    // just freeze it and recurse on its values.
+    Object.freeze(object);
+    Object.keys(object).forEach(key => this.deepFreeze((object as any)[key]));
+
+    return object as Readonly<S>;
   }
 }

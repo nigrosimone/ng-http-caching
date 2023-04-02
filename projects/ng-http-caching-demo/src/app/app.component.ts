@@ -22,6 +22,7 @@ interface CachedKey {
 })
 export class AppComponent implements OnInit, OnDestroy {
   public url = 'https://my-json-server.typicode.com/typicode/demo/db';
+  public key = 'GET@' + this.url;
   public tag = '';
   public regex = '';
   public cachedKeys: CachedKey[] = [];
@@ -88,7 +89,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   clearCacheByKey(): void {
-    this.ngHttpCachingService.clearCacheByKey(this.url);
+    this.ngHttpCachingService.clearCacheByKey(this.key);
     this.updateCachedKeys();
   }
 

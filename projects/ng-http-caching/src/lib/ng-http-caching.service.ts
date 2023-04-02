@@ -62,7 +62,7 @@ export const NgHttpCachingConfigDefault: NgHttpCachingDefaultConfig = {
   store: new NgHttpCachingMemoryStorage(),
   lifetime: NG_HTTP_CACHING_HOUR_IN_MS,
   version: VERSION.major,
-  allowedMethod: ['GET'],
+  allowedMethod: ['GET', 'HEAD'],
   cacheStrategy: NgHttpCachingStrategy.ALLOW_ALL,
 };
 

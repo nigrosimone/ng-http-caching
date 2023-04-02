@@ -46,7 +46,7 @@ describe('NgHttpCachingService: no config', () => {
     expect(NG_HTTP_CACHING_MONTH_IN_MS).toBe(NG_HTTP_CACHING_DAY_IN_MS * 30);
     expect(NG_HTTP_CACHING_YEAR_IN_MS).toBe(NG_HTTP_CACHING_DAY_IN_MS * 365);
     expect(NgHttpCachingConfigDefault.lifetime).toBe(NG_HTTP_CACHING_HOUR_IN_MS);
-    expect(NgHttpCachingConfigDefault.allowedMethod).toEqual(['GET']);
+    expect(NgHttpCachingConfigDefault.allowedMethod).toEqual(['GET', 'HEAD']);
     expect(NgHttpCachingConfigDefault.version).toBe(VERSION.major);
     expect(NgHttpCachingConfigDefault.cacheStrategy).toBe(NgHttpCachingStrategy.ALLOW_ALL);
   });

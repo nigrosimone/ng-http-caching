@@ -69,9 +69,9 @@ export const NgHttpCachingConfigDefault: NgHttpCachingDefaultConfig = {
 @Injectable()
 export class NgHttpCachingService {
 
-  private queue = new Map<string, Observable<HttpEvent<any>>>();
+  private readonly queue = new Map<string, Observable<HttpEvent<any>>>();
 
-  private config: NgHttpCachingDefaultConfig;
+  private readonly config: NgHttpCachingDefaultConfig;
 
   private gcLock = false;
 
@@ -293,7 +293,9 @@ export class NgHttpCachingService {
   }
 
   /**
-   * Return the cache key
+   * Return the cache key.
+   * Default key is http method plus url with query parameters, eg.:
+   * `GET@https://github.com/nigrosimone/ng-http-caching`
    */
   getKey<K>(req: HttpRequest<K>): string {
     // if user provide custom method, use it
@@ -304,7 +306,7 @@ export class NgHttpCachingService {
         return result;
       }
     }
-    // default key id is req.method plus url with query parameters
+    // default key is req.method plus url with query parameters
     return req.method + '@' + req.urlWithParams;
   }
 

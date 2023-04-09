@@ -112,7 +112,7 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
         }
     }
 
-    get(key: string): NgHttpCachingEntry | undefined {
+    get(key: string): Readonly<NgHttpCachingEntry> | undefined {
         const item = this.storage.getItem(KEY_PREFIX + key);
         if (item) {
             const parsedItem: StorageEntry = JSON.parse(item);

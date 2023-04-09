@@ -92,21 +92,21 @@ export class NgHttpCachingService {
   /**
    * Return the config
    */
-  getConfig(): NgHttpCachingConfig {
+  getConfig(): Readonly<NgHttpCachingConfig> {
     return this.config;
   }
 
   /**
    * Return the queue map
    */
-  getQueue(): Map<string, Observable<HttpEvent<any>>> {
+  getQueue(): Readonly<Map<string, Observable<HttpEvent<any>>>> {
     return this.queue;
   }
 
   /**
    * Return the cache store
    */
-  getStore(): NgHttpCachingStorageInterface {
+  getStore(): Readonly<NgHttpCachingStorageInterface> {
     return this.config.store;
   }
 

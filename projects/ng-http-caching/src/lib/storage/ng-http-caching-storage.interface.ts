@@ -11,7 +11,7 @@ export interface NgHttpCachingStorageInterface {
 
     forEach<K = any, T = any>(callbackfn: (value: NgHttpCachingEntry<K, T>, key: string) => void): void;
 
-    get<K = any, T = any>(key: string): NgHttpCachingEntry<K, T> | undefined;
+    get<K = any, T = any>(key: string): Readonly<NgHttpCachingEntry<K, T>> | undefined;
 
     has(key: string): boolean;
 

@@ -152,7 +152,7 @@ export class NgHttpCachingService {
   private devMode: boolean = isDevMode();
 
   constructor(
-    @Inject(NG_HTTP_CACHING_CONFIG) @Optional() config: NgHttpCachingConfig
+    @Inject(NG_HTTP_CACHING_CONFIG) @Optional() config: Readonly<NgHttpCachingConfig>
   ) {
     if (config) {
       this.config = { ...NgHttpCachingConfigDefault, ...config };

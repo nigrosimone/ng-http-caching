@@ -5,10 +5,25 @@ import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage
 import { NgHttpCachingMemoryStorage } from './storage/ng-http-caching-memory-storage';
 
 export interface NgHttpCachingEntry<K = any, T = any> {
+  /**
+   * URL
+   */
   url: string;
+  /**
+   * HttpResponse
+   */
   response: HttpResponse<T>;
+  /**
+   * HttpRequest
+   */
   request: HttpRequest<K>;
+  /**
+   * Timestam of add to cache time
+   */
   addedTime: number;
+  /**
+   * Cache version
+   */
   version: string;
 }
 
@@ -117,7 +132,7 @@ export interface NgHttpCachingDefaultConfig extends NgHttpCachingConfig {
   version: string;
 }
 
-export const NgHttpCachingConfigDefault: NgHttpCachingDefaultConfig = {
+export const NgHttpCachingConfigDefault: Readonly<NgHttpCachingDefaultConfig> = {
   store: new NgHttpCachingMemoryStorage(),
   lifetime: NG_HTTP_CACHING_HOUR_IN_MS,
   version: VERSION.major,

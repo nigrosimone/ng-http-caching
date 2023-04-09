@@ -133,7 +133,6 @@ export class NgHttpCachingService {
    * Add response to cache
    */
   addToCache<K, T>(req: HttpRequest<K>, res: HttpResponse<T>): boolean {
-    const key: string = this.getKey(req);
     const entry: NgHttpCachingEntry<K, T> = {
       url: req.urlWithParams,
       response: res,
@@ -142,6 +141,7 @@ export class NgHttpCachingService {
       version: this.config.version,
     };
     if (this.isValid(entry)) {
+      const key: string = this.getKey(req);
       this.config.store.set(key, entry);
       return true;
     }
@@ -174,7 +174,7 @@ export class NgHttpCachingService {
    * Clear the cache by regex
    */
   clearCacheByRegex<K, T>(regex: RegExp): void {
-    this.config.store.forEach<K, T>((entry: NgHttpCachingEntry<K, T>, key: string) => {
+    this.config.store.forEach<K, T>((_: NgHttpCachingEntry<K, T>, key: string) => {
       if (regex.test(key)) {
         this.clearCacheByKey(key);
       }

@@ -39,14 +39,54 @@ export const NG_HTTP_CACHING_MONTH_IN_MS = NG_HTTP_CACHING_DAY_IN_MS * 30;
 export const NG_HTTP_CACHING_YEAR_IN_MS = NG_HTTP_CACHING_DAY_IN_MS * 365;
 
 export interface NgHttpCachingConfig {
+  /**
+   * Set the cache store. You can implement your custom store by implement the `NgHttpCachingStorageInterface` interface, eg.:
+   */
   store?: NgHttpCachingStorageInterface;
+  /**
+   * Number of millisecond that a response is stored in the cache. 
+   * You can set specific "lifetime" for each request by add the header `X-NG-HTTP-CACHING-LIFETIME` (see example below).
+   */
   lifetime?: number;
+  /**
+   * Array of allowed HTTP methods to cache. 
+   * You can allow multiple methods, eg.: `['GET', 'POST', 'PUT', 'DELETE', 'HEAD']` or 
+   * allow all methods by: `['ALL']`. If `allowedMethod` is an empty array (`[]`), no response are cached.
+   * *Warning!* `NgHttpCaching` use the full url (url with query parameters) as unique key for the cached response,
+   * this is correct for the `GET` request but is _potentially_ wrong for other type of request (eg. `POST`, `PUT`). 
+   * You can set a different "key" by customizing the `getKey` config method (see `getKey` section).
+   */
   allowedMethod?: string[];
+  /**
+   * Set the cache strategy, possible strategies are:
+   * - `NgHttpCachingStrategy.ALLOW_ALL`: All request are cacheable if HTTP method is into `allowedMethod`;
+   * - `NgHttpCachingStrategy.DISALLOW_ALL`: Only the request with `X-NG-HTTP-CACHING-ALLOW-CACHE` header are cacheable if HTTP method is into `allowedMethod`;
+   */
   cacheStrategy?: NgHttpCachingStrategy;
+  /**
+   * Cache version. When you have a breaking change, change the version, and it'll delete the current cache automatically.
+   * The default value is Angular major version (eg. 13), in this way, the cache is invalitaded on every Angular upgrade.
+   */
   version?: string;
+  /**
+   * If this function return `true` the request is expired and a new request is send to backend, if return `false` isn't expired. 
+   * If the result is `undefined`, the normal behaviour is provided.
+   */
   isExpired?: <K, T>(entry: NgHttpCachingEntry<K, T>) => boolean | undefined;
+  /**
+   * If this function return `true` the request is cacheable, if return `false` isn't cacheable. 
+   * If the result is `undefined`, the normal behaviour is provided.
+   */
   isCacheable?: <K>(req: HttpRequest<K>) => boolean | undefined;
+  /**
+   * This function return the unique key (`string`) for store the response into the cache. 
+   * If the result is `undefined`, the normal behaviour is provided.
+   */
   getKey?: <K>(req: HttpRequest<K>) => string | undefined;
+  /**
+   * If this function return `true` the cache entry is valid and can be strored, if return `false` isn't valid. 
+   * If the result is `undefined`, the normal behaviour is provided.
+   */
   isValid?: <K, T>(entry: NgHttpCachingEntry<K, T>) => boolean | undefined;
 }
 

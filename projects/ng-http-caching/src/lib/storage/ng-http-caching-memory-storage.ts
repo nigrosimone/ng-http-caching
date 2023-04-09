@@ -17,7 +17,6 @@ export class NgHttpCachingMemoryStorage implements NgHttpCachingStorageInterface
         return this.store.delete(key);
     }
 
-
     forEach<K, T>(callbackfn: (value: NgHttpCachingEntry<K, T>, key: string) => void): void {
         return this.store.forEach(callbackfn);
     }

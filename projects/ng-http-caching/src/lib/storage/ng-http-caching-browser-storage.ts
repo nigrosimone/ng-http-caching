@@ -4,7 +4,7 @@ import { HttpHeaders, HttpParams, HttpRequest, HttpResponse } from '@angular/com
 
 const KEY_PREFIX = 'NgHttpCaching::';
 
-export function serializeRequest(req: HttpRequest<any>): string {
+export const serializeRequest = (req: HttpRequest<any>): string => {
     const request = req.clone(); // Make a clone, useful for doing destructive things
     return JSON.stringify({
         headers: Object.fromEntries( // Just a helper to make this into an object, not really required but makes the output nicer
@@ -25,7 +25,7 @@ export function serializeRequest(req: HttpRequest<any>): string {
     });
 }
 
-export function serializeResponse(res: HttpResponse<any>): string {
+export const serializeResponse = (res: HttpResponse<any>): string => {
     const response = res.clone();
     return JSON.stringify({
         headers: Object.fromEntries( // Just a helper to make this into an object, not really required but makes the output nicer
@@ -40,11 +40,10 @@ export function serializeResponse(res: HttpResponse<any>): string {
     });
 }
 
-export function deserializeRequest<T = any>(req: string): HttpRequest<T> {
+export const deserializeRequest = <T = any>(req: string): HttpRequest<T> => {
     const request = JSON.parse(req);
     const headers = new HttpHeaders(request.headers);
     const params = new HttpParams(); // Probably some way to make this a one-liner, but alas, there are no good docs
-    // tslint:disable-next-line: forin
     for (const parameter in request.params) {
         request.params[parameter].forEach((paramValue: string) => params.append(parameter, paramValue));
     }
@@ -56,7 +55,7 @@ export function deserializeRequest<T = any>(req: string): HttpRequest<T> {
     });
 }
 
-export function deserializeResponse<T = any>(res: string): HttpResponse<T> {
+export const deserializeResponse = <T = any>(res: string): HttpResponse<T> => {
     const response = JSON.parse(res);
     return new HttpResponse<T>({
         url: response.url,
@@ -68,7 +67,6 @@ export function deserializeResponse<T = any>(res: string): HttpResponse<T> {
 }
 
 export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterface {
-
 
     constructor(private storage: Storage) { }
 
@@ -96,7 +94,6 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
         this.storage.removeItem(KEY_PREFIX + key);
         return true;
     }
-
 
     forEach(callbackfn: (value: NgHttpCachingEntry, key: string) => void): void {
         // iterate this.storage

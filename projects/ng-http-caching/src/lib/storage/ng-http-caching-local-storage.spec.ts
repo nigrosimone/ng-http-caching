@@ -50,7 +50,7 @@ describe('NgHttpCachingLocalStorage', () => {
         expect(cache?.addedTime).toEqual(entry.addedTime);
         expect(cache?.url).toEqual(entry.url);
         expect(cache?.response).toBeTruthy();
-        expect(cache?.response.body.body).toEqual(entry.response.body);
+        expect(cache?.response.body).toEqual(entry.response.body);
         store.forEach((value, key) => {
             expect(key).toBe('NgHttpCaching::' + entry.url);
         });

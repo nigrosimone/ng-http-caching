@@ -36,7 +36,7 @@ export const serializeResponse = (res: HttpResponse<any>): string => {
         status: response.status,
         statusText: response.statusText,
         url: response.url,
-        body: response.body // Serialize the body, all well and good since we are working on a clone 
+        body: response.body // Serialize the body, all well and good since we are working on a clone
     });
 }
 

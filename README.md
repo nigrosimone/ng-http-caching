@@ -72,10 +72,10 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
     BrowserModule,
     AppRoutingModule,
     HttpClientModule,
-    NgHttpCachingModule.forRoot(ngHttpCachingConfig),
+    NgHttpCachingModule.forRoot(ngHttpCachingConfig)
   ],
   providers: [],
-  bootstrap: [AppComponent],
+  bootstrap: [AppComponent]
   ],
 })
 export class AppModule { }

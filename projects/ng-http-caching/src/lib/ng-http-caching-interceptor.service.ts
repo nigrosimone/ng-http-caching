@@ -29,7 +29,7 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
     const cachedObservable: Observable<HttpEvent<any>> | undefined = this.cacheService.getFromQueue(req);
     if (cachedObservable) {
       // console.log('cachedObservable');
-      return scheduled(cachedObservable, asapScheduler);
+      return cachedObservable;
     }
 
     // Checked if there is cached response for this request

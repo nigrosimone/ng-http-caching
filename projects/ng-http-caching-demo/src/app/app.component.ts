@@ -29,6 +29,7 @@ export class AppComponent implements OnInit, OnDestroy {
   public timeSpan = 0;
   public nocache = false;
   public lifetime = null;
+  public count = 0;
 
   private config: NgHttpCachingConfig;
   private timerUpdateCachedKeys = 0;
@@ -54,6 +55,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async getRequest(): Promise<void> {
     this.timeSpan = 0;
+    this.count = 0;
     const timeStart = new Date();
 
     let headers = new HttpHeaders();
@@ -67,17 +69,35 @@ export class AppComponent implements OnInit, OnDestroy {
       headers = headers.set(NgHttpCachingHeaders.LIFETIME, this.lifetime);
     }
     console.log('pre-request');
-    this.http.get(this.url, { headers }).subscribe(result => {
-      this.timeSpan = new Date().getTime() - timeStart.getTime();
-      this.updateCachedKeys();
-      console.log('response1', result);
-      this.http.get(this.url, { headers }).subscribe(result => {
-        console.log('response2', result);
-      })
-    });
+    // test sequential requests
+    const result1 = await lastValueFrom(this.http.get(this.url, { headers }));
+    console.log('Sequential response 1', result1);
+    this.count++;
+    const result2 = await lastValueFrom(this.http.get(this.url, { headers }));
+    console.log('Sequential response 2', result2);
+    this.count++;
 
-    console.log('response1 await', await lastValueFrom(this.http.get(this.url, { headers })));
-    console.log('response2 await', await lastValueFrom(this.http.get(this.url, { headers })));
+    // test parallel request
+    const results = await Promise.all([
+      lastValueFrom(this.http.get(this.url, { headers })),
+      lastValueFrom(this.http.get(this.url, { headers })),
+    ]);
+    this.count++;
+    this.count++;
+    console.log('Parallel responses', results);
+
+    // test nested request
+    this.http.get(this.url, { headers }).subscribe((result1) => {
+      console.log('Nested response 1', result1);
+      this.count++;
+      this.http.get(this.url, { headers }).subscribe((result2) => {
+        console.log('Nested response 2', result2);
+        this.count++;
+
+        this.timeSpan = new Date().getTime() - timeStart.getTime();
+        this.updateCachedKeys();
+      });
+    });
   }
 
   clearCache(): void {

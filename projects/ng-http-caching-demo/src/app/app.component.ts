@@ -67,10 +67,17 @@ export class AppComponent implements OnInit, OnDestroy {
       headers = headers.set(NgHttpCachingHeaders.LIFETIME, this.lifetime);
     }
     console.log('pre-request');
-    const result = await lastValueFrom(this.http.get(this.url, { headers }));
-    this.timeSpan = new Date().getTime() - timeStart.getTime();
-    this.updateCachedKeys();
-    console.log('response', result);
+    this.http.get(this.url, { headers }).subscribe(result => {
+      this.timeSpan = new Date().getTime() - timeStart.getTime();
+      this.updateCachedKeys();
+      console.log('response1', result);
+      this.http.get(this.url, { headers }).subscribe(result => {
+        console.log('response2', result);
+      })
+    });
+
+    console.log('response1 await', await lastValueFrom(this.http.get(this.url, { headers })));
+    console.log('response2 await', await lastValueFrom(this.http.get(this.url, { headers })));
   }
 
   clearCache(): void {

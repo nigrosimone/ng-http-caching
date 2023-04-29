@@ -1,7 +1,7 @@
 import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { asapScheduler, Observable, scheduled } from 'rxjs';
-import { tap, finalize, share } from 'rxjs/operators';
+import { tap, finalize, shareReplay } from 'rxjs/operators';
 import { NgHttpCachingService, NgHttpCachingHeadersList } from './ng-http-caching.service';
 
 /**
@@ -28,7 +28,7 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
     // Checked if there is pending response for this request
     const cachedObservable: Observable<HttpEvent<any>> | undefined = this.cacheService.getFromQueue(req);
     if (cachedObservable) {
-      // console.log('cachedObservable');
+      // console.log('cachedObservable',cachedObservable);
       return cachedObservable;
     }
 
@@ -52,7 +52,7 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
         // delete pending request
         this.cacheService.deleteFromQueue(req);
       }),
-      share()
+      shareReplay()
     );
 
     // add pending request to queue for cache parallell request

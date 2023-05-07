@@ -1,6 +1,6 @@
 {
   "name": "ng-http-caching",
-  "version": "15.2.4",
+  "version": "16.0.0",
   "description": "Cache for HTTP requests in Angular application.",
   "repository": {
     "type": "git",
@@ -26,8 +26,8 @@
   },
   "homepage": "https://github.com/nigrosimone/ng-http-caching",
   "peerDependencies": {
-    "@angular/common": "^15.0.0",
-    "@angular/core": "^15.0.0"
+    "@angular/common": ">15.0.0",
+    "@angular/core": ">15.0.0"
   },
   "dependencies": {
     "tslib": "^2.3.0"

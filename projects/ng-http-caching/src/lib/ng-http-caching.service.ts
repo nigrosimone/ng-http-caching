@@ -195,12 +195,6 @@ export class NgHttpCachingService {
       return undefined;
     }
 
-    // different angular major version
-    if (this.config.version !== cached.version) {
-      this.clearCacheByKey(key);
-      return undefined;
-    }
-
     if (this.isExpired(cached)) {
       this.clearCacheByKey(key);
       return undefined;
@@ -301,6 +295,10 @@ export class NgHttpCachingService {
       if (result !== undefined) {
         return result;
       }
+    }
+    // if version change, always expire
+    if (this.config.version !== entry.version) {
+      return true;
     }
     // config/default lifetime
     let lifetime: number = this.config.lifetime;

@@ -1119,7 +1119,7 @@ describe('NgHttpCachingService: clearCacheByTag', () => {
     expect(service.getFromCache(req2)).toEqual(res);
     expect(service.getFromCache(req3)).toEqual(res);
 
-    service.clearCacheByTag('foo');
+    expect(service.clearCacheByTag('foo')).toEqual(2);
 
     expect(service.getFromCache(req1)).toBeUndefined();
     expect(service.getFromCache(req2)).toBeUndefined();

@@ -131,7 +131,7 @@ describe('NgHttpCachingService: getStore()', () => {
     const store = service.getStore();
     const cacheEntry: NgHttpCachingEntry = {
       url: keyUrl,
-      addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
+      addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', keyUrl),
       version: VERSION.major
@@ -519,7 +519,7 @@ describe('NgHttpCachingService: default isExpired', () => {
   it('not expired', () => {
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
-      addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
+      addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
@@ -530,7 +530,7 @@ describe('NgHttpCachingService: default isExpired', () => {
   it('expired', () => {
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
-      addedTime: Date.now() - 1000 * 60 * 60 * 24 * 365,
+      addedTime: Date.now() - NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
@@ -566,7 +566,7 @@ describe('NgHttpCachingService: override isExpired', () => {
   it('expired 1', () => {
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
-      addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
+      addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
@@ -577,7 +577,7 @@ describe('NgHttpCachingService: override isExpired', () => {
   it('expired 2', () => {
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
-      addedTime: Date.now() - 1000 * 60 * 60 * 24 * 365,
+      addedTime: Date.now() - NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
@@ -612,7 +612,7 @@ describe('NgHttpCachingService: override isExpired return undefined', () => {
   it('expired', () => {
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
-      addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
+      addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
@@ -623,7 +623,7 @@ describe('NgHttpCachingService: override isExpired return undefined', () => {
   it('not expired', () => {
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
-      addedTime: Date.now() - 1000 * 60 * 60 * 24 * 365,
+      addedTime: Date.now() - NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
@@ -635,7 +635,7 @@ describe('NgHttpCachingService: override isExpired return undefined', () => {
 describe('NgHttpCachingService: default isExpired with long lifetime', () => {
   let service: NgHttpCachingService;
   const config: NgHttpCachingConfig = {
-    lifetime: 1000 * 60 * 60 * 24 * 365 * 2,
+    lifetime: NG_HTTP_CACHING_YEAR_IN_MS * 2,
   };
 
   beforeEach(() => {
@@ -655,7 +655,7 @@ describe('NgHttpCachingService: default isExpired with long lifetime', () => {
   it('not expired 1', () => {
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
-      addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
+      addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
@@ -666,7 +666,7 @@ describe('NgHttpCachingService: default isExpired with long lifetime', () => {
   it('not expired 2', () => {
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
-      addedTime: Date.now() - 1000 * 60 * 60 * 24 * 365,
+      addedTime: Date.now() - NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
@@ -698,7 +698,7 @@ describe('NgHttpCachingService: default isExpired with infinite lifetime', () =>
   it('not expired', () => {
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
-      addedTime: Date.now() - 1000 * 60 * 60 * 24 * 365,
+      addedTime: Date.now() - NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
@@ -724,11 +724,11 @@ describe('NgHttpCachingService: default isExpired with request lifetime', () => 
   it('expired', () => {
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
-      addedTime: Date.now() - 1000 * 60 * 60 * 24 * 365 * 2,
+      addedTime: Date.now() - NG_HTTP_CACHING_YEAR_IN_MS * 2,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar', null, {
         headers: new HttpHeaders({
-          [NgHttpCachingHeaders.LIFETIME]: (1000 * 60 * 60 * 24 * 365).toString(),
+          [NgHttpCachingHeaders.LIFETIME]: (NG_HTTP_CACHING_YEAR_IN_MS).toString(),
         }),
       }),
       version: VERSION.major
@@ -743,7 +743,7 @@ describe('NgHttpCachingService: default isExpired with request lifetime', () => 
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar', null, {
         headers: new HttpHeaders({
-          [NgHttpCachingHeaders.LIFETIME]: (1000 * 60 * 60 * 24 * 365).toString(),
+          [NgHttpCachingHeaders.LIFETIME]: (NG_HTTP_CACHING_YEAR_IN_MS).toString(),
         }),
       }),
       version: VERSION.major
@@ -805,7 +805,7 @@ describe('NgHttpCachingService: change of version', () => {
   it('isExpired', () => {
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
-      addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
+      addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: (+VERSION.major + 1).toString()
@@ -816,7 +816,7 @@ describe('NgHttpCachingService: change of version', () => {
   it('isValid', () => {
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
-      addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
+      addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: (+VERSION.major + 1).toString()
@@ -824,10 +824,10 @@ describe('NgHttpCachingService: change of version', () => {
     expect(service.isValid(cacheEntry)).toBeFalse();
   });
 
-  it('not 200', () => {
+  it('isValid not 200', () => {
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
-      addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
+      addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({status: 500}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
@@ -1019,7 +1019,7 @@ describe('NgHttpCachingService: clearCacheByRegex', () => {
     expect(service.getFromCache(req1)).toEqual(res);
     expect(service.getFromCache(req2)).toEqual(res);
 
-    service.clearCacheByRegex(/regex1$/);
+    expect(service.clearCacheByRegex(/regex1$/)).toEqual(1);
 
     expect(service.getFromCache(req1)).toBeUndefined();
     expect(service.getFromCache(req2)).toEqual(res);
@@ -1037,7 +1037,7 @@ describe('NgHttpCachingService: clearCacheByRegex', () => {
     expect(service.getFromCache(req1)).toEqual(res);
     expect(service.getFromCache(req2)).toEqual(res);
 
-    service.clearCacheByRegex(new RegExp('regex1$'));
+    expect(service.clearCacheByRegex(new RegExp('regex1$'))).toEqual(1);
 
     expect(service.getFromCache(req1)).toBeUndefined();
     expect(service.getFromCache(req2)).toEqual(res);
@@ -1146,7 +1146,7 @@ describe('NgHttpCachingService: default isValid', () => {
   it('valid', () => {
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
-      addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
+      addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
@@ -1182,7 +1182,7 @@ describe('NgHttpCachingService: override isValid', () => {
     const res = new HttpResponse({ status: 200 });
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=isValid',
-      addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
+      addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: res,
       request: req,
       version: VERSION.major
@@ -1196,7 +1196,7 @@ describe('NgHttpCachingService: override isValid', () => {
     const res = new HttpResponse({ status: 500 });
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=isValid',
-      addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
+      addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: res,
       request: req,
       version: VERSION.major
@@ -1232,7 +1232,7 @@ describe('NgHttpCachingService: override isValid return undefined', () => {
   it('valid', () => {
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
-      addedTime: Date.now() + 1000 * 60 * 60 * 24 * 365,
+      addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({ status: 200 }),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major

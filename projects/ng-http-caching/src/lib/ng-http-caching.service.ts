@@ -247,12 +247,15 @@ export class NgHttpCachingService {
   /**
    * Clear the cache by regex
    */
-  clearCacheByRegex<K, T>(regex: RegExp): void {
+  clearCacheByRegex<K, T>(regex: RegExp): number {
+    let count = 0;
     this.config.store.forEach<K, T>((_: NgHttpCachingEntry<K, T>, key: string) => {
       if (regex.test(key)) {
+        count++;
         this.clearCacheByKey(key);
       }
     });
+    return count;
   }
 
   /**

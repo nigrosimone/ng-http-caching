@@ -17,6 +17,7 @@ import {
   NG_HTTP_CACHING_YEAR_IN_MS,
 } from './ng-http-caching.service';
 import { VERSION } from '@angular/core';
+import { NgHttpCachingModule } from './ng-http-caching.module';
 
 
 describe('NgHttpCachingService: no config', () => {
@@ -24,7 +25,7 @@ describe('NgHttpCachingService: no config', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [NgHttpCachingService],
+      imports: [NgHttpCachingModule]
     });
     service = TestBed.inject(NgHttpCachingService);
   });
@@ -57,8 +58,8 @@ describe('NgHttpCachingService: empty config', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
+      imports: [NgHttpCachingModule],
       providers: [
-        NgHttpCachingService,
         { provide: NG_HTTP_CACHING_CONFIG, useValue: {} },
       ],
     });
@@ -83,8 +84,8 @@ describe('NgHttpCachingService: override config', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
+      imports: [NgHttpCachingModule],
       providers: [
-        NgHttpCachingService,
         { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
@@ -112,7 +113,7 @@ describe('NgHttpCachingService: getStore()', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [NgHttpCachingService],
+      imports: [NgHttpCachingModule]
     });
     service = TestBed.inject(NgHttpCachingService);
   });
@@ -147,7 +148,7 @@ describe('NgHttpCachingService: getQueue()', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [NgHttpCachingService],
+      imports: [NgHttpCachingModule]
     });
     service = TestBed.inject(NgHttpCachingService);
   });
@@ -166,7 +167,7 @@ describe('NgHttpCachingService: default getKey', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [NgHttpCachingService],
+      imports: [NgHttpCachingModule]
     });
     service = TestBed.inject(NgHttpCachingService);
   });
@@ -193,8 +194,8 @@ describe('NgHttpCachingService: override getKey', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
+      imports: [NgHttpCachingModule],
       providers: [
-        NgHttpCachingService,
         { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
@@ -248,7 +249,7 @@ describe('NgHttpCachingService: default isCacheable', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [NgHttpCachingService],
+      imports: [NgHttpCachingModule]
     });
     service = TestBed.inject(NgHttpCachingService);
   });
@@ -279,8 +280,8 @@ describe('NgHttpCachingService: default isCacheable allow ALL', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
+      imports: [NgHttpCachingModule],
       providers: [
-        NgHttpCachingService,
         { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
@@ -313,8 +314,8 @@ describe('NgHttpCachingService: default isCacheable allow two', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
+      imports: [NgHttpCachingModule],
       providers: [
-        NgHttpCachingService,
         { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
@@ -351,8 +352,8 @@ describe('NgHttpCachingService: override isCacheable', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
+      imports: [NgHttpCachingModule],
       providers: [
-        NgHttpCachingService,
         { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
@@ -389,8 +390,8 @@ describe('NgHttpCachingService: override isCacheable return undefined', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
+      imports: [NgHttpCachingModule],
       providers: [
-        NgHttpCachingService,
         { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
@@ -424,8 +425,8 @@ describe('NgHttpCachingService: isCacheable strategy DISALLOW_ALL', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
+      imports: [NgHttpCachingModule],
       providers: [
-        NgHttpCachingService,
         { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
@@ -467,8 +468,8 @@ describe('NgHttpCachingService: isCacheable strategy ALLOW_ALL', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
+      imports: [NgHttpCachingModule],
       providers: [
-        NgHttpCachingService,
         { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
@@ -506,7 +507,7 @@ describe('NgHttpCachingService: default isExpired', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [NgHttpCachingService],
+      imports: [NgHttpCachingModule]
     });
     service = TestBed.inject(NgHttpCachingService);
   });
@@ -550,8 +551,8 @@ describe('NgHttpCachingService: override isExpired', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
+      imports: [NgHttpCachingModule],
       providers: [
-        NgHttpCachingService,
         { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
@@ -596,8 +597,8 @@ describe('NgHttpCachingService: override isExpired return undefined', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
+      imports: [NgHttpCachingModule],
       providers: [
-        NgHttpCachingService,
         { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
@@ -639,8 +640,8 @@ describe('NgHttpCachingService: default isExpired with long lifetime', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
+      imports: [NgHttpCachingModule],
       providers: [
-        NgHttpCachingService,
         { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
@@ -682,8 +683,8 @@ describe('NgHttpCachingService: default isExpired with infinite lifetime', () =>
 
   beforeEach(() => {
     TestBed.configureTestingModule({
+      imports: [NgHttpCachingModule],
       providers: [
-        NgHttpCachingService,
         { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
@@ -711,7 +712,7 @@ describe('NgHttpCachingService: default isExpired with request lifetime', () => 
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [NgHttpCachingService],
+      imports: [NgHttpCachingModule],
     });
     service = TestBed.inject(NgHttpCachingService);
   });
@@ -789,8 +790,8 @@ describe('NgHttpCachingService: change of version', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
+      imports: [NgHttpCachingModule],
       providers: [
-        NgHttpCachingService,
         { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
@@ -829,7 +830,7 @@ describe('NgHttpCachingService: ADD and GET and DELETE', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [NgHttpCachingService],
+      imports: [NgHttpCachingModule]
     });
     service = TestBed.inject(NgHttpCachingService);
   });
@@ -870,7 +871,7 @@ describe('NgHttpCachingService: get default config', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [NgHttpCachingService],
+      imports: [NgHttpCachingModule]
     });
     service = TestBed.inject(NgHttpCachingService);
   });
@@ -893,8 +894,8 @@ describe('NgHttpCachingService: get override config', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
+      imports: [NgHttpCachingModule],
       providers: [
-        NgHttpCachingService,
         { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
@@ -917,7 +918,7 @@ describe('NgHttpCachingService: clearCache', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [NgHttpCachingService],
+      imports: [NgHttpCachingModule]
     });
     service = TestBed.inject(NgHttpCachingService);
   });
@@ -942,9 +943,7 @@ describe('NgHttpCachingService: runGc', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        NgHttpCachingService
-      ],
+      imports: [NgHttpCachingModule]
     });
     service = TestBed.inject(NgHttpCachingService);
   });
@@ -989,9 +988,7 @@ describe('NgHttpCachingService: clearCacheByRegex', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        NgHttpCachingService
-      ],
+      imports: [NgHttpCachingModule]
     });
     service = TestBed.inject(NgHttpCachingService);
   });
@@ -1042,9 +1039,7 @@ describe('NgHttpCachingService: clearCacheByKey', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        NgHttpCachingService
-      ],
+      imports: [NgHttpCachingModule]
     });
     service = TestBed.inject(NgHttpCachingService);
   });
@@ -1078,9 +1073,7 @@ describe('NgHttpCachingService: clearCacheByTag', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        NgHttpCachingService
-      ],
+      imports: [NgHttpCachingModule]
     });
     service = TestBed.inject(NgHttpCachingService);
   });
@@ -1130,9 +1123,7 @@ describe('NgHttpCachingService: default isValid', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        NgHttpCachingService
-      ],
+      imports: [NgHttpCachingModule]
     });
     service = TestBed.inject(NgHttpCachingService);
   });
@@ -1215,8 +1206,8 @@ describe('NgHttpCachingService: override isValid return undefined', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
+      imports: [NgHttpCachingModule],
       providers: [
-        NgHttpCachingService,
         { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
       ],
     });
@@ -1245,9 +1236,7 @@ describe('NgHttpCachingService: deep freeze', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        NgHttpCachingService
-      ],
+      imports: [NgHttpCachingModule]
     });
     service = TestBed.inject(NgHttpCachingService);
   });

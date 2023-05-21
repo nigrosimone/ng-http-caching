@@ -10,6 +10,7 @@ import { NgHttpCachingInterceptorService } from './ng-http-caching-interceptor.s
 @NgModule({
   providers: [
     NgHttpCachingService,
+    NgHttpCachingInterceptorService,
     {
       provide: HTTP_INTERCEPTORS,
       useClass: NgHttpCachingInterceptorService,

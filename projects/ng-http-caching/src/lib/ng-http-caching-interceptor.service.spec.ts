@@ -5,6 +5,7 @@ import { of, Observable, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import { NgHttpCachingService, NG_HTTP_CACHING_CONFIG, NgHttpCachingHeaders } from './ng-http-caching.service';
 import { NgHttpCachingInterceptorService } from './ng-http-caching-interceptor.service';
+import { NgHttpCachingModule } from './ng-http-caching.module';
 
 const DELAY = 50;
 
@@ -47,10 +48,8 @@ describe('NgHttpCachingInterceptorService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
+      imports: [HttpClientTestingModule, NgHttpCachingModule],
       providers: [
-        NgHttpCachingService,
-        NgHttpCachingInterceptorService,
         { provide: NG_HTTP_CACHING_CONFIG, useValue: {} },
         {
           provide: HTTP_INTERCEPTORS,

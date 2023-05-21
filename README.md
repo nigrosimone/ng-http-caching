@@ -181,6 +181,7 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
 ### isValid (function - default see NgHttpCachingService.isValid());
 If this function return `true` the cache entry is valid and can be strored, if return `false` isn't valid. 
 If the result is `undefined`, the normal behaviour is provided.
+Default behaviour is whether the status code falls in the 2xx range.
 Example of customization:
 
 ```ts

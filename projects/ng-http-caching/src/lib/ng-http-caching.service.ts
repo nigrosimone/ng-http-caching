@@ -316,6 +316,7 @@ export class NgHttpCachingService {
 
   /**
    * Return true if cache entry is valid for store in the cache
+   * Default behaviour is whether the status code falls in the 2xx range.
    */
   isValid<K, T>(entry: NgHttpCachingEntry<K, T>): boolean {
     // if user provide custom method, use it
@@ -330,7 +331,7 @@ export class NgHttpCachingService {
     if (this.config.version !== entry.version) {
       return false;
     }
-    return true;
+    return entry.response.ok;
   }
 
   /**

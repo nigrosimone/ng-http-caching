@@ -133,7 +133,8 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
             url: value.url,
             response: serializeResponse(value.response),
             request: serializeRequest(value.request),
-            addedTime: value.addedTime
+            addedTime: value.addedTime,
+            version: value.version
         } as StorageEntry));
     }
 }

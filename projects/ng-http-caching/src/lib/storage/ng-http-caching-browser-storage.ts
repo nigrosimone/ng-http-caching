@@ -129,13 +129,14 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
     }
 
     set(key: string, value: NgHttpCachingEntry): void {
-        this.storage.setItem(KEY_PREFIX + key, JSON.stringify({
+        const unParsedItem: StorageEntry = {
             url: value.url,
             response: serializeResponse(value.response),
             request: serializeRequest(value.request),
             addedTime: value.addedTime,
             version: value.version
-        } as StorageEntry));
+        };
+        this.storage.setItem(KEY_PREFIX + key, JSON.stringify(unParsedItem));
     }
 }
 

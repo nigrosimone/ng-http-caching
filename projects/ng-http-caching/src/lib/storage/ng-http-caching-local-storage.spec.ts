@@ -49,6 +49,7 @@ describe('NgHttpCachingLocalStorage', () => {
         expect(store.size).toBe(1);
         expect(cache?.addedTime).toEqual(entry.addedTime);
         expect(cache?.url).toEqual(entry.url);
+        expect(cache?.version).toEqual(entry.version);
         expect(cache?.response).toBeTruthy();
         expect(cache?.response.body).toEqual(entry.response.body);
         store.forEach((value, key) => {

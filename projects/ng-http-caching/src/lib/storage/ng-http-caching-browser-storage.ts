@@ -91,7 +91,7 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
     }
 
     delete(key: string): boolean {
-        this.storage.removeItem(KEY_PREFIX + key);
+        this.storage.removeItem(key);
         return true;
     }
 

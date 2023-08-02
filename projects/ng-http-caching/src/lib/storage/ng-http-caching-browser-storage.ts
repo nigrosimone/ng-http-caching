@@ -2,7 +2,7 @@ import { NgHttpCachingStorageInterface } from './ng-http-caching-storage.interfa
 import { NgHttpCachingEntry } from '../ng-http-caching.service';
 import { HttpHeaders, HttpParams, HttpRequest, HttpResponse } from '@angular/common/http';
 
-export const KEY_PREFIX = 'NgHttpCaching::';
+const KEY_PREFIX = 'NgHttpCaching::';
 
 export const serializeRequest = (req: HttpRequest<any>): string => {
     const request = req.clone(); // Make a clone, useful for doing destructive things
@@ -91,17 +91,22 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
     }
 
     delete(key: string): boolean {
+        if (!key) {
+            return false;
+        }
+        if (!key.startsWith(KEY_PREFIX)) {
+            key = KEY_PREFIX + key;
+        }
         this.storage.removeItem(key);
         return true;
     }
 
     forEach(callbackfn: (value: NgHttpCachingEntry, key: string) => void): void {
         // iterate this.storage
-        const lenPrefix = KEY_PREFIX.length;
         for (let i = 0, e = this.storage.length; i < e; i++) {
             const key = this.storage.key(i);
             if (key && key.startsWith(KEY_PREFIX)) {
-                const value = this.get(key.substring(lenPrefix));
+                const value = this.get(key);
                 if (value) {
                     callbackfn(value, key);
                 }
@@ -110,7 +115,13 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
     }
 
     get(key: string): Readonly<NgHttpCachingEntry> | undefined {
-        const item = this.storage.getItem(KEY_PREFIX + key);
+        if (!key) {
+            return undefined;
+        }
+        if (!key.startsWith(KEY_PREFIX)) {
+            key = KEY_PREFIX + key;
+        }
+        const item = this.storage.getItem(key);
         if (item) {
             const parsedItem: StorageEntry = JSON.parse(item);
             return {
@@ -125,10 +136,22 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
     }
 
     has(key: string): boolean {
-        return this.storage.getItem(KEY_PREFIX + key) !== undefined;
+        if (!key) {
+            return false;
+        }
+        if (!key.startsWith(KEY_PREFIX)) {
+            key = KEY_PREFIX + key;
+        }
+        return this.storage.getItem(key) !== undefined;
     }
 
     set(key: string, value: NgHttpCachingEntry): void {
+        if (!key) {
+            return;
+        }
+        if (!key.startsWith(KEY_PREFIX)) {
+            key = KEY_PREFIX + key;
+        }
         const unParsedItem: StorageEntry = {
             url: value.url,
             response: serializeResponse(value.response),
@@ -136,7 +159,7 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
             addedTime: value.addedTime,
             version: value.version
         };
-        this.storage.setItem(KEY_PREFIX + key, JSON.stringify(unParsedItem));
+        this.storage.setItem(key, JSON.stringify(unParsedItem));
     }
 }
 

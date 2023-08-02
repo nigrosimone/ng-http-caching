@@ -1,6 +1,7 @@
 import { HttpContext, HttpHeaders, HttpParams, HttpRequest, HttpResponse } from '@angular/common/http';
 import { NgHttpCachingSessionStorage } from './ng-http-caching-session-storage';
 import { NgHttpCachingStorageInterface } from './ng-http-caching-storage.interface';
+import { KEY_PREFIX } from './ng-http-caching-browser-storage';
 
 
 describe('NgHttpCachingSessionStorage', () => {
@@ -54,7 +55,7 @@ describe('NgHttpCachingSessionStorage', () => {
         store.forEach((value, key) => {
             expect(key).toBe('NgHttpCaching::' + entry.url);
         });
-        store.delete(entry.url);
+        store.delete(KEY_PREFIX + entry.url);
         expect(store.get(entry.url)).toBeUndefined();
         expect(store.size).toBe(0);
 

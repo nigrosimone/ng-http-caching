@@ -1,6 +1,7 @@
 import { HttpContext, HttpHeaders, HttpParams, HttpRequest, HttpResponse } from '@angular/common/http';
 import { NgHttpCachingLocalStorage } from './ng-http-caching-local-storage';
 import { NgHttpCachingStorageInterface } from './ng-http-caching-storage.interface';
+import { KEY_PREFIX } from './ng-http-caching-browser-storage';
 
 
 describe('NgHttpCachingLocalStorage', () => {
@@ -56,7 +57,7 @@ describe('NgHttpCachingLocalStorage', () => {
             expect(key).toBe('NgHttpCaching::' + entry.url);
             expect(value).toBeDefined();
         });
-        expect(store.delete(entry.url)).toBe(true)
+        expect(store.delete(KEY_PREFIX + entry.url)).toBe(true)
         expect(store.get(entry.url)).toBeUndefined();
         expect(store.size).toBe(0);
 

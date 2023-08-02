@@ -2,7 +2,7 @@ import { NgHttpCachingStorageInterface } from './ng-http-caching-storage.interfa
 import { NgHttpCachingEntry } from '../ng-http-caching.service';
 import { HttpHeaders, HttpParams, HttpRequest, HttpResponse } from '@angular/common/http';
 
-const KEY_PREFIX = 'NgHttpCaching::';
+export const KEY_PREFIX = 'NgHttpCaching::';
 
 export const serializeRequest = (req: HttpRequest<any>): string => {
     const request = req.clone(); // Make a clone, useful for doing destructive things

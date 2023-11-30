@@ -14,12 +14,20 @@
     </li>
     <li>
       <label>Mark request as "NO CACHEABLE"</label>
-      <input type="checkbox" [checked]="nocache" (change)="nocache = !nocache" />
+      <input
+        type="checkbox"
+        [checked]="nocache"
+        (change)="nocache = !nocache"
+      />
     </li>
     <li>
+      <select [(ngModel)]="typeOfRequest">
+        <option *ngFor="let t of typeOfRequests" [ngValue]="t">{{ t }}</option>
+      </select>
       <button (click)="getRequest()">EXECUTE REQUEST</button>
+      <br />
       <em *ngIf="timeSpan !== null">
-        HTTP server respond in ({{ timeSpan }}) ms
+        HTTP server respond in {{ timeSpan }} ms
       </em>
       <em *ngIf="count"> (for {{ count }} requests)</em>
     </li>
@@ -57,8 +65,10 @@
       <th>Status</th>
     </thead>
     <tbody *ngIf="cachedKeys && cachedKeys.length > 0; else noCachedKeys">
-      <tr *ngFor="let cachedKey of cachedKeys; trackBy:trackByCachedKey"
-        [ngClass]="cachedKey.status === 'queue' ? 'queue' : ''">
+      <tr
+        *ngFor="let cachedKey of cachedKeys; trackBy: trackByCachedKey"
+        [ngClass]="cachedKey.status === 'queue' ? 'queue' : ''"
+      >
         <td style="width: 30%; text-align: left;">
           {{ cachedKey.key }}
         </td>
@@ -73,13 +83,11 @@
     <ng-template #noCachedKeys>
       <tbody>
         <tr>
-          <td style="text-align: center;" colspan="3">
-            No cached keys
-          </td>
+          <td style="text-align: center;" colspan="3">No cached keys</td>
         </tr>
       </tbody>
     </ng-template>
   </table>
-  <br>
+  <br />
   <button (click)="updateCachedKeys()">Update cached keys</button>
 </main>

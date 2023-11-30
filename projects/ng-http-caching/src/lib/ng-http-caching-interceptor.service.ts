@@ -1,15 +1,8 @@
 import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { asapScheduler, Observable, scheduled } from 'rxjs';
+import { asyncScheduler, Observable, of, scheduled } from 'rxjs';
 import { tap, finalize, shareReplay } from 'rxjs/operators';
 import { NgHttpCachingService, NgHttpCachingHeadersList } from './ng-http-caching.service';
-
-/**
- * Fix for https://github.com/ReactiveX/rxjs/issues/7241
- */
-function* _of<T>(value: T): Generator<T> {
-  yield value;
-}
 
 @Injectable()
 export class NgHttpCachingInterceptorService implements HttpInterceptor {
@@ -36,7 +29,7 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
     const cachedResponse: HttpResponse<any> | undefined = this.cacheService.getFromCache(req);
     if (cachedResponse) {
       // console.log('cachedResponse');
-      return scheduled(_of(cachedResponse.clone()), asapScheduler);
+      return scheduled(of(cachedResponse.clone()), asyncScheduler);
     }
 
     // If the request of going through for first time

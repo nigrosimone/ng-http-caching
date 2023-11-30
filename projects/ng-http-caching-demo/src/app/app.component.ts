@@ -24,37 +24,38 @@ export class AppComponent implements OnInit, OnDestroy {
   public url = 'https://my-json-server.typicode.com/typicode/demo/db';
   public key = 'GET@' + this.url;
   public tag = '';
-  public regex = '';
+  public regex: string = '';
   public cachedKeys: CachedKey[] = [];
-  public timeSpan = 0;
+  public timeSpan: number | null = null;
   public nocache = false;
   public lifetime = null;
   public count = 0;
+  public typeOfRequests = ['PARALLEL', 'SEQUENTIAL', 'NESTED'];
+  public typeOfRequest = this.typeOfRequests[0];
 
   private config: NgHttpCachingConfig;
-  private timerUpdateCachedKeys = 0;
+  private timerUpdateCachedKeys!: ReturnType<typeof setInterval>;
 
   constructor(
-
     private ngHttpCachingService: NgHttpCachingService,
-
     private http: HttpClient
   ) {
     this.config = this.ngHttpCachingService.getConfig();
-    this.lifetime = null;
   }
 
   ngOnInit(): void {
-    this.timerUpdateCachedKeys = window.setInterval(() => this.updateCachedKeys(), 100);
+    this.timerUpdateCachedKeys = setInterval(
+      () => this.updateCachedKeys(),
+      100
+    );
   }
 
   ngOnDestroy(): void {
     clearInterval(this.timerUpdateCachedKeys);
   }
 
-
   async getRequest(): Promise<void> {
-    this.timeSpan = 0;
+    this.timeSpan = null;
     this.count = 0;
     const timeStart = new Date();
 
@@ -68,36 +69,52 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.lifetime && Number(this.lifetime) !== this.config.lifetime) {
       headers = headers.set(NgHttpCachingHeaders.LIFETIME, this.lifetime);
     }
-    console.log('pre-request');
-    // test sequential requests
-    const result1 = await lastValueFrom(this.http.get(this.url, { headers }));
-    console.log('Sequential response 1', result1);
-    this.count++;
-    const result2 = await lastValueFrom(this.http.get(this.url, { headers }));
-    console.log('Sequential response 2', result2);
-    this.count++;
 
-    // test parallel request
-    const results = await Promise.all([
-      lastValueFrom(this.http.get(this.url, { headers })),
-      lastValueFrom(this.http.get(this.url, { headers })),
-    ]);
-    this.count++;
-    this.count++;
-    console.log('Parallel responses', results);
-
-    // test nested request
-    this.http.get(this.url, { headers }).subscribe((result1) => {
-      console.log('Nested response 1', result1);
-      this.count++;
-      this.http.get(this.url, { headers }).subscribe((result2) => {
-        console.log('Nested response 2', result2);
+    switch (this.typeOfRequest) {
+      case 'SEQUENTIAL': {
+        // test sequential requests
+        const result1 = await lastValueFrom(
+          this.http.get(this.url, { headers })
+        );
+        console.log('Sequential response 1', result1);
         this.count++;
-
+        const result2 = await lastValueFrom(
+          this.http.get(this.url, { headers })
+        );
+        console.log('Sequential response 2', result2);
+        this.count++;
         this.timeSpan = new Date().getTime() - timeStart.getTime();
         this.updateCachedKeys();
-      });
-    });
+        break;
+      }
+      case 'PARALLEL': {
+        // test parallel requests
+        const results = await Promise.all([
+          lastValueFrom(this.http.get(this.url, { headers })),
+          lastValueFrom(this.http.get(this.url, { headers })),
+        ]);
+        this.count++;
+        this.count++;
+        this.timeSpan = new Date().getTime() - timeStart.getTime();
+        this.updateCachedKeys();
+        console.log('Parallel responses', results);
+        break;
+      }
+      case 'NESTED': {
+        // test nested requests
+        this.http.get(this.url, { headers }).subscribe((result1) => {
+          console.log('Nested response 1', result1);
+          this.count++;
+          this.http.get(this.url, { headers }).subscribe((result2) => {
+            console.log('Nested response 2', result2);
+            this.count++;
+            this.timeSpan = new Date().getTime() - timeStart.getTime();
+            this.updateCachedKeys();
+          });
+        });
+        break;
+      }
+    }
   }
 
   clearCache(): void {
@@ -124,25 +141,26 @@ export class AppComponent implements OnInit, OnDestroy {
     const keys: CachedKey[] = [];
 
     this.ngHttpCachingService.getStore().forEach((value, key) => {
-      const headers: { [key: string]: string }[] = [];
-      NgHttpCachingHeadersList.forEach((ngHttpCachingHeaders: string) => {
-        if (value.request.headers.has(ngHttpCachingHeaders)) {
-          headers.push({
-            [ngHttpCachingHeaders]: value.request.headers.get(
-              ngHttpCachingHeaders
-            ) as string,
-          });
+      const headers: Array<Record<string, string>> = [];
+      NgHttpCachingHeadersList.forEach(
+        (ngHttpCachingHeaders: NgHttpCachingHeaders) => {
+          if (value.request.headers.has(ngHttpCachingHeaders)) {
+            headers.push({
+              [ngHttpCachingHeaders]:
+                value.request.headers.get(ngHttpCachingHeaders) as string,
+            });
+          }
         }
-      });
+      );
       keys.push({ key, headers, status: 'cached' });
     });
-    this.ngHttpCachingService.getQueue().forEach((value, key) => {
+    this.ngHttpCachingService.getQueue().forEach((_, key) => {
       keys.push({ key, headers: [], status: 'queue' });
     });
     this.cachedKeys = keys;
   }
 
-  trackByCachedKey(index: number, cachedKey: CachedKey): string {
+  trackByCachedKey(_: number, cachedKey: CachedKey): string {
     return cachedKey.key + '@' + cachedKey.status;
   }
 }

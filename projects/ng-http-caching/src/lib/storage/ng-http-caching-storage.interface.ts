@@ -13,17 +13,17 @@ export interface NgHttpCachingStorageInterface {
     clear(): void;
 
     /**
-     * Delete the chache entry for the provided key.
+     * Delete the cache entry for the provided key.
      */
     delete(key: string): boolean;
 
     /**
-     * The forEach() method executes a provided function once for each chache entry.
+     * The forEach() method executes a provided function once for each cache entry.
      */
     forEach<K = any, T = any>(callbackfn: (value: NgHttpCachingEntry<K, T>, key: string) => void): void;
 
     /**
-     * Return the chache entry for the provided key.
+     * Return the cache entry for the provided key.
      */
     get<K = any, T = any>(key: string): Readonly<NgHttpCachingEntry<K, T>> | undefined;
 
@@ -33,7 +33,7 @@ export interface NgHttpCachingStorageInterface {
     has(key: string): boolean;
 
     /**
-     * Set the chache entry for the provided key.
+     * Set the cache entry for the provided key.
      */
     set<K = any, T = any>(key: string, value: NgHttpCachingEntry<K, T>): void;
 }

@@ -20,7 +20,7 @@ export const serializeRequest = (req: HttpRequest<any>): string => {
             )
         ), // The request parameters
         withCredentials: request.withCredentials, // Whether credentials are being sent
-        respnseType: request.responseType, // The response type
+        responseType: request.responseType, // The response type
         body: request.serializeBody() // Serialize the body, all well and good since we are working on a clone
     });
 }

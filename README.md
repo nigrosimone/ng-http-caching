@@ -102,7 +102,7 @@ export interface NgHttpCachingConfig {
 
 ### version (string - default: VERSION.major)
 Cache version. When you have a breaking change, change the version, and it'll delete the current cache automatically.
-The default value is Angular major version (eg. 13), in this way, the cache is invalitaded on every Angular upgrade.
+The default value is Angular major version (eg. 13), in this way, the cache is invalidated on every Angular upgrade.
 
 ### lifetime (number - default: 3.600.000)
 Number of millisecond that a response is stored in the cache. 
@@ -167,7 +167,7 @@ import { NgHttpCachingConfig, NgHttpCachingEntry } from 'ng-http-caching';
 const ngHttpCachingConfig: NgHttpCachingConfig = {
   isExpired: (entry: NgHttpCachingEntry): boolean | undefined => {
       // In this example a special API endpoint (/my-endpoint) send into the body response
-      // an expireAt Date property. Only for this endpoit the expiration is provided by expireAt value.
+      // an expireAt Date property. Only for this endpoint the expiration is provided by expireAt value.
       // For all the other endpoint normal behaviour is provided.
       if( entry.request.urlWithParams.indexOf('/my-endpoint') !== -1 ){
         return entry.response.body.expireAt.getTime() > Date.now();
@@ -179,7 +179,7 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
 ```
 
 ### isValid (function - default see NgHttpCachingService.isValid());
-If this function return `true` the cache entry is valid and can be strored, if return `false` isn't valid. 
+If this function return `true` the cache entry is valid and can be stored, if return `false` isn't valid. 
 If the result is `undefined`, the normal behaviour is provided.
 Default behaviour is whether the status code falls in the 2xx range.
 Example of customization:

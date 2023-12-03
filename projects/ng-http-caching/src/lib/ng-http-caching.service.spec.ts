@@ -345,7 +345,7 @@ describe('NgHttpCachingService: override isCacheable', () => {
 
   const config: NgHttpCachingConfig = {
     isCacheable: (req: HttpRequest<any>): boolean => {
-      // cacheable only if without queryparameters
+      // cacheable only if without query parameters
       return req.urlWithParams.indexOf('?') === -1;
     },
   };
@@ -828,7 +828,7 @@ describe('NgHttpCachingService: change of version', () => {
     const cacheEntry: NgHttpCachingEntry = {
       url: 'https://angular.io/docs?foo=bar',
       addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
-      response: new HttpResponse({status: 500}),
+      response: new HttpResponse({ status: 500 }),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
     };

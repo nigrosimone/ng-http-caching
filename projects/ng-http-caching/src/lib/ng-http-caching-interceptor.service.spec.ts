@@ -139,9 +139,9 @@ describe('NgHttpCachingInterceptorService', () => {
     });
   }, 1000);
 
-  it('parallell requests', (done) => {
+  it('parallel requests', (done) => {
 
-    const req = new HttpRequest('GET', 'https://angular.io/docs?foo=parallell');
+    const req = new HttpRequest('GET', 'https://angular.io/docs?foo=parallel');
 
     const responses: HttpEvent<any>[] = [];
 

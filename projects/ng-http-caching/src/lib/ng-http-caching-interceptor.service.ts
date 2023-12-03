@@ -48,7 +48,7 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
       shareReplay()
     );
 
-    // add pending request to queue for cache parallell request
+    // add pending request to queue for cache parallel request
     this.cacheService.addToQueue(req, shared);
 
     return shared;

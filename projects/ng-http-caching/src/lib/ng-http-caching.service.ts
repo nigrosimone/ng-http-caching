@@ -18,7 +18,7 @@ export interface NgHttpCachingEntry<K = any, T = any> {
    */
   request: HttpRequest<K>;
   /**
-   * Timestam of add to cache time
+   * Timestamp of add to cache time
    */
   addedTime: number;
   /**
@@ -99,7 +99,7 @@ export interface NgHttpCachingConfig {
   cacheStrategy?: NgHttpCachingStrategy;
   /**
    * Cache version. When you have a breaking change, change the version, and it'll delete the current cache automatically.
-   * The default value is Angular major version (eg. 13), in this way, the cache is invalitaded on every Angular upgrade.
+   * The default value is Angular major version (eg. 13), in this way, the cache is invalidated on every Angular upgrade.
    */
   version?: string;
   /**
@@ -118,7 +118,7 @@ export interface NgHttpCachingConfig {
    */
   getKey?: <K>(req: HttpRequest<K>) => string | undefined;
   /**
-   * If this function return `true` the cache entry is valid and can be strored, if return `false` isn't valid. 
+   * If this function return `true` the cache entry is valid and can be stored, if return `false` isn't valid. 
    * If the result is `undefined`, the normal behaviour is provided.
    */
   isValid?: <K, T>(entry: NgHttpCachingEntry<K, T>) => boolean | undefined;
@@ -369,7 +369,7 @@ export class NgHttpCachingService {
         return false;
       }
     }
-    // if allowed method is only ALL, allow all http methos
+    // if allowed method is only ALL, allow all http methods
     if (this.config.allowedMethod.length === 1) {
       if (this.config.allowedMethod[0] === 'ALL') {
         return true;

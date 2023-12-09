@@ -104,11 +104,12 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
     forEach(callbackfn: (value: NgHttpCachingEntry, key: string) => void): void {
         // iterate this.storage
         for (let i = 0, e = this.storage.length; i < e; i++) {
-            const key = this.storage.key(i);
-            if (key && key.startsWith(KEY_PREFIX)) {
-                const value = this.get(key);
+            const keyWithPrefix = this.storage.key(i);
+            if (keyWithPrefix && keyWithPrefix.startsWith(KEY_PREFIX)) {
+                const value = this.get(keyWithPrefix);
                 if (value) {
-                    callbackfn(value, key);
+                    const keyWithoutPrefix = keyWithPrefix.substring(KEY_PREFIX.length);
+                    callbackfn(value, keyWithoutPrefix);
                 }
             }
         }

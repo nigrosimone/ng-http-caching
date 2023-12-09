@@ -1,11 +1,12 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import {
   NgHttpCachingService,
   NgHttpCachingHeaders,
   NgHttpCachingConfig,
-  NgHttpCachingHeadersList
+  NgHttpCachingHeadersList,
+  NG_HTTP_CACHING_CONTEXT
 } from '../../../ng-http-caching/src/public-api';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpHeaders } from '@angular/common/http';
 import { lastValueFrom } from 'rxjs';
 
 interface CachedKey {
@@ -20,7 +21,7 @@ interface CachedKey {
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
 })
-export class AppComponent implements OnInit, OnDestroy {
+export class AppComponent implements OnInit {
   public url = 'https://my-json-server.typicode.com/typicode/demo/db';
   public key = 'GET@' + this.url;
   public tag = '';
@@ -34,7 +35,6 @@ export class AppComponent implements OnInit, OnDestroy {
   public typeOfRequest = this.typeOfRequests[0];
 
   private config: NgHttpCachingConfig;
-  private timerUpdateCachedKeys!: ReturnType<typeof setInterval>;
 
   constructor(
     private ngHttpCachingService: NgHttpCachingService,
@@ -44,14 +44,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.timerUpdateCachedKeys = setInterval(
-      () => this.updateCachedKeys(),
-      100
-    );
-  }
-
-  ngOnDestroy(): void {
-    clearInterval(this.timerUpdateCachedKeys);
+    this.updateCachedKeys();
   }
 
   async getRequest(): Promise<void> {
@@ -70,16 +63,35 @@ export class AppComponent implements OnInit, OnDestroy {
       headers = headers.set(NgHttpCachingHeaders.LIFETIME, this.lifetime);
     }
 
+    const context = new HttpContext().set(NG_HTTP_CACHING_CONTEXT, {
+      isExpired: () => {
+        console.log('context:isExpired');
+        return undefined;
+      },
+      isCacheable: () => {
+        console.log('context:isCacheable');
+        return undefined;
+      },
+      getKey: () => {
+        console.log('context:getKey');
+        return 'xxx';
+      },
+      isValid: () => {
+        console.log('context:isValid');
+        return undefined;
+      }
+    });
+
     switch (this.typeOfRequest) {
       case 'SEQUENTIAL': {
         // test sequential requests
         const result1 = await lastValueFrom(
-          this.http.get(this.url, { headers })
+          this.http.get(this.url, { headers, context })
         );
         console.log('Sequential response 1', result1);
         this.count++;
         const result2 = await lastValueFrom(
-          this.http.get(this.url, { headers })
+          this.http.get(this.url, { headers, context })
         );
         console.log('Sequential response 2', result2);
         this.count++;
@@ -90,8 +102,8 @@ export class AppComponent implements OnInit, OnDestroy {
       case 'PARALLEL': {
         // test parallel requests
         const results = await Promise.all([
-          lastValueFrom(this.http.get(this.url, { headers })),
-          lastValueFrom(this.http.get(this.url, { headers })),
+          lastValueFrom(this.http.get(this.url, { headers, context })),
+          lastValueFrom(this.http.get(this.url, { headers, context })),
         ]);
         this.count++;
         this.count++;
@@ -102,10 +114,10 @@ export class AppComponent implements OnInit, OnDestroy {
       }
       case 'NESTED': {
         // test nested requests
-        this.http.get(this.url, { headers }).subscribe((result1) => {
+        this.http.get(this.url, { headers, context }).subscribe((result1) => {
           console.log('Nested response 1', result1);
           this.count++;
-          this.http.get(this.url, { headers }).subscribe((result2) => {
+          this.http.get(this.url, { headers, context }).subscribe((result2) => {
             console.log('Nested response 2', result2);
             this.count++;
             this.timeSpan = new Date().getTime() - timeStart.getTime();
@@ -158,6 +170,8 @@ export class AppComponent implements OnInit, OnDestroy {
       keys.push({ key, headers: [], status: 'queue' });
     });
     this.cachedKeys = keys;
+
+    setTimeout(() => this.updateCachedKeys(), 100);
   }
 
   trackByCachedKey(_: number, cachedKey: CachedKey): string {

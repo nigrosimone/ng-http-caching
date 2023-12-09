@@ -52,7 +52,7 @@ describe('NgHttpCachingSessionStorage', () => {
         expect(cache?.response).toBeTruthy();
         expect(cache?.response.body).toEqual(entry.response.body);
         store.forEach((value, key) => {
-            expect(key).toBe('NgHttpCaching::' + entry.url);
+            expect(key).toBe(entry.url);
         });
         store.delete(entry.url);
         expect(store.get(entry.url)).toBeUndefined();

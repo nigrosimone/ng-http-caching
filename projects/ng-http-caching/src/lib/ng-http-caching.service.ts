@@ -1,8 +1,33 @@
 import { Injectable, InjectionToken, Inject, Optional, VERSION, isDevMode } from '@angular/core';
-import { HttpRequest, HttpResponse, HttpEvent } from '@angular/common/http';
+import { HttpRequest, HttpResponse, HttpEvent, HttpContextToken } from '@angular/common/http';
 import { Observable } from 'rxjs/internal/Observable';
 import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
 import { NgHttpCachingMemoryStorage } from './storage/ng-http-caching-memory-storage';
+
+export interface NgHttpCachingContext {
+  /**
+   * If this function return `true` the request is expired and a new request is send to backend, if return `false` isn't expired. 
+   * If the result is `undefined`, the normal behaviour is provided.
+   */
+  isExpired?: <K, T>(entry: NgHttpCachingEntry<K, T>) => boolean | undefined;
+  /**
+   * If this function return `true` the request is cacheable, if return `false` isn't cacheable. 
+   * If the result is `undefined`, the normal behaviour is provided.
+   */
+  isCacheable?: <K>(req: HttpRequest<K>) => boolean | undefined;
+  /**
+   * This function return the unique key (`string`) for store the response into the cache. 
+   * If the result is `undefined`, the normal behaviour is provided.
+   */
+  getKey?: <K>(req: HttpRequest<K>) => string | undefined;
+  /**
+   * If this function return `true` the cache entry is valid and can be stored, if return `false` isn't valid. 
+   * If the result is `undefined`, the normal behaviour is provided.
+   */
+  isValid?: <K, T>(entry: NgHttpCachingEntry<K, T>) => boolean | undefined;
+}
+
+export const NG_HTTP_CACHING_CONTEXT = new HttpContextToken<NgHttpCachingContext>(() => ({}));
 
 export interface NgHttpCachingEntry<K = any, T = any> {
   /**
@@ -297,6 +322,15 @@ export class NgHttpCachingService {
    */
   isExpired<K, T>(entry: NgHttpCachingEntry<K, T>): boolean {
     // if user provide custom method, use it
+    const context = entry.request.context.get(NG_HTTP_CACHING_CONTEXT);
+    if (typeof context?.isExpired === 'function') {
+      const result = context.isExpired(entry);
+      // if result is undefined, normal behaviour is provided
+      if (result !== undefined) {
+        return result;
+      }
+    }
+    // if user provide custom method, use it
     if (typeof this.config.isExpired === 'function') {
       const result = this.config.isExpired(entry);
       // if result is undefined, normal behaviour is provided
@@ -331,6 +365,15 @@ export class NgHttpCachingService {
    * Default behaviour is whether the status code falls in the 2xx range.
    */
   isValid<K, T>(entry: NgHttpCachingEntry<K, T>): boolean {
+    const context = entry.request.context.get(NG_HTTP_CACHING_CONTEXT);
+    // if user provide custom method, use it
+    if (typeof context.isValid === 'function') {
+      const result = context.isValid(entry);
+      // if result is undefined, normal behaviour is provided
+      if (result !== undefined) {
+        return result;
+      }
+    }
     // if user provide custom method, use it
     if (typeof this.config.isValid === 'function') {
       const result = this.config.isValid(entry);
@@ -350,6 +393,15 @@ export class NgHttpCachingService {
    * Return true if the request is cacheable
    */
   isCacheable<K>(req: HttpRequest<K>): boolean {
+    const context = req.context.get(NG_HTTP_CACHING_CONTEXT);
+    // if user provide custom method, use it
+    if (typeof context?.isCacheable === 'function') {
+      const result = context.isCacheable(req);
+      // if result is undefined, normal behaviour is provided
+      if (result !== undefined) {
+        return result;
+      }
+    }
     // if user provide custom method, use it
     if (typeof this.config.isCacheable === 'function') {
       const result = this.config.isCacheable(req);
@@ -385,6 +437,15 @@ export class NgHttpCachingService {
    * `GET@https://github.com/nigrosimone/ng-http-caching`
    */
   getKey<K>(req: HttpRequest<K>): string {
+    // if user provide custom method, use it
+    const context = req.context.get(NG_HTTP_CACHING_CONTEXT);
+    if (typeof context.getKey === 'function') {
+      const result = context.getKey(req);
+      // if result is undefined, normal behaviour is provided
+      if (result !== undefined) {
+        return result;
+      }
+    }
     // if user provide custom method, use it
     if (typeof this.config.getKey === 'function') {
       const result = this.config.getKey(req);

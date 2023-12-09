@@ -5,7 +5,7 @@ import { HttpClientModule } from '@angular/common/http';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { NgHttpCachingModule } from '../../../ng-http-caching/src/public-api';
+import { NgHttpCachingModule, NgHttpCachingLocalStorage } from '../../../ng-http-caching/src/public-api';
 
 
 @NgModule({
@@ -15,7 +15,9 @@ import { NgHttpCachingModule } from '../../../ng-http-caching/src/public-api';
     AppRoutingModule,
     FormsModule,
     HttpClientModule,
-    NgHttpCachingModule,
+    NgHttpCachingModule.forRoot({
+      store: new NgHttpCachingLocalStorage()
+    }),
   ],
   bootstrap: [AppComponent],
 })

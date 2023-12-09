@@ -316,32 +316,32 @@ export class NgHttpCachingService {
   /**
    * Return the config
    */
-  getConfig(): NgHttpCachingConfig;
+  getConfig(): Readonly<NgHttpCachingConfig>;
 
   /**
    * Return the queue map
    */
-  getQueue(): Map<string, Observable<HttpEvent<any>>>;
+  getQueue(): Readonly<Map<string, Observable<HttpEvent<any>>>>;
 
   /**
    * Return the cache store
    */
-  getStore(): NgHttpCachingStorageInterface;
+  getStore(): Readonly<NgHttpCachingStorageInterface>;
 
   /**
    * Return response from cache
    */
-  getFromCache(req: HttpRequest<any>): HttpResponse<any> | undefined;
+  getFromCache<K, T>(req: HttpRequest<K>): Readonly<HttpResponse<T>> | undefined;
 
   /**
    * Add response to cache
    */
-  addToCache(req: HttpRequest<any>, res: HttpResponse<any>): boolean;
+  addToCache<K, T>(req: HttpRequest<K>, res: HttpResponse<T>): boolean;
 
   /**
    * Delete response from cache
    */
-  deleteFromCache(req: HttpRequest<any>): boolean;
+  deleteFromCache<K>(req: HttpRequest<K>): boolean;
 
   /**
    * Clear the cache
@@ -356,53 +356,55 @@ export class NgHttpCachingService {
   /**
    * Clear the cache by regex
    */
-  clearCacheByRegex(regex: RegExp): void;
+  clearCacheByRegex<K, T>(regex: RegExp): number;
 
   /**
    * Clear the cache by TAG
    */
-  clearCacheByTag(tag: string): void;
+  clearCacheByTag<K, T>(tag: string): number;
 
   /**
    * Run garbage collector (delete expired cache entry)
    */
-  runGc(): void;
+  runGc<K, T>(): boolean;
 
   /**
    * Return true if cache entry is expired
    */
-  isExpired(entry: NgHttpCachingEntry): boolean;
+  isExpired<K, T>(entry: NgHttpCachingEntry<K, T>): boolean;
 
   /**
    * Return true if cache entry is valid for store in the cache
+   * Default behaviour is whether the status code falls in the 2xx range.
    */
-  isValid(entry: NgHttpCachingEntry): boolean;
+  isValid<K, T>(entry: NgHttpCachingEntry<K, T>): boolean;
 
   /**
    * Return true if the request is cacheable
    */
-  isCacheable(req: HttpRequest<any>): boolean;
+  isCacheable<K>(req: HttpRequest<K>): boolean;
 
   /**
-   * Return the cache key
+   * Return the cache key.
+   * Default key is http method plus url with query parameters, eg.:
+   * `GET@https://github.com/nigrosimone/ng-http-caching`
    */
-  getKey(req: HttpRequest<any>): string;
+  getKey<K>(req: HttpRequest<K>): string;
 
   /**
    * Return observable from cache
    */
-  getFromQueue(req: HttpRequest<any>): Observable<HttpEvent<any>> | undefined;
+  getFromQueue<K, T>(req: HttpRequest<K>): Observable<HttpEvent<T>> | undefined;
 
   /**
    * Add observable to cache
    */
-  addToQueue(req: HttpRequest<any>, obs: Observable<HttpEvent<any>>): void;
+  addToQueue<K, T>(req: HttpRequest<K>, obs: Observable<HttpEvent<T>>): void;
 
   /**
    * Delete observable from cache
    */
-  deleteFromQueue(req: HttpRequest<any>): boolean;
-
+  deleteFromQueue<K>(req: HttpRequest<K>): boolean;
 }
 ```
 

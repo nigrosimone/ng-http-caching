@@ -306,6 +306,36 @@ this.http.get('https://my-json-server.typicode.com/typicode/demo/db?id=1', {
 }).subscribe(e => console.log);
 ```
 
+## HttpContext
+
+You can override `NgHttpCachingConfig` methods:
+```ts
+isExpired?: (entry: NgHttpCachingEntry) => boolean | undefined | void;
+isValid?: (entry: NgHttpCachingEntry) => boolean | undefined | void;
+isCacheable?: (req: HttpRequest<any>) => boolean | undefined | void;
+getKey?: (req: HttpRequest<any>) => string | undefined | void;
+```
+with `HttpContextToken`, eg.:
+```ts
+import { withNgHttpCachingContext } from 'ng-http-caching';
+
+const context = withNgHttpCachingContext({
+  isExpired: (entry: NgHttpCachingEntry) => {
+    console.log('context:isExpired', entry);
+  },
+  isCacheable: (req: HttpRequest<any>) => {
+    console.log('context:isCacheable', req);
+  },
+  getKey: (req: HttpRequest<any>) => {
+    console.log('context:getKey', req);
+  },
+  isValid: (entry: NgHttpCachingEntry) => {
+    console.log('context:isValid', entry);
+  }
+});
+this.http.get('https://my-json-server.typicode.com/typicode/demo/db?id=1', { context }).subscribe(e => console.log);
+```
+
 ## Cache service
 
 You can inject into your component the `NgHttpCachingService` that expose some utils methods:

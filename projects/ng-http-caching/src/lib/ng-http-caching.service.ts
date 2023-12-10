@@ -1,33 +1,14 @@
 import { Injectable, InjectionToken, Inject, Optional, VERSION, isDevMode } from '@angular/core';
-import { HttpRequest, HttpResponse, HttpEvent, HttpContextToken } from '@angular/common/http';
+import { HttpRequest, HttpResponse, HttpEvent, HttpContextToken, HttpContext } from '@angular/common/http';
 import { Observable } from 'rxjs/internal/Observable';
 import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
 import { NgHttpCachingMemoryStorage } from './storage/ng-http-caching-memory-storage';
 
-export interface NgHttpCachingContext {
-  /**
-   * If this function return `true` the request is expired and a new request is send to backend, if return `false` isn't expired. 
-   * If the result is `undefined`, the normal behaviour is provided.
-   */
-  isExpired?: <K, T>(entry: NgHttpCachingEntry<K, T>) => boolean | undefined;
-  /**
-   * If this function return `true` the request is cacheable, if return `false` isn't cacheable. 
-   * If the result is `undefined`, the normal behaviour is provided.
-   */
-  isCacheable?: <K>(req: HttpRequest<K>) => boolean | undefined;
-  /**
-   * This function return the unique key (`string`) for store the response into the cache. 
-   * If the result is `undefined`, the normal behaviour is provided.
-   */
-  getKey?: <K>(req: HttpRequest<K>) => string | undefined;
-  /**
-   * If this function return `true` the cache entry is valid and can be stored, if return `false` isn't valid. 
-   * If the result is `undefined`, the normal behaviour is provided.
-   */
-  isValid?: <K, T>(entry: NgHttpCachingEntry<K, T>) => boolean | undefined;
-}
+export type NgHttpCachingContext = Pick<NgHttpCachingConfig, 'getKey' | 'isCacheable' | 'isExpired' | 'isValid'>;
 
 export const NG_HTTP_CACHING_CONTEXT = new HttpContextToken<NgHttpCachingContext>(() => ({}));
+
+export const withNgHttpCachingContext = (value: NgHttpCachingContext) => new HttpContext().set(NG_HTTP_CACHING_CONTEXT, value)
 
 export interface NgHttpCachingEntry<K = any, T = any> {
   /**
@@ -52,7 +33,7 @@ export interface NgHttpCachingEntry<K = any, T = any> {
   version: string;
 }
 
-export const NG_HTTP_CACHING_CONFIG = new InjectionToken<NgHttpCachingConfig>(
+export const NG_HTTP_CACHING_CONFIG = new InjectionToken<NgHttpCachingContext>(
   'ng-http-caching.config'
 );
 
@@ -131,22 +112,22 @@ export interface NgHttpCachingConfig {
    * If this function return `true` the request is expired and a new request is send to backend, if return `false` isn't expired. 
    * If the result is `undefined`, the normal behaviour is provided.
    */
-  isExpired?: <K, T>(entry: NgHttpCachingEntry<K, T>) => boolean | undefined;
+  isExpired?: <K, T>(entry: NgHttpCachingEntry<K, T>) => boolean | undefined | void;
   /**
    * If this function return `true` the request is cacheable, if return `false` isn't cacheable. 
    * If the result is `undefined`, the normal behaviour is provided.
    */
-  isCacheable?: <K>(req: HttpRequest<K>) => boolean | undefined;
+  isCacheable?: <K>(req: HttpRequest<K>) => boolean | undefined | void;
   /**
    * This function return the unique key (`string`) for store the response into the cache. 
    * If the result is `undefined`, the normal behaviour is provided.
    */
-  getKey?: <K>(req: HttpRequest<K>) => string | undefined;
+  getKey?: <K>(req: HttpRequest<K>) => string | undefined | void;
   /**
    * If this function return `true` the cache entry is valid and can be stored, if return `false` isn't valid. 
    * If the result is `undefined`, the normal behaviour is provided.
    */
-  isValid?: <K, T>(entry: NgHttpCachingEntry<K, T>) => boolean | undefined;
+  isValid?: <K, T>(entry: NgHttpCachingEntry<K, T>) => boolean | undefined | void;
 }
 
 export interface NgHttpCachingDefaultConfig extends NgHttpCachingConfig {

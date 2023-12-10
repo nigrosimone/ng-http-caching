@@ -4,9 +4,9 @@ import {
   NgHttpCachingHeaders,
   NgHttpCachingConfig,
   NgHttpCachingHeadersList,
-  NG_HTTP_CACHING_CONTEXT
+  withNgHttpCachingContext
 } from '../../../ng-http-caching/src/public-api';
-import { HttpClient, HttpContext, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { lastValueFrom } from 'rxjs';
 
 interface CachedKey {
@@ -63,22 +63,18 @@ export class AppComponent implements OnInit {
       headers = headers.set(NgHttpCachingHeaders.LIFETIME, this.lifetime);
     }
 
-    const context = new HttpContext().set(NG_HTTP_CACHING_CONTEXT, {
+    const context = withNgHttpCachingContext({
       isExpired: () => {
         console.log('context:isExpired');
-        return undefined;
       },
       isCacheable: () => {
         console.log('context:isCacheable');
-        return undefined;
       },
       getKey: () => {
         console.log('context:getKey');
-        return 'xxx';
       },
       isValid: () => {
         console.log('context:isValid');
-        return undefined;
       }
     });
 

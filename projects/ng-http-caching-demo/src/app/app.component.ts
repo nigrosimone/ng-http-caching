@@ -33,8 +33,8 @@ export class AppComponent implements OnInit {
   public count = 0;
   public typeOfRequests = ['PARALLEL', 'SEQUENTIAL', 'NESTED'];
   public typeOfRequest = this.typeOfRequests[0];
-
   private config: NgHttpCachingConfig;
+  private timer!: ReturnType<typeof setTimeout>;
 
   constructor(
     private ngHttpCachingService: NgHttpCachingService,
@@ -146,6 +146,8 @@ export class AppComponent implements OnInit {
   }
 
   updateCachedKeys(): void {
+    clearTimeout(this.timer);
+    
     const keys: CachedKey[] = [];
 
     this.ngHttpCachingService.getStore().forEach((value, key) => {
@@ -167,7 +169,7 @@ export class AppComponent implements OnInit {
     });
     this.cachedKeys = keys;
 
-    setTimeout(() => this.updateCachedKeys(), 100);
+    this.timer = setTimeout(() => this.updateCachedKeys(), 100);
   }
 
   trackByCachedKey(_: number, cachedKey: CachedKey): string {

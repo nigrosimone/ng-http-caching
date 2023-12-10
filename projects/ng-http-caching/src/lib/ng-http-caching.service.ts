@@ -8,7 +8,7 @@ export type NgHttpCachingContext = Pick<NgHttpCachingConfig, 'getKey' | 'isCache
 
 export const NG_HTTP_CACHING_CONTEXT = new HttpContextToken<NgHttpCachingContext>(() => ({}));
 
-export const withNgHttpCachingContext = (value: NgHttpCachingContext) => new HttpContext().set(NG_HTTP_CACHING_CONTEXT, value)
+export const withNgHttpCachingContext = (value: NgHttpCachingContext, context: HttpContext = new HttpContext()) => context.set(NG_HTTP_CACHING_CONTEXT, value)
 
 export interface NgHttpCachingEntry<K = any, T = any> {
   /**

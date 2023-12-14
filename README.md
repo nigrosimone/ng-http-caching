@@ -93,10 +93,10 @@ export interface NgHttpCachingConfig {
   allowedMethod?: string[];
   cacheStrategy?: NgHttpCachingStrategy;
   store?: NgHttpCachingStorageInterface;
-  isExpired?: (entry: NgHttpCachingEntry) => boolean | undefined;
-  isValid?: (entry: NgHttpCachingEntry) => boolean | undefined;
-  isCacheable?: (req: HttpRequest<any>) => boolean | undefined;
-  getKey?: (req: HttpRequest<any>) => string | undefined;
+  isExpired?: (entry: NgHttpCachingEntry) => boolean | undefined | void;
+  isValid?: (entry: NgHttpCachingEntry) => boolean | undefined | void;
+  isCacheable?: (req: HttpRequest<any>) => boolean | undefined | void;
+  getKey?: (req: HttpRequest<any>) => string | undefined | void;
 }
 ```
 

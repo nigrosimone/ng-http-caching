@@ -143,7 +143,7 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
         if (!key.startsWith(KEY_PREFIX)) {
             key = KEY_PREFIX + key;
         }
-        return this.storage.getItem(key) !== undefined;
+        return !!this.storage.getItem(key);
     }
 
     set(key: string, value: NgHttpCachingEntry): void {

@@ -82,7 +82,7 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
     }
 
     clear(): void {
-        for (let i = 0, e = this.storage.length; i < e; i++) {
+        for (let i = this.storage.length; i >= 0; i--) {
             const key = this.storage.key(i);
             if (key && key.startsWith(KEY_PREFIX)) {
                 this.storage.removeItem(key);

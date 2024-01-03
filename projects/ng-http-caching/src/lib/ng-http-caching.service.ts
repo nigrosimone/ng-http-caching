@@ -300,11 +300,13 @@ export class NgHttpCachingService {
       return false;
     }
     this.gcLock = true;
+    const keys: Array<string> = [];
     this.config.store.forEach<K, T>((entry: NgHttpCachingEntry<K, T>, key: string) => {
       if (this.isExpired(entry)) {
-        this.clearCacheByKey(key);
+        keys.push(key);
       }
     });
+    this.clearCacheByKeys(keys);
     this.gcLock = false;
     return true;
   }

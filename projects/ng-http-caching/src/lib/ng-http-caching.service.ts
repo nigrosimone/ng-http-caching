@@ -251,6 +251,21 @@ export class NgHttpCachingService {
   }
 
   /**
+   * Clear the cache by keys
+   */
+  clearCacheByKeys(keys: Array<string>): number {
+    let counter = 0;
+    if (keys) {
+      for (const key of keys) {
+        if (this.clearCacheByKey(key)) {
+          counter++;
+        }
+      }
+    }
+    return counter;
+  }
+
+  /**
    * Clear the cache by regex
    */
   clearCacheByRegex<K, T>(regex: RegExp): number {
@@ -260,10 +275,7 @@ export class NgHttpCachingService {
         keys.push(key);
       }
     });
-    for (const key of keys) {
-      this.clearCacheByKey(key)
-    }
-    return keys.length;
+    return this.clearCacheByKeys(keys);
   }
 
   /**
@@ -277,10 +289,7 @@ export class NgHttpCachingService {
         keys.push(key);
       }
     });
-    for (const key of keys) {
-      this.clearCacheByKey(key)
-    }
-    return keys.length;
+    return this.clearCacheByKeys(keys);
   }
 
   /**

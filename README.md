@@ -384,6 +384,11 @@ export class NgHttpCachingService {
   clearCacheByKey(key: string): boolean;
 
   /**
+   * Clear the cache by keys
+   */
+  clearCacheByKeys(keys: Array<string>): number;
+
+  /**
    * Clear the cache by regex
    */
   clearCacheByRegex<K, T>(regex: RegExp): number;

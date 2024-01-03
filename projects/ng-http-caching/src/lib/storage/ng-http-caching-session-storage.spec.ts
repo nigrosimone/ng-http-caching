@@ -8,15 +8,15 @@ describe('NgHttpCachingSessionStorage', () => {
 
     beforeEach(() => {
         store = new NgHttpCachingSessionStorage();
-        localStorage.setItem('NgHttpCachingSessionStorageTEST', 'TEST');
+        sessionStorage.setItem('NgHttpCachingSessionStorageTEST', 'TEST');
     });
 
     afterEach(() => {
         store.clear();
         expect(store.size).toBe(0);
 
-        expect(localStorage.getItem('NgHttpCachingSessionStorageTEST')).toBe('TEST');
-        localStorage.removeItem('NgHttpCachingSessionStorageTEST');
+        expect(sessionStorage.getItem('NgHttpCachingSessionStorageTEST')).toBe('TEST');
+        sessionStorage.removeItem('NgHttpCachingSessionStorageTEST');
     });
 
     it('should be created', () => {

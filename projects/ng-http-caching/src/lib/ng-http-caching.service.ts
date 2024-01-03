@@ -254,31 +254,33 @@ export class NgHttpCachingService {
    * Clear the cache by regex
    */
   clearCacheByRegex<K, T>(regex: RegExp): number {
-    let count = 0;
+    const keys: Array<string> = [];
     this.config.store.forEach<K, T>((_: NgHttpCachingEntry<K, T>, key: string) => {
       if (regex.test(key)) {
-        if (this.clearCacheByKey(key)) {
-          count++;
-        }
+        keys.push(key);
       }
     });
-    return count;
+    for (const key of keys) {
+      this.clearCacheByKey(key)
+    }
+    return keys.length;
   }
 
   /**
    * Clear the cache by TAG
    */
   clearCacheByTag<K, T>(tag: string): number {
-    let count = 0;
+    const keys: Array<string> = [];
     this.config.store.forEach<K, T>((entry: NgHttpCachingEntry<K, T>, key: string) => {
       const tagHeader = entry.request.headers.get(NgHttpCachingHeaders.TAG);
       if (tagHeader && tagHeader.split(',').includes(tag)) {
-        if (this.clearCacheByKey(key)) {
-          count++;
-        }
+        keys.push(key);
       }
     });
-    return count;
+    for (const key of keys) {
+      this.clearCacheByKey(key)
+    }
+    return keys.length;
   }
 
   /**

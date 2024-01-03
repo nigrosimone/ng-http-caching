@@ -4,6 +4,14 @@ import { HttpHeaders, HttpParams, HttpRequest, HttpResponse } from '@angular/com
 
 const KEY_PREFIX = 'NgHttpCaching::';
 
+export interface NgHttpCachingStorageEntry {
+    url: string;
+    response: string;
+    request: string;
+    addedTime: number;
+    version: string;
+}
+
 export const serializeRequest = (req: HttpRequest<any>): string => {
     const request = req.clone(); // Make a clone, useful for doing destructive things
     return JSON.stringify({
@@ -124,14 +132,8 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
         }
         const item = this.storage.getItem(key);
         if (item) {
-            const parsedItem: StorageEntry = JSON.parse(item);
-            return {
-                url: parsedItem.url,
-                response: deserializeResponse(parsedItem.response),
-                request: deserializeRequest(parsedItem.request),
-                addedTime: parsedItem.addedTime,
-                version: parsedItem.version
-            };
+            const parsedItem: NgHttpCachingStorageEntry = JSON.parse(item);
+            return this.deserialize(parsedItem);
         }
         return undefined;
     }
@@ -153,21 +155,28 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
         if (!key.startsWith(KEY_PREFIX)) {
             key = KEY_PREFIX + key;
         }
-        const unParsedItem: StorageEntry = {
+        const unParsedItem: NgHttpCachingStorageEntry = this.serialize(value);
+        this.storage.setItem(key, JSON.stringify(unParsedItem));
+    }
+
+    protected serialize(value: NgHttpCachingEntry): NgHttpCachingStorageEntry {
+        return {
             url: value.url,
             response: serializeResponse(value.response),
             request: serializeRequest(value.request),
             addedTime: value.addedTime,
             version: value.version
         };
-        this.storage.setItem(key, JSON.stringify(unParsedItem));
+    }
+
+    protected deserialize(value: NgHttpCachingStorageEntry): NgHttpCachingEntry {
+        return {
+            url: value.url,
+            response: deserializeResponse(value.response),
+            request: deserializeRequest(value.request),
+            addedTime: value.addedTime,
+            version: value.version
+        };
     }
 }
 
-interface StorageEntry {
-    url: string;
-    response: string;
-    request: string;
-    addedTime: number;
-    version: string;
-}

@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { HTTP_INTERCEPTORS, HttpRequest, HttpHandler, HttpResponse, HttpEvent, HttpHeaders } from '@angular/common/http';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { HTTP_INTERCEPTORS, HttpRequest, HttpHandler, HttpResponse, HttpEvent, HttpHeaders, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { of, Observable, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import { NgHttpCachingService, NG_HTTP_CACHING_CONFIG, NgHttpCachingHeaders } from './ng-http-caching.service';
@@ -48,16 +48,18 @@ describe('NgHttpCachingInterceptorService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule, NgHttpCachingModule],
-      providers: [
+    imports: [NgHttpCachingModule],
+    providers: [
         { provide: NG_HTTP_CACHING_CONFIG, useValue: {} },
         {
-          provide: HTTP_INTERCEPTORS,
-          useClass: NgHttpCachingInterceptorService,
-          multi: true,
+            provide: HTTP_INTERCEPTORS,
+            useClass: NgHttpCachingInterceptorService,
+            multi: true,
         },
-      ],
-    });
+        provideHttpClient(withInterceptorsFromDi()),
+        provideHttpClientTesting(),
+    ]
+});
     service = TestBed.inject(NgHttpCachingInterceptorService);
     httpCacheService = TestBed.inject(NgHttpCachingService);
   });

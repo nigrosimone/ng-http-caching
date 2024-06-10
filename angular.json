@@ -58,12 +58,15 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:browser",
+          "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/ng-http-caching-demo",
+            "outputPath": {
+              "base": "dist/ng-http-caching-demo"
+            },
             "index": "projects/ng-http-caching-demo/src/index.html",
-            "main": "projects/ng-http-caching-demo/src/main.ts",
-            "polyfills": "projects/ng-http-caching-demo/src/polyfills.ts",
+            "polyfills": [
+              "projects/ng-http-caching-demo/src/polyfills.ts"
+            ],
             "tsConfig": "projects/ng-http-caching-demo/tsconfig.app.json",
             "inlineStyleLanguage": "sass",
             "assets": [
@@ -73,7 +76,8 @@
             "styles": [
               "projects/ng-http-caching-demo/src/styles.sass"
             ],
-            "scripts": []
+            "scripts": [],
+            "browser": "projects/ng-http-caching-demo/src/main.ts"
           },
           "configurations": {
             "production": {
@@ -98,9 +102,7 @@
               "outputHashing": "all"
             },
             "development": {
-              "buildOptimizer": false,
               "optimization": false,
-              "vendorChunk": true,
               "extractLicenses": false,
               "sourceMap": true,
               "namedChunks": true

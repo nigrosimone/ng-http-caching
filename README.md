@@ -15,6 +15,7 @@ See the [stackblitz demo](https://stackblitz.com/edit/demo-ng-http-caching?file=
 ✅ Automatic garbage collector of cache<br>
 ✅ More than 90% unit tested<br>
 ✅ LocalStorage, SessionStorage, MemoryStorage and custom cache storage<br>
+✅ Check response headers cache-control and expires<br>
 
 ## Get Started
 
@@ -181,7 +182,7 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
 ### isValid (function - default see NgHttpCachingService.isValid());
 If this function return `true` the cache entry is valid and can be stored, if return `false` isn't valid. 
 If the result is `undefined`, the normal behaviour is provided.
-Default behaviour is whether the status code falls in the 2xx range.
+Default behaviour is whether the status code falls in the 2xx range and response headers cache-control and expires allow cache.
 Example of customization:
 
 ```ts
@@ -412,7 +413,7 @@ export class NgHttpCachingService {
 
   /**
    * Return true if cache entry is valid for store in the cache
-   * Default behaviour is whether the status code falls in the 2xx range.
+   * Default behaviour is whether the status code falls in the 2xx range and response headers cache-control and expires allow cache.
    */
   isValid<K, T>(entry: NgHttpCachingEntry<K, T>): boolean;
 

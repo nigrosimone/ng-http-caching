@@ -1,5 +1,5 @@
 import { Injectable, InjectionToken, Inject, Optional, VERSION, isDevMode } from '@angular/core';
-import { HttpRequest, HttpResponse, HttpEvent, HttpContextToken, HttpContext } from '@angular/common/http';
+import { HttpRequest, HttpResponse, HttpEvent, HttpContextToken, HttpContext, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs/internal/Observable';
 import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
 import { NgHttpCachingMemoryStorage } from './storage/ng-http-caching-memory-storage';
@@ -9,6 +9,32 @@ export type NgHttpCachingContext = Pick<NgHttpCachingConfig, 'getKey' | 'isCache
 export const NG_HTTP_CACHING_CONTEXT = new HttpContextToken<NgHttpCachingContext>(() => ({}));
 
 export const withNgHttpCachingContext = (value: NgHttpCachingContext, context: HttpContext = new HttpContext()) => context.set(NG_HTTP_CACHING_CONTEXT, value)
+
+export const checkCacheHeaders = (headers: HttpHeaders): boolean => {
+  // check Cache-Control
+  const cacheControlHeader = headers.get('cache-control');
+  if (cacheControlHeader) {
+    const cacheControl = cacheControlHeader.toLowerCase();
+    if (cacheControl.includes('no-store')) {
+      return false;
+    } else if (cacheControl.includes('no-cache')) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  // check Expires header Expires if response is without Cache-Control
+  const expiresHeader = headers.get('expires');
+  if (expiresHeader) {
+    const expires = Date.parse(expiresHeader);
+    if (!isNaN(expires)) {
+      return expires > Date.now();
+    }
+  }
+
+  return true;
+}
 
 export interface NgHttpCachingEntry<K = any, T = any> {
   /**
@@ -356,7 +382,7 @@ export class NgHttpCachingService {
 
   /**
    * Return true if cache entry is valid for store in the cache
-   * Default behaviour is whether the status code falls in the 2xx range.
+   * Default behaviour is whether the status code falls in the 2xx range and response headers cache-control and expires allow cache.
    */
   isValid<K, T>(entry: NgHttpCachingEntry<K, T>): boolean {
     const context = entry.request.context.get(NG_HTTP_CACHING_CONTEXT);
@@ -380,7 +406,11 @@ export class NgHttpCachingService {
     if (this.config.version !== entry.version) {
       return false;
     }
-    return entry.response.ok;
+
+    // check if response headers allow cache
+    const fromHeader = checkCacheHeaders(entry.response.headers);
+
+    return entry.response.ok && fromHeader;
   }
 
   /**

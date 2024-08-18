@@ -109,6 +109,9 @@ The default value is Angular major version (eg. 13), in this way, the cache is i
 Number of millisecond that a response is stored in the cache. 
 You can set specific "lifetime" for each request by add the header `X-NG-HTTP-CACHING-LIFETIME` (see example below).
 
+### checkResponseHeaders (boolean - default false);
+If true response headers cache-control and expires are respected.
+
 ### allowedMethod (string[] - default: ['GET', 'HEAD'])
 Array of allowed HTTP methods to cache. 
 You can allow multiple methods, eg.: `['GET', 'POST', 'PUT', 'DELETE', 'HEAD']` or 

@@ -135,6 +135,10 @@ export interface NgHttpCachingConfig {
    */
   version?: string;
   /**
+   * If true response headers cache-control and expires are respected.
+   */
+  checkResponseHeaders?: boolean;
+  /**
    * If this function return `true` the request is expired and a new request is send to backend, if return `false` isn't expired. 
    * If the result is `undefined`, the normal behaviour is provided.
    */
@@ -162,6 +166,7 @@ export interface NgHttpCachingDefaultConfig extends NgHttpCachingConfig {
   allowedMethod: string[];
   cacheStrategy: NgHttpCachingStrategy;
   version: string;
+  checkResponseHeaders: boolean;
 }
 
 export const NgHttpCachingConfigDefault: Readonly<NgHttpCachingDefaultConfig> = {
@@ -170,6 +175,7 @@ export const NgHttpCachingConfigDefault: Readonly<NgHttpCachingDefaultConfig> = 
   version: VERSION.major,
   allowedMethod: ['GET', 'HEAD'],
   cacheStrategy: NgHttpCachingStrategy.ALLOW_ALL,
+  checkResponseHeaders: false
 };
 
 @Injectable()
@@ -407,9 +413,11 @@ export class NgHttpCachingService {
       return false;
     }
 
-    // check if response headers allow cache
-    const fromHeader = checkCacheHeaders(entry.response.headers);
-
+    let fromHeader = true;
+    if (this.config.checkResponseHeaders) {
+      // check if response headers allow cache
+      fromHeader = checkCacheHeaders(entry.response.headers);
+    }
     return entry.response.ok && fromHeader;
   }
 

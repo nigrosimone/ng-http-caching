@@ -280,11 +280,25 @@ describe('NgHttpCachingInterceptorService: cache headers', () => {
     service.clearCache()
   });
 
-  it('not should cached by header cache control', (done) => {
+  it('not should cached by header cache control no-cache', (done) => {
     const request = new HttpRequest('GET', 'https://angular.io/docs?foo=bar-no-cache');
     const response = new HttpResponse({
       status: 200,
       headers: new HttpHeaders({ 'cache-control': 'no-cache' }),
+      body: { result: true }
+    });
+    interceptor.intercept(request, new BaseHandler(response)).subscribe((response) => {
+      expect(response).toBeTruthy();
+      expect(service.getFromCache(request)).toBeUndefined();
+      done()
+    });
+  }, 1000);
+
+  it('not should cached by header cache control no-store', (done) => {
+    const request = new HttpRequest('GET', 'https://angular.io/docs?foo=bar-no-cache');
+    const response = new HttpResponse({
+      status: 200,
+      headers: new HttpHeaders({ 'cache-control': 'no-store' }),
       body: { result: true }
     });
     interceptor.intercept(request, new BaseHandler(response)).subscribe((response) => {

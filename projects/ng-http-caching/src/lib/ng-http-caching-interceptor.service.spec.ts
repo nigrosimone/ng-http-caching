@@ -37,6 +37,16 @@ class NullMockHandler extends HttpHandler {
   }
 }
 
+class BaseHandler extends HttpHandler {
+  constructor(private response: HttpResponse<any>) {
+    super()
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
+    return of(this.response);
+  }
+}
+
 function sleep(time: number): Promise<any> {
   return new Promise((resolve) => setTimeout(resolve, time));
 }
@@ -271,18 +281,13 @@ describe('NgHttpCachingInterceptorService: cache headers', () => {
   });
 
   it('not should cached by header cache control', (done) => {
-    class NoCacheHandler extends HttpHandler {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
-        return of(new HttpResponse({
-          status: 200, headers: new HttpHeaders({
-            'cache-control': 'no-cache'
-          }), body: { date: new Date().toJSON() }
-        }));
-      }
-    }
     const request = new HttpRequest('GET', 'https://angular.io/docs?foo=bar-no-cache');
-    interceptor.intercept(request, new NoCacheHandler()).subscribe((response) => {
+    const response = new HttpResponse({
+      status: 200,
+      headers: new HttpHeaders({ 'cache-control': 'no-cache' }),
+      body: { result: true }
+    });
+    interceptor.intercept(request, new BaseHandler(response)).subscribe((response) => {
       expect(response).toBeTruthy();
       expect(service.getFromCache(request)).toBeUndefined();
       done()
@@ -290,18 +295,13 @@ describe('NgHttpCachingInterceptorService: cache headers', () => {
   }, 1000);
 
   it('not should cached by header expire', (done) => {
-    class ExpiredHandler extends HttpHandler {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
-        return of(new HttpResponse({
-          status: 200, headers: new HttpHeaders({
-            'expires': new Date().toJSON(),
-          }), body: { date: new Date().toJSON() }
-        }));
-      }
-    }
     const request = new HttpRequest('GET', 'https://angular.io/docs?foo=bar-no-cache');
-    interceptor.intercept(request, new ExpiredHandler()).subscribe((response) => {
+    const response = new HttpResponse({
+      status: 200,
+      headers: new HttpHeaders({ 'expires': new Date().toJSON() }),
+      body: { result: true }
+    });
+    interceptor.intercept(request, new BaseHandler(response)).subscribe((response) => {
       expect(response).toBeTruthy();
       expect(service.getFromCache(request)).toBeUndefined();
       done()

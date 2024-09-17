@@ -1,25 +1,42 @@
 import { TestBed } from '@angular/core/testing';
-import { HTTP_INTERCEPTORS, HttpRequest, HttpHandler, HttpResponse, HttpEvent, HttpHeaders, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { HttpRequest, HttpHandler, HttpResponse, HttpEvent, HttpHeaders, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { of, Observable, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
-import { NgHttpCachingService, NG_HTTP_CACHING_CONFIG, NgHttpCachingHeaders } from './ng-http-caching.service';
+import { NgHttpCachingService, NgHttpCachingHeaders } from './ng-http-caching.service';
 import { NgHttpCachingInterceptorService } from './ng-http-caching-interceptor.service';
-import { NgHttpCachingModule } from './ng-http-caching.module';
+import { provideNgHttpCaching } from './ng-http-caching-provider';
 
 const DELAY = 50;
 
-class MockHandler extends HttpHandler {
-
+class BaseHandler extends HttpHandler {
+  constructor(private response: HttpResponse<any>, private delay?: number) {
+    super()
+  }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
-    return of(new HttpResponse({ status: 200, body: { date: new Date().toJSON() } })).pipe(delay(DELAY));
+  handle(_req: HttpRequest<any>): Observable<HttpEvent<any>> {
+    if (typeof this.delay === 'number' && this.delay > 0) {
+      return of(this.response).pipe(delay(this.delay));
+    }
+    return of(this.response);
+  }
+}
+
+class MockHandler extends BaseHandler {
+  constructor() {
+    super(new HttpResponse({ status: 200, body: { date: new Date().toJSON() } }), DELAY)
   }
 }
 
 class EchoMockHandler extends HttpHandler {
   handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
     return of(new HttpResponse({ status: 200, body: req })).pipe(delay(DELAY));
+  }
+}
+
+class NullMockHandler extends BaseHandler {
+  constructor() {
+    super(null as any, DELAY)
   }
 }
 
@@ -30,22 +47,7 @@ class ErrorMockHandler extends HttpHandler {
   }
 }
 
-class NullMockHandler extends HttpHandler {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
-    return of(null as any);
-  }
-}
 
-class BaseHandler extends HttpHandler {
-  constructor(private response: HttpResponse<any>) {
-    super()
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
-    return of(this.response);
-  }
-}
 
 function sleep(time: number): Promise<any> {
   return new Promise((resolve) => setTimeout(resolve, time));
@@ -57,14 +59,8 @@ describe('NgHttpCachingInterceptorService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [NgHttpCachingModule],
       providers: [
-        { provide: NG_HTTP_CACHING_CONFIG, useValue: {} },
-        {
-          provide: HTTP_INTERCEPTORS,
-          useClass: NgHttpCachingInterceptorService,
-          multi: true,
-        },
+        provideNgHttpCaching(),
         provideHttpClient(withInterceptorsFromDi()),
         provideHttpClientTesting(),
       ]
@@ -141,10 +137,10 @@ describe('NgHttpCachingInterceptorService', () => {
 
       expect(headers).toBeTruthy();
 
-      expect(body.headers.has(NgHttpCachingHeaders.ALLOW_CACHE)).toBeFalse();
-      expect(body.headers.has(NgHttpCachingHeaders.DISALLOW_CACHE)).toBeFalse();
-      expect(body.headers.has(NgHttpCachingHeaders.LIFETIME)).toBeFalse();
-      expect(body.headers.has('CHECK')).toBeTrue();
+      expect(headers.has(NgHttpCachingHeaders.ALLOW_CACHE)).toBeFalse();
+      expect(headers.has(NgHttpCachingHeaders.DISALLOW_CACHE)).toBeFalse();
+      expect(headers.has(NgHttpCachingHeaders.LIFETIME)).toBeFalse();
+      expect(headers.has('CHECK')).toBeTrue();
 
       done();
     });
@@ -266,8 +262,8 @@ describe('NgHttpCachingInterceptorService: cache headers', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [NgHttpCachingModule.forRoot({ checkResponseHeaders: true })],
       providers: [
+        provideNgHttpCaching({ checkResponseHeaders: true }),
         provideHttpClient(withInterceptorsFromDi()),
         provideHttpClientTesting(),
       ]

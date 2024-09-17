@@ -1,12 +1,18 @@
-import { enableProdMode } from '@angular/core';
-import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+import { enableProdMode, isDevMode } from '@angular/core';
+import { bootstrapApplication } from '@angular/platform-browser';
+import { AppComponent } from './app/app.component';
+import { NgHttpCachingLocalStorage, provideNgHttpCaching } from 'projects/ng-http-caching/src/public-api';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
-import { AppModule } from './app/app.module';
-import { environment } from './environments/environment';
-
-if (environment.production) {
+if (!isDevMode()) {
   enableProdMode();
 }
 
-platformBrowserDynamic().bootstrapModule(AppModule)
-  .catch(err => console.error(err));
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideNgHttpCaching({
+      store: new NgHttpCachingLocalStorage()
+    }),
+    provideHttpClient(withInterceptorsFromDi())
+  ]
+});

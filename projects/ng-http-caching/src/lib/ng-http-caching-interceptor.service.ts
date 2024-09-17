@@ -1,5 +1,5 @@
 import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest, HttpResponse } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { asyncScheduler, Observable, of, scheduled } from 'rxjs';
 import { tap, finalize, shareReplay } from 'rxjs/operators';
 import { NgHttpCachingService, NgHttpCachingHeadersList } from './ng-http-caching.service';
@@ -7,7 +7,7 @@ import { NgHttpCachingService, NgHttpCachingHeadersList } from './ng-http-cachin
 @Injectable()
 export class NgHttpCachingInterceptorService implements HttpInterceptor {
 
-  constructor(private readonly cacheService: NgHttpCachingService) { }
+  private readonly cacheService: NgHttpCachingService = inject(NgHttpCachingService);
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     // run garbage collector

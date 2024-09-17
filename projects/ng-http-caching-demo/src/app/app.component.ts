@@ -8,6 +8,8 @@ import {
 } from '../../../ng-http-caching/src/public-api';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { lastValueFrom } from 'rxjs';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
 interface CachedKey {
   key: string;
@@ -20,6 +22,8 @@ interface CachedKey {
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
+  standalone: true,
+  imports: [CommonModule, FormsModule]
 })
 export class AppComponent implements OnInit {
   public url = 'https://my-json-server.typicode.com/typicode/demo/db';

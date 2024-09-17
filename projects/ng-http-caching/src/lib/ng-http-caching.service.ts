@@ -1,4 +1,4 @@
-import { Injectable, InjectionToken, Inject, Optional, VERSION, isDevMode } from '@angular/core';
+import { Injectable, InjectionToken, VERSION, isDevMode, inject } from '@angular/core';
 import { HttpRequest, HttpResponse, HttpEvent, HttpContextToken, HttpContext, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs/internal/Observable';
 import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
@@ -189,9 +189,8 @@ export class NgHttpCachingService {
 
   private devMode: boolean = isDevMode();
 
-  constructor(
-    @Inject(NG_HTTP_CACHING_CONFIG) @Optional() config: Readonly<NgHttpCachingConfig>
-  ) {
+  constructor() {
+    const config: Readonly<NgHttpCachingConfig | null> = inject(NG_HTTP_CACHING_CONFIG, { optional: true });
     if (config) {
       this.config = { ...NgHttpCachingConfigDefault, ...config };
     } else {

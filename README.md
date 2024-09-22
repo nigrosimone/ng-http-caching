@@ -25,61 +25,41 @@ See the [stackblitz demo](https://stackblitz.com/edit/demo-ng-http-caching?file=
 npm i ng-http-caching
 ```
 
-*Step 2*: Import `NgHttpCachingModule` into your app module, eg.:
+*Step 2*: Provide `NgHttpCaching` into your `bootstrapApplication`, eg.:
 
 ```ts
-import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
-import { HttpClientModule } from '@angular/common/http';
-import { AppRoutingModule } from './app-routing.module';
+import { bootstrapApplication } from '@angular/platform-browser';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { AppComponent } from './app.component';
+import { provideNgHttpCaching } from 'ng-http-caching';
 
-import { NgHttpCachingModule } from 'ng-http-caching';
-
-@NgModule({
-  declarations: [AppComponent],
-  imports: [
-    BrowserModule,
-    AppRoutingModule,
-    HttpClientModule,
-    NgHttpCachingModule,
-  ],
-  providers: [],
-  bootstrap: [AppComponent],
-  ],
-})
-export class AppModule { }
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideNgHttpCaching(),
+    provideHttpClient(withInterceptorsFromDi())
+  ]
+});
 ```
 
-if you want configure `NgHttpCachingModule`, you can pass a configuration to the module, eg.:
+if you want configure `ng-http-caching`, you can pass a configuration, eg.:
 
 ```ts
-import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
-import { HttpClientModule } from '@angular/common/http';
-import { AppRoutingModule } from './app-routing.module';
+import { bootstrapApplication } from '@angular/platform-browser';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { AppComponent } from './app.component';
-
-import { NgHttpCachingModule, NgHttpCachingConfig } from 'ng-http-caching';
+import { provideNgHttpCaching, NgHttpCachingConfig } from 'ng-http-caching';
 
 // your config...
 const ngHttpCachingConfig: NgHttpCachingConfig = {
   lifetime: 1000 * 10 // cache expire after 10 seconds
 };
 
-@NgModule({
-  declarations: [AppComponent],
-  imports: [
-    BrowserModule,
-    AppRoutingModule,
-    HttpClientModule,
-    NgHttpCachingModule.forRoot(ngHttpCachingConfig)
-  ],
-  providers: [],
-  bootstrap: [AppComponent]
-  ],
-})
-export class AppModule { }
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideNgHttpCaching(ngHttpCachingConfig),
+    provideHttpClient(withInterceptorsFromDi())
+  ]
+});
 ```
 
 ## Config

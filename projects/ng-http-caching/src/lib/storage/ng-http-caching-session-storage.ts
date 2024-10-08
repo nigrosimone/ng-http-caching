@@ -6,3 +6,5 @@ export class NgHttpCachingSessionStorage extends NgHttpCachingBrowserStorage {
         super(sessionStorage);
     }
 }
+
+export const withNgHttpCachingSessionStorage = () => new NgHttpCachingSessionStorage();

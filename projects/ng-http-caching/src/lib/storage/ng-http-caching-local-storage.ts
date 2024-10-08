@@ -6,3 +6,5 @@ export class NgHttpCachingLocalStorage extends NgHttpCachingBrowserStorage {
         super(localStorage);
     }
 }
+
+export const withNgHttpCachingLocalStorage = () => new NgHttpCachingLocalStorage();

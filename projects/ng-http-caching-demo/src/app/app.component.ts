@@ -18,12 +18,11 @@ interface CachedKey {
 }
 
 @Component({
-  // eslint-disable-next-line @angular-eslint/component-selector
-  selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css'],
-  standalone: true,
-  imports: [CommonModule, FormsModule]
+    // eslint-disable-next-line @angular-eslint/component-selector
+    selector: 'app-root',
+    templateUrl: './app.component.html',
+    styleUrls: ['./app.component.css'],
+    imports: [CommonModule, FormsModule]
 })
 export class AppComponent implements OnInit {
   public url = 'https://my-json-server.typicode.com/typicode/demo/db';

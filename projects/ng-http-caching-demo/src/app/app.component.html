@@ -14,22 +14,24 @@
     </li>
     <li>
       <label>Mark request as "NO CACHEABLE"</label>
-      <input
-        type="checkbox"
-        [checked]="nocache"
-        (change)="nocache = !nocache"
-      />
+      <input type="checkbox" [(ngModel)]="nocache" [ngModelOptions]="{standalone: true}" />
     </li>
     <li>
       <select [(ngModel)]="typeOfRequest">
-        <option *ngFor="let t of typeOfRequests" [ngValue]="t">{{ t }}</option>
+        @for(t of typeOfRequests(); track t){
+        <option [ngValue]="t">{{ t }}</option>
+        }
       </select>
       <button (click)="getRequest()">EXECUTE REQUEST</button>
       <br />
-      <em *ngIf="timeSpan !== null">
-        HTTP server respond in {{ timeSpan }} ms
+      @if(timeSpan() !== null){
+      <em>
+        HTTP server respond in {{ timeSpan() }} ms
       </em>
-      <em *ngIf="count"> (for {{ count }} requests)</em>
+      }
+      @if(count()){
+      <em> (for {{ count() }} requests)</em>
+      }
     </li>
     <li>
       <hr />
@@ -64,11 +66,9 @@
       <th>Headers</th>
       <th>Status</th>
     </thead>
-    <tbody *ngIf="cachedKeys && cachedKeys.length > 0; else noCachedKeys">
-      <tr
-        *ngFor="let cachedKey of cachedKeys; trackBy: trackByCachedKey"
-        [ngClass]="cachedKey.status === 'queue' ? 'queue' : ''"
-      >
+    <tbody>
+      @for(cachedKey of cachedKeys(); track trackByCachedKey){
+      <tr [class.queue]="cachedKey.status === 'queue'">
         <td style="width: 30%; text-align: left;">
           {{ cachedKey.key }}
         </td>
@@ -79,14 +79,12 @@
           {{ cachedKey.status }}
         </td>
       </tr>
+      } @empty {
+      <tr>
+        <td style="text-align: center;" colspan="3">No cached keys</td>
+      </tr>
+      }
     </tbody>
-    <ng-template #noCachedKeys>
-      <tbody>
-        <tr>
-          <td style="text-align: center;" colspan="3">No cached keys</td>
-        </tr>
-      </tbody>
-    </ng-template>
   </table>
   <br />
   <button (click)="updateCachedKeys()">Update cached keys</button>

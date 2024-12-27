@@ -1,4 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject, model, signal } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { lastValueFrom } from 'rxjs';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import {
   NgHttpCachingService,
   NgHttpCachingHeaders,
@@ -6,10 +10,6 @@ import {
   NgHttpCachingHeadersList,
   withNgHttpCachingContext
 } from '../../../ng-http-caching/src/public-api';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { lastValueFrom } from 'rxjs';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 
 interface CachedKey {
   key: string;
@@ -18,31 +18,32 @@ interface CachedKey {
 }
 
 @Component({
-    // eslint-disable-next-line @angular-eslint/component-selector
-    selector: 'app-root',
-    templateUrl: './app.component.html',
-    styleUrls: ['./app.component.css'],
-    imports: [CommonModule, FormsModule]
+  // eslint-disable-next-line @angular-eslint/component-selector
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css'],
+  imports: [CommonModule, FormsModule]
 })
 export class AppComponent implements OnInit {
-  public url = 'https://my-json-server.typicode.com/typicode/demo/db';
-  public key = 'GET@' + this.url;
-  public tag = '';
-  public regex: string = '';
-  public cachedKeys: CachedKey[] = [];
-  public timeSpan: number | null = null;
-  public nocache = false;
-  public lifetime = null;
-  public count = 0;
-  public typeOfRequests = ['PARALLEL', 'SEQUENTIAL', 'NESTED'];
-  public typeOfRequest = this.typeOfRequests[0];
-  private config: NgHttpCachingConfig;
+  private readonly ngHttpCachingService = inject(NgHttpCachingService);
+  private readonly http = inject(HttpClient);
+
+  public readonly url = model('https://my-json-server.typicode.com/typicode/demo/db');
+  public readonly key = model('GET@' + this.url());
+  public readonly tag = model('');
+  public readonly regex = model('');
+  public readonly cachedKeys = signal<CachedKey[]>([]);
+  public readonly timeSpan = signal<number | null>(null);
+  public readonly nocache = signal(false);
+  public readonly lifetime = model<number | null>(null);
+  public readonly count = signal(0);
+  public readonly typeOfRequests = signal(['PARALLEL', 'SEQUENTIAL', 'NESTED']);
+  public readonly typeOfRequest = model(this.typeOfRequests()[0]);
+
+  private readonly config: NgHttpCachingConfig;
   private timer!: ReturnType<typeof setTimeout>;
 
-  constructor(
-    private ngHttpCachingService: NgHttpCachingService,
-    private http: HttpClient
-  ) {
+  constructor() {
     this.config = this.ngHttpCachingService.getConfig();
   }
 
@@ -51,21 +52,29 @@ export class AppComponent implements OnInit {
   }
 
   async getRequest(): Promise<void> {
-    this.timeSpan = null;
-    this.count = 0;
+    this.timeSpan.set(null);
+    this.count.set(0);
     const timeStart = new Date();
 
+    /**
+    * @see https://github.com/nigrosimone/ng-http-caching?tab=readme-ov-file#headers
+    */
     let headers = new HttpHeaders();
     if (this.tag) {
-      headers = headers.set(NgHttpCachingHeaders.TAG, this.tag);
+      headers = headers.set(NgHttpCachingHeaders.TAG, this.tag());
     }
-    if (this.nocache) {
+    if (this.nocache()) {
       headers = headers.set(NgHttpCachingHeaders.DISALLOW_CACHE, '1');
     }
-    if (this.lifetime && Number(this.lifetime) !== this.config.lifetime) {
-      headers = headers.set(NgHttpCachingHeaders.LIFETIME, this.lifetime);
+    const lifetime = this.lifetime();
+    if (lifetime && Number(lifetime) !== this.config.lifetime) {
+      headers = headers.set(NgHttpCachingHeaders.LIFETIME, lifetime.toString());
     }
 
+    /**
+    * You can override NgHttpCachingConfig
+    * @see https://github.com/nigrosimone/ng-http-caching?tab=readme-ov-file#httpcontext
+    */
     const context = withNgHttpCachingContext({
       isExpired: () => {
         console.log('context:isExpired');
@@ -81,45 +90,45 @@ export class AppComponent implements OnInit {
       }
     });
 
-    switch (this.typeOfRequest) {
+    switch (this.typeOfRequest()) {
       case 'SEQUENTIAL': {
         // test sequential requests
         const result1 = await lastValueFrom(
-          this.http.get(this.url, { headers, context })
+          this.http.get(this.url(), { headers, context })
         );
         console.log('Sequential response 1', result1);
-        this.count++;
+        this.count.update(value => value + 1);
         const result2 = await lastValueFrom(
-          this.http.get(this.url, { headers, context })
+          this.http.get(this.url(), { headers, context })
         );
         console.log('Sequential response 2', result2);
-        this.count++;
-        this.timeSpan = new Date().getTime() - timeStart.getTime();
+        this.count.update(value => value + 1);
+        this.timeSpan.set(new Date().getTime() - timeStart.getTime());
         this.updateCachedKeys();
         break;
       }
       case 'PARALLEL': {
         // test parallel requests
         const results = await Promise.all([
-          lastValueFrom(this.http.get(this.url, { headers, context })),
-          lastValueFrom(this.http.get(this.url, { headers, context })),
+          lastValueFrom(this.http.get(this.url(), { headers, context })),
+          lastValueFrom(this.http.get(this.url(), { headers, context })),
         ]);
-        this.count++;
-        this.count++;
-        this.timeSpan = new Date().getTime() - timeStart.getTime();
+        this.count.update(value => value + 1);
+        this.count.update(value => value + 1);
+        this.timeSpan.set(new Date().getTime() - timeStart.getTime());
         this.updateCachedKeys();
         console.log('Parallel responses', results);
         break;
       }
       case 'NESTED': {
         // test nested requests
-        this.http.get(this.url, { headers, context }).subscribe((result1) => {
+        this.http.get(this.url(), { headers, context }).subscribe((result1) => {
           console.log('Nested response 1', result1);
-          this.count++;
-          this.http.get(this.url, { headers, context }).subscribe((result2) => {
+          this.count.update(value => value + 1);
+          this.http.get(this.url(), { headers, context }).subscribe((result2) => {
             console.log('Nested response 2', result2);
-            this.count++;
-            this.timeSpan = new Date().getTime() - timeStart.getTime();
+            this.count.update(value => value + 1);
+            this.timeSpan.set(new Date().getTime() - timeStart.getTime());
             this.updateCachedKeys();
           });
         });
@@ -129,28 +138,32 @@ export class AppComponent implements OnInit {
   }
 
   clearCache(): void {
+    /** @see https://github.com/nigrosimone/ng-http-caching?tab=readme-ov-file#cache-service */
     this.ngHttpCachingService.clearCache();
     this.updateCachedKeys();
   }
 
   clearCacheByTag(): void {
-    this.ngHttpCachingService.clearCacheByTag(this.tag);
+    /** @see https://github.com/nigrosimone/ng-http-caching?tab=readme-ov-file#cache-service */
+    this.ngHttpCachingService.clearCacheByTag(this.tag());
     this.updateCachedKeys();
   }
 
   clearCacheByRegex(): void {
-    this.ngHttpCachingService.clearCacheByRegex(new RegExp(this.regex));
+    /** @see https://github.com/nigrosimone/ng-http-caching?tab=readme-ov-file#cache-service */
+    this.ngHttpCachingService.clearCacheByRegex(new RegExp(this.regex()));
     this.updateCachedKeys();
   }
 
   clearCacheByKey(): void {
-    this.ngHttpCachingService.clearCacheByKey(this.key);
+    /** @see https://github.com/nigrosimone/ng-http-caching?tab=readme-ov-file#cache-service */
+    this.ngHttpCachingService.clearCacheByKey(this.key());
     this.updateCachedKeys();
   }
 
   updateCachedKeys(): void {
     clearTimeout(this.timer);
-    
+
     const keys: CachedKey[] = [];
 
     this.ngHttpCachingService.getStore().forEach((value, key) => {
@@ -170,7 +183,7 @@ export class AppComponent implements OnInit {
     this.ngHttpCachingService.getQueue().forEach((_, key) => {
       keys.push({ key, headers: [], status: 'queue' });
     });
-    this.cachedKeys = keys;
+    this.cachedKeys.set(keys);
 
     this.timer = setTimeout(() => this.updateCachedKeys(), 100);
   }
@@ -179,3 +192,9 @@ export class AppComponent implements OnInit {
     return cachedKey.key + '@' + cachedKey.status;
   }
 }
+
+/**
+ * NgHttpCaching demo
+ * Cache for HTTP requests in Angular application.
+ * see https://www.npmjs.com/package/ng-http-caching
+ */

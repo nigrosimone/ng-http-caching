@@ -13,7 +13,7 @@ import {
 
 interface CachedKey {
   key: string;
-  headers: { [key: string]: string }[];
+  headers: Array<Record<string, string>>;
   status: 'cached' | 'queue';
 }
 

@@ -32,7 +32,19 @@ export class AppComponent implements OnInit {
   public readonly key = model('GET@' + this.url());
   public readonly tag = model('');
   public readonly regex = model('');
-  public readonly cachedKeys = signal<CachedKey[]>([]);
+  public readonly cachedKeys = signal<CachedKey[]>([], {
+    equal: (a, b) => {
+      if (!a || !b) return false;
+      if (a === b) return true;
+      if (a.length !== b.length) return false;
+      for (let i = 0, l = a.length; i < l; i++) {
+        if (a[i] !== b[i]) {
+          return false;
+        }
+      }
+      return true;
+    }
+  });
   public readonly timeSpan = signal<number | null>(null);
   public readonly nocache = signal(false);
   public readonly lifetime = model<number | null>(null);
@@ -60,7 +72,7 @@ export class AppComponent implements OnInit {
     * @see https://github.com/nigrosimone/ng-http-caching?tab=readme-ov-file#headers
     */
     let headers = new HttpHeaders();
-    if (this.tag) {
+    if (this.tag()) {
       headers = headers.set(NgHttpCachingHeaders.TAG, this.tag());
     }
     if (this.nocache()) {

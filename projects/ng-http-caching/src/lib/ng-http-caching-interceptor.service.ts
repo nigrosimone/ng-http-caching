@@ -1,4 +1,4 @@
-import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest, HttpResponse } from '@angular/common/http';
+import { HttpEvent, HttpHandler, HttpHeaders, HttpInterceptor, HttpRequest, HttpResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { asyncScheduler, Observable, of, scheduled } from 'rxjs';
 import { tap, finalize, shareReplay } from 'rxjs/operators';
@@ -58,13 +58,18 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
    * Send http request (next handler)
    */
   sendRequest(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    let cloned: HttpRequest<any> = req.clone();
     // trim custom headers before send request
-    NgHttpCachingHeadersList.forEach(ngHttpCachingHeaders => {
-      if (cloned.headers.has(ngHttpCachingHeaders)) {
-        cloned = cloned.clone({ headers: cloned.headers.delete(ngHttpCachingHeaders) });
+    let headers: HttpHeaders = req.headers;
+    let needClone = false;
+    for (const header of NgHttpCachingHeadersList) {
+      if (headers.has(header)) {
+        needClone = true;
+        headers = headers.delete(header);
       }
-    });
-    return next.handle(cloned);
+    }
+    if (needClone) {
+      req = req.clone({ headers });
+    }
+    return next.handle(req);
   }
 }

@@ -38,7 +38,7 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
     const shared = this.sendRequest(req, next).pipe(
       tap(event => {
         if (event instanceof HttpResponse) {
-          this.cacheService.addToCache(req, event.clone());
+          this.cacheService.addToCache(req, event);
         }
       }),
       finalize(() => {

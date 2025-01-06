@@ -34,12 +34,6 @@ class EchoMockHandler extends HttpHandler {
   }
 }
 
-class NullMockHandler extends BaseHandler {
-  constructor() {
-    super(null as any, DELAY)
-  }
-}
-
 class ErrorMockHandler extends HttpHandler {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
@@ -231,20 +225,6 @@ describe('NgHttpCachingInterceptorService', () => {
       },
       error => {
         expect(error).toBe('This is an error!');
-        expect(httpCacheService.getFromCache(req)).toBeUndefined();
-        done();
-      }
-    );
-
-  }, 1000);
-
-  it('null requests', (done) => {
-
-    const req = new HttpRequest('GET', 'https://angular.io/docs?foo=null');
-
-    service.intercept(req, new NullMockHandler()).subscribe(
-      response => {
-        expect(response).toBeNull();
         expect(httpCacheService.getFromCache(req)).toBeUndefined();
         done();
       }

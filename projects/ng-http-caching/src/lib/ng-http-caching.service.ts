@@ -459,7 +459,7 @@ export class NgHttpCachingService {
       }
     }
     // request is allowed if method is in allowedMethod
-    return this.config.allowedMethod.indexOf(req.method) !== -1;
+    return this.config.allowedMethod.includes(req.method);
   }
 
   /**

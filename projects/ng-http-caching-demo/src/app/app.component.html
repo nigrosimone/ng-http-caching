@@ -67,7 +67,7 @@
       <th>Status</th>
     </thead>
     <tbody>
-      @for(cachedKey of cachedKeys(); track trackByCachedKey){
+      @for(cachedKey of cachedKeys(); track trackByCachedKey(cachedKey)){
       <tr [class.queue]="cachedKey.status === 'queue'">
         <td style="width: 30%; text-align: left;">
           {{ cachedKey.key }}

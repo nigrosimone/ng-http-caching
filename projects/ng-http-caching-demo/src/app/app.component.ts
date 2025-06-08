@@ -200,7 +200,7 @@ export class AppComponent implements OnInit {
     this.timer = setTimeout(() => this.updateCachedKeys(), 100);
   }
 
-  trackByCachedKey(_: number, cachedKey: CachedKey): string {
+  trackByCachedKey(cachedKey: CachedKey): string {
     return cachedKey.key + '@' + cachedKey.status;
   }
 }

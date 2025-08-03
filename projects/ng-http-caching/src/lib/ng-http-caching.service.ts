@@ -63,36 +63,38 @@ export const NG_HTTP_CACHING_CONFIG = new InjectionToken<NgHttpCachingContext>(
   'ng-http-caching.config'
 );
 
-export enum NgHttpCachingStrategy {
+export const NgHttpCachingStrategy = {
   /**
    * All request are cacheable if HTTP method is into `allowedMethod`
    */
-  ALLOW_ALL = 'ALLOW_ALL',
+  ALLOW_ALL: 'ALLOW_ALL',
   /**
    * Only the request with `X-NG-HTTP-CACHING-ALLOW-CACHE` header are cacheable if HTTP method is into `allowedMethod`
    */
-  DISALLOW_ALL = 'DISALLOW_ALL'
+  DISALLOW_ALL: 'DISALLOW_ALL'
 }
+export type NgHttpCachingStrategy = typeof NgHttpCachingStrategy[keyof typeof NgHttpCachingStrategy];
 
-export enum NgHttpCachingHeaders {
+export const NgHttpCachingHeaders = {
   /**
    * Request is cacheable if HTTP method is into `allowedMethod`
    */
-  ALLOW_CACHE = 'X-NG-HTTP-CACHING-ALLOW-CACHE',
+  ALLOW_CACHE: 'X-NG-HTTP-CACHING-ALLOW-CACHE',
   /**
    * Request isn't cacheable
    */
-  DISALLOW_CACHE = 'X-NG-HTTP-CACHING-DISALLOW-CACHE',
+  DISALLOW_CACHE: 'X-NG-HTTP-CACHING-DISALLOW-CACHE',
   /**
    * Specific cache lifetime for the request
    */
-  LIFETIME = 'X-NG-HTTP-CACHING-LIFETIME',
+  LIFETIME: 'X-NG-HTTP-CACHING-LIFETIME',
   /**
    * You can tag multiple request by adding this header with the same tag and 
    * using `NgHttpCachingService.clearCacheByTag(tag: string)` for delete all the tagged request
    */
-  TAG = 'X-NG-HTTP-CACHING-TAG'
+  TAG: 'X-NG-HTTP-CACHING-TAG'
 }
+export type NgHttpCachingHeaders = typeof NgHttpCachingHeaders[keyof typeof NgHttpCachingHeaders];
 
 export const NgHttpCachingHeadersList = Object.values(NgHttpCachingHeaders);
 

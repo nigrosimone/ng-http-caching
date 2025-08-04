@@ -180,7 +180,7 @@ export const NgHttpCachingConfigDefault: Readonly<NgHttpCachingDefaultConfig> = 
   checkResponseHeaders: false
 };
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class NgHttpCachingService {
 
   private readonly queue = new Map<string, Observable<HttpEvent<any>>>();

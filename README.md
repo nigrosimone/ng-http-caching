@@ -456,7 +456,7 @@ export class AppComponent implements OnInit {
     // Note: all the "special" headers in NgHttpCachingHeaders are removed before send the request to the backend.
     this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
       headers: {
-         [NgHttpCachingHeaders.DISALLOW_CACHE]: '1',
+        [NgHttpCachingHeaders.DISALLOW_CACHE]: '1',
       }
     }).subscribe(e => console.log);
   }
@@ -486,7 +486,7 @@ export class AppComponent implements OnInit {
     // Note: all the "special" headers in NgHttpCachingHeaders are removed before send the request to the backend.
     this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
       headers: {
-         [NgHttpCachingHeaders.LIFETIME]: (1000 * 60 * 60 * 24 * 365).toString(),
+        [NgHttpCachingHeaders.LIFETIME]: (1000 * 60 * 60 * 24 * 365).toString(),
       }
     }).subscribe(e => console.log);
   }
@@ -516,7 +516,7 @@ export class AppComponent implements OnInit {
     // Note: all the "special" headers in NgHttpCachingHeaders are removed before send the request to the backend.
     this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
       headers: {
-         [NgHttpCachingHeaders.ALLOW_CACHE]: '1',
+        [NgHttpCachingHeaders.ALLOW_CACHE]: '1',
       }
     }).subscribe(e => console.log);
   }
@@ -620,7 +620,7 @@ export class AppComponent {
     // using NgHttpCachingService.clearCacheByTag("foo") for delete all the tagged request.
     this.http.get('https://my-json-server.typicode.com/typicode/demo/db?id=1', {
       headers: {
-         [NgHttpCachingHeaders.TAG]: 'foo',
+        [NgHttpCachingHeaders.TAG]: 'foo',
       }
     }).subscribe(e => console.log);
 
@@ -628,7 +628,7 @@ export class AppComponent {
     // You can add multiple tags comma separated.
     this.http.get('https://my-json-server.typicode.com/typicode/demo/db?id=2', {
       headers: {
-         [NgHttpCachingHeaders.TAG]: 'foo,baz',
+        [NgHttpCachingHeaders.TAG]: 'foo,baz',
       }
     }).subscribe(e => console.log);
   }

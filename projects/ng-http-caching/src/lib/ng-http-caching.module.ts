@@ -7,6 +7,7 @@ import {
 } from './ng-http-caching.service';
 import { NgHttpCachingInterceptorService } from './ng-http-caching-interceptor.service';
 
+/** @deprecated use provideNgHttpCaching */
 @NgModule({
   providers: [
     NgHttpCachingService,

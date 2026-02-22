@@ -1,7 +1,7 @@
 import { Injectable, InjectionToken, inject } from '@angular/core';
 import { NgHttpCachingEntry } from '../ng-http-caching.service';
 import { NgHttpCachingStorageInterface } from './ng-http-caching-storage.interface';
-import { NgSimpleStateBaseSignalStore, NgSimpleStateStoreConfig } from 'ng-simple-state';
+import { NgSimpleStateBaseSignalStore, type NgSimpleStateStoreConfig } from 'ng-simple-state';
 
 /**
  * State shape expected by the adapter.

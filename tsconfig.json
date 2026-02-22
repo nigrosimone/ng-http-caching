@@ -14,8 +14,7 @@
     "sourceMap": true,
     "paths": {
       "ng-http-caching": [
-        "dist/ng-http-caching/ng-http-caching",
-        "dist/ng-http-caching"
+        "projects/ng-http-caching/src/public-api.ts",
       ]
     },
     "declaration": false,

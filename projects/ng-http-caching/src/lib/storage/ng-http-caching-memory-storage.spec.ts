@@ -1,5 +1,5 @@
 import { HttpContext, HttpHeaders, HttpRequest, HttpResponse } from '@angular/common/http';
-import { NgHttpCachingMemoryStorage } from './ng-http-caching-memory-storage';
+import { NgHttpCachingMemoryStorage, withNgHttpCachingMemoryStorage } from './ng-http-caching-memory-storage';
 import { NgHttpCachingStorageInterface } from './ng-http-caching-storage.interface';
 
 describe('NgHttpCachingMemoryStorage', () => {
@@ -42,5 +42,9 @@ describe('NgHttpCachingMemoryStorage', () => {
         store.delete(entry.url);
         expect(store.get(entry.url)).toBeUndefined();
         expect(store.size).toBe(0);
+    });
+
+    it('withNgHttpCachingMemoryStorage should return instance', () => {
+        expect(withNgHttpCachingMemoryStorage()).toBeInstanceOf(NgHttpCachingMemoryStorage);
     });
 });

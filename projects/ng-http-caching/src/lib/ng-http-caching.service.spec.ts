@@ -15,9 +15,15 @@ import {
   NG_HTTP_CACHING_WEEK_IN_MS,
   NG_HTTP_CACHING_MONTH_IN_MS,
   NG_HTTP_CACHING_YEAR_IN_MS,
+  withNgHttpCachingContext,
+  checkCacheHeaders,
+  NG_HTTP_CACHING_CONTEXT,
 } from './ng-http-caching.service';
-import { VERSION } from '@angular/core';
+import { VERSION, Type } from '@angular/core';
 import { provideNgHttpCaching } from './ng-http-caching-provider';
+import { NgHttpCachingNgSimpleStateSentinel } from './storage/ng-http-caching-ng-simple-state-sentinel';
+import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
+import { HttpContext } from '@angular/common/http';
 
 
 describe('NgHttpCachingService: no config', () => {
@@ -1229,5 +1235,86 @@ describe('NgHttpCachingService: deep freeze', () => {
       service['devMode'] = true;
       expect(service['devMode']).toEqual(true);
     }
+  });
+});
+
+describe('NgHttpCachingService: context and edge cases', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching()],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('withNgHttpCachingContext with default context', () => {
+    const context = withNgHttpCachingContext({ getKey: () => 'test' });
+    expect(context.get(NG_HTTP_CACHING_CONTEXT).getKey!({} as any)).toBe('test');
+  });
+
+  it('checkCacheHeaders coverage', () => {
+    expect(checkCacheHeaders(new HttpHeaders({ 'cache-control': 'public, max-age=3600' }))).toBe(true);
+    expect(checkCacheHeaders(new HttpHeaders({ 'expires': 'invalid' }))).toBe(true);
+  });
+
+  it('isExpired: HttpContext override', () => {
+    const context = withNgHttpCachingContext({ isExpired: () => true });
+    const cacheEntry: NgHttpCachingEntry = {
+      url: 'https://angular.io',
+      addedTime: Date.now(),
+      response: new HttpResponse({}),
+      request: new HttpRequest('GET', 'https://angular.io', { context }),
+      version: VERSION.major
+    };
+    expect(service.isExpired(cacheEntry)).toBeTrue();
+  });
+
+  it('isCacheable: HttpContext override', () => {
+    const context = withNgHttpCachingContext({ isCacheable: () => false });
+    const httpRequest = new HttpRequest('GET', 'https://angular.io', { context });
+    expect(service.isCacheable(httpRequest)).toBeFalse();
+  });
+
+  it('isValid: HttpContext override', () => {
+    const context = withNgHttpCachingContext({ isValid: () => false });
+    const cacheEntry: NgHttpCachingEntry = {
+      url: 'https://angular.io',
+      addedTime: Date.now(),
+      response: new HttpResponse({}),
+      request: new HttpRequest('GET', 'https://angular.io', { context }),
+      version: VERSION.major
+    };
+    expect(service.isValid(cacheEntry)).toBeFalse();
+  });
+
+  it('getKey: HttpContext override', () => {
+    const context = withNgHttpCachingContext({ getKey: () => 'custom-key' });
+    const httpRequest = new HttpRequest('GET', 'https://angular.io', { context });
+    expect(service.getKey(httpRequest)).toBe('custom-key');
+  });
+});
+
+describe('NgHttpCachingService: sentinel detection', () => {
+  class MockAdapter implements NgHttpCachingStorageInterface {
+    size = 0;
+    get = () => undefined;
+    set = () => { };
+    delete = () => true;
+    clear = () => { };
+    forEach = () => { };
+    has = () => false;
+  }
+
+  it('should inject adapter from sentinel', () => {
+    const sentinel = new NgHttpCachingNgSimpleStateSentinel(MockAdapter as any as Type<NgHttpCachingStorageInterface>);
+    TestBed.configureTestingModule({
+      providers: [
+        provideNgHttpCaching({ store: sentinel }),
+        MockAdapter
+      ],
+    });
+    const service = TestBed.inject(NgHttpCachingService);
+    expect(service.getStore()).toBeInstanceOf(MockAdapter);
   });
 });

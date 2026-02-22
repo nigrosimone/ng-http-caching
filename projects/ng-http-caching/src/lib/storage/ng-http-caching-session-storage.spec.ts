@@ -1,5 +1,5 @@
 import { HttpContext, HttpHeaders, HttpParams, HttpRequest, HttpResponse } from '@angular/common/http';
-import { NgHttpCachingSessionStorage } from './ng-http-caching-session-storage';
+import { NgHttpCachingSessionStorage, withNgHttpCachingSessionStorage } from './ng-http-caching-session-storage';
 import { NgHttpCachingStorageInterface } from './ng-http-caching-storage.interface';
 
 
@@ -62,5 +62,9 @@ describe('NgHttpCachingSessionStorage', () => {
         expect(store.size).toBe(1);
         store.clear();
         expect(store.size).toBe(0);
+    });
+
+    it('withNgHttpCachingSessionStorage should return instance', () => {
+        expect(withNgHttpCachingSessionStorage()).toBeInstanceOf(NgHttpCachingSessionStorage);
     });
 });

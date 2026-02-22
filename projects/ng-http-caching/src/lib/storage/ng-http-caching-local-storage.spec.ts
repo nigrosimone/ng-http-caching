@@ -1,5 +1,5 @@
 import { HttpContext, HttpHeaders, HttpParams, HttpRequest, HttpResponse } from '@angular/common/http';
-import { NgHttpCachingLocalStorage } from './ng-http-caching-local-storage';
+import { NgHttpCachingLocalStorage, withNgHttpCachingLocalStorage } from './ng-http-caching-local-storage';
 import { NgHttpCachingStorageInterface } from './ng-http-caching-storage.interface';
 
 
@@ -64,5 +64,9 @@ describe('NgHttpCachingLocalStorage', () => {
         expect(store.size).toBe(1);
         store.clear();
         expect(store.size).toBe(0);
+    });
+
+    it('withNgHttpCachingLocalStorage should return instance', () => {
+        expect(withNgHttpCachingLocalStorage()).toBeInstanceOf(NgHttpCachingLocalStorage);
     });
 });

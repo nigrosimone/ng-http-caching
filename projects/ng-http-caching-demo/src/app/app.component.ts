@@ -9,7 +9,7 @@ import {
   NgHttpCachingConfig,
   NgHttpCachingHeadersList,
   withNgHttpCachingContext
-} from '../../../ng-http-caching/src/public-api';
+} from 'ng-http-caching';
 
 interface CachedKey {
   key: string;

@@ -1,4 +1,4 @@
-import { Injectable, InjectionToken, inject, isDevMode } from '@angular/core';
+import { Injectable, InjectionToken, inject } from '@angular/core';
 import { NgHttpCachingEntry } from '../ng-http-caching.service';
 import { NgHttpCachingStorageInterface } from './ng-http-caching-storage.interface';
 import { NgSimpleStateBaseSignalStore, NgSimpleStateStoreConfig } from 'ng-simple-state';
@@ -14,8 +14,6 @@ export interface NgHttpCachingNgSimpleState<K = unknown, T = unknown> {
  * User-facing configuration for the ng-simple-state adapter.
  *
  * Accepts all {@link NgSimpleStateStoreConfig} options.
- * `storeName` defaults to `'NgHttpCaching'` and `enableDevTool` defaults
- * to `isDevMode()` if not provided.
  */
 export type NgHttpCachingNgSimpleStateAdapterConfig = Partial<NgSimpleStateStoreConfig>;
 
@@ -99,8 +97,6 @@ export class NgHttpCachingNgSimpleStateAdapter extends NgSimpleStateBaseSignalSt
     implements NgHttpCachingStorageInterface {
 
     protected override storeConfig(): NgSimpleStateStoreConfig {
-        // inject() is valid here because storeConfig() is called from the
-        // base-class constructor, which runs inside Angular's injection context.
         const userConfig = inject(NG_HTTP_CACHING_NG_SIMPLE_STATE_CONFIG, { optional: true });
         return {
             storeName: userConfig?.storeName ?? 'NgHttpCaching',

@@ -37,12 +37,7 @@ export class NgHttpCachingNgSimpleStateAdapter extends NgSimpleStateBaseSignalSt
     }
 
     clear(): void {
-        const current = this.getCurrentState();
-        const next = {
-            ...current,
-            entries: {}
-        };
-        this.replaceState(next, `ngHttpCaching:clear`);
+        this.restartState();
     }
 
     delete(key: string): boolean {

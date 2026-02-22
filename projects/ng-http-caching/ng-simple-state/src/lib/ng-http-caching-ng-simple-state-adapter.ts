@@ -1,11 +1,13 @@
 import { Injectable, inject } from '@angular/core';
-import { NgHttpCachingEntry } from '../ng-http-caching.service';
-import { NgSimpleStateBaseSignalStore, type NgSimpleStateStoreConfig } from 'ng-simple-state';
 import {
+    NgHttpCachingEntry,
+    NgHttpCachingStorageInterface,
+    NgHttpCachingNgSimpleStateSentinel,
     NG_HTTP_CACHING_NG_SIMPLE_STATE_CONFIG,
-    NgHttpCachingNgSimpleStateAdapterToken,
-    type NgHttpCachingNgSimpleState
-} from './ng-http-caching-ng-simple-state-sentinel';
+    type NgHttpCachingNgSimpleState,
+    type NgHttpCachingNgSimpleStateAdapterConfig
+} from 'ng-http-caching';
+import { NgSimpleStateBaseSignalStore, type NgSimpleStateStoreConfig } from 'ng-simple-state';
 
 /**
  * Storage adapter for ng-http-caching backed by ng-simple-state.
@@ -13,11 +15,10 @@ import {
  * This allows a single source of truth for HTTP cache entries.
  */
 @Injectable({
-    providedIn: 'root',
-    useClass: NgHttpCachingNgSimpleStateAdapter
+    providedIn: 'root'
 })
 export class NgHttpCachingNgSimpleStateAdapter extends NgSimpleStateBaseSignalStore<NgHttpCachingNgSimpleState>
-    implements NgHttpCachingNgSimpleStateAdapterToken {
+    implements NgHttpCachingStorageInterface {
 
     protected override storeConfig(): NgSimpleStateStoreConfig {
         const userConfig = inject(NG_HTTP_CACHING_NG_SIMPLE_STATE_CONFIG, { optional: true });
@@ -97,4 +98,11 @@ export class NgHttpCachingNgSimpleStateAdapter extends NgSimpleStateBaseSignalSt
         };
         this.replaceState(next, `ngHttpCaching:set`);
     }
+}
+
+/**
+ * Factory helper to enable the ng-simple-state adapter for ng-http-caching.
+ */
+export function withNgHttpCachingNgSimpleState(config?: NgHttpCachingNgSimpleStateAdapterConfig): NgHttpCachingNgSimpleStateSentinel {
+    return new NgHttpCachingNgSimpleStateSentinel(NgHttpCachingNgSimpleStateAdapter as any, config);
 }

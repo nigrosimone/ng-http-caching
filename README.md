@@ -140,15 +140,21 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
 };
 ```
 
-and a `withNgHttpCachingNgSimpleState` adapter for use [ng-simple-state](https://www.npmjs.com/package/ng-simple-state) as the cache storage:
+and a `withNgHttpCachingNgSimpleState` adapter for use [ng-simple-state](https://www.npmjs.com/package/ng-simple-state) as the cache storage.
+
+To use this adapter, you **must install** `ng-simple-state` in your project:
+
+```bash
+npm i ng-simple-state
+```
+
+Then you can use it like this:
 
 ```ts
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
-import {
-  provideNgHttpCaching,
-  withNgHttpCachingNgSimpleState,
-} from 'ng-http-caching';
+import { provideNgHttpCaching } from 'ng-http-caching';
+import { withNgHttpCachingNgSimpleState } from 'ng-http-caching/ng-simple-state';
 import { AppComponent } from './app.component';
 
 bootstrapApplication(AppComponent, {

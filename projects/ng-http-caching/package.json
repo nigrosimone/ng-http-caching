@@ -27,7 +27,13 @@
   "homepage": "https://github.com/nigrosimone/ng-http-caching",
   "peerDependencies": {
     "@angular/common": ">15.0.0",
-    "@angular/core": ">15.0.0"
+    "@angular/core": ">15.0.0",
+    "ng-simple-state": "^21.1.4"
+  },
+  "peerDependenciesMeta": {
+    "ng-simple-state": {
+      "optional": true
+    }
   },
   "dependencies": {
     "tslib": "^2.3.0"

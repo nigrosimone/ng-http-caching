@@ -3,7 +3,7 @@ import { HttpRequest, HttpResponse, HttpEvent, HttpContextToken, HttpContext, Ht
 import { Observable } from 'rxjs/internal/Observable';
 import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
 import { NgHttpCachingMemoryStorage } from './storage/ng-http-caching-memory-storage';
-import { NgHttpCachingNgSimpleStateAdapter, NgHttpCachingNgSimpleStateSentinel } from './storage/ng-http-caching-ng-simple-state-adapter';
+import { NgHttpCachingNgSimpleStateSentinel } from './storage/ng-http-caching-ng-simple-state-sentinel';
 
 export type NgHttpCachingContext = Pick<NgHttpCachingConfig, 'getKey' | 'isCacheable' | 'isExpired' | 'isValid'>;
 
@@ -111,7 +111,7 @@ export interface NgHttpCachingConfig {
   /**
    * Set the cache store. You can implement your custom store by implement the `NgHttpCachingStorageInterface` interface, eg.:
    */
-  store?: NgHttpCachingStorageInterface;
+  store?: NgHttpCachingStorageInterface | NgHttpCachingNgSimpleStateSentinel;
   /**
    * Number of millisecond that a response is stored in the cache. 
    * You can set specific "lifetime" for each request by add the header `X-NG-HTTP-CACHING-LIFETIME` (see example below).
@@ -193,12 +193,13 @@ export class NgHttpCachingService {
   private devMode: boolean = isDevMode();
 
   constructor() {
-    const config: Readonly<NgHttpCachingConfig | null> = inject(NG_HTTP_CACHING_CONFIG, { optional: true });
-    if (config) {
-      if (config.store instanceof NgHttpCachingNgSimpleStateSentinel || config.store instanceof NgHttpCachingNgSimpleStateAdapter) {
-        (config as any).store = inject(NgHttpCachingNgSimpleStateAdapter);
+    const userConfig: Readonly<NgHttpCachingConfig | null> = inject(NG_HTTP_CACHING_CONFIG, { optional: true });
+    if (userConfig) {
+      const config: NgHttpCachingConfig = { ...userConfig };
+      if (config.store instanceof NgHttpCachingNgSimpleStateSentinel) {
+        config.store = inject(config.store.adapterClass);
       }
-      this.config = { ...NgHttpCachingConfigDefault, ...config };
+      this.config = { ...NgHttpCachingConfigDefault, ...config } as NgHttpCachingDefaultConfig;
     } else {
       this.config = { ...NgHttpCachingConfigDefault };
     }

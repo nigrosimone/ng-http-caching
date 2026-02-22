@@ -9,7 +9,7 @@ import { NgHttpCachingInterceptorService } from './ng-http-caching-interceptor.s
 import {
   NG_HTTP_CACHING_NG_SIMPLE_STATE_CONFIG,
   NgHttpCachingNgSimpleStateSentinel,
-} from './storage/ng-http-caching-ng-simple-state-adapter';
+} from './storage/ng-http-caching-ng-simple-state-sentinel';
 
 /** @deprecated use provideNgHttpCaching */
 @NgModule({
@@ -35,7 +35,7 @@ export class NgHttpCachingModule {
     ];
     // Forward optional ng-simple-state adapter config
     if (ngHttpCachingConfig?.store instanceof NgHttpCachingNgSimpleStateSentinel
-        && ngHttpCachingConfig.store.adapterConfig) {
+      && ngHttpCachingConfig.store.adapterConfig) {
       providers.push({
         provide: NG_HTTP_CACHING_NG_SIMPLE_STATE_CONFIG,
         useValue: ngHttpCachingConfig.store.adapterConfig,

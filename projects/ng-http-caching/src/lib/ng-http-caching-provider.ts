@@ -5,7 +5,7 @@ import { NG_HTTP_CACHING_CONFIG, NgHttpCachingConfig, NgHttpCachingService } fro
 import {
     NG_HTTP_CACHING_NG_SIMPLE_STATE_CONFIG,
     NgHttpCachingNgSimpleStateSentinel,
-} from "./storage/ng-http-caching-ng-simple-state-adapter";
+} from "./storage/ng-http-caching-ng-simple-state-sentinel";
 
 export function provideNgHttpCaching(ngHttpCachingConfig?: NgHttpCachingConfig) {
     const providers: Provider[] = [

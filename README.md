@@ -140,6 +140,27 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
 };
 ```
 
+and a `withNgHttpCachingNgSimpleState` adapter for use [ng-simple-state](https://www.npmjs.com/package/ng-simple-state) as the cache storage:
+
+```ts
+import { bootstrapApplication } from '@angular/platform-browser';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import {
+  provideNgHttpCaching,
+  withNgHttpCachingNgSimpleState,
+} from 'ng-http-caching';
+import { AppComponent } from './app.component';
+
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideNgHttpCaching({
+      store: withNgHttpCachingNgSimpleState(),
+    }),
+    provideHttpClient(withInterceptorsFromDi())
+  ]
+});
+```
+
 ### isExpired (function - default see NgHttpCachingService.isExpired());
 If this function return `true` the request is expired and a new request is send to backend, if return `false` isn't expired. 
 If the result is `undefined`, the normal behaviour is provided.

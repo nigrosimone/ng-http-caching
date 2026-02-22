@@ -37,6 +37,13 @@
       <hr />
     </li>
     <li>
+      <label>Current cache storage</label>
+      <em>{{ storageImplementation }}</em>
+    </li>
+    <li>
+      <hr />
+    </li>
+    <li>
       <label>Clear cache for TAG</label>
       <input type="text" [(ngModel)]="tag" />
       <button (click)="clearCacheByTag()">Clear Cache</button>

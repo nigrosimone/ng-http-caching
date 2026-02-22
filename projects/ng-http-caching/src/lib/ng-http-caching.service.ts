@@ -3,6 +3,7 @@ import { HttpRequest, HttpResponse, HttpEvent, HttpContextToken, HttpContext, Ht
 import { Observable } from 'rxjs/internal/Observable';
 import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
 import { NgHttpCachingMemoryStorage } from './storage/ng-http-caching-memory-storage';
+import { NgHttpCachingNgSimpleStateAdapter, NgHttpCachingNgSimpleStateSentinel } from './storage/ng-http-caching-ng-simple-state-adapter';
 
 export type NgHttpCachingContext = Pick<NgHttpCachingConfig, 'getKey' | 'isCacheable' | 'isExpired' | 'isValid'>;
 
@@ -194,6 +195,9 @@ export class NgHttpCachingService {
   constructor() {
     const config: Readonly<NgHttpCachingConfig | null> = inject(NG_HTTP_CACHING_CONFIG, { optional: true });
     if (config) {
+      if (config.store instanceof NgHttpCachingNgSimpleStateSentinel || config.store instanceof NgHttpCachingNgSimpleStateAdapter) {
+        (config as any).store = inject(NgHttpCachingNgSimpleStateAdapter);
+      }
       this.config = { ...NgHttpCachingConfigDefault, ...config };
     } else {
       this.config = { ...NgHttpCachingConfigDefault };

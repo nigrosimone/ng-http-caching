@@ -59,6 +59,11 @@ export class AppComponent implements OnInit {
     this.config = this.ngHttpCachingService.getConfig();
   }
 
+  get storageImplementation(): string {
+    const store = this.ngHttpCachingService.getStore();
+    return store?.constructor?.name ?? 'UnknownStorage';
+  }
+
   ngOnInit(): void {
     this.updateCachedKeys();
   }

@@ -24,12 +24,14 @@ export function provideNgHttpCaching(ngHttpCachingConfig?: NgHttpCachingConfig) 
         });
         // If the user chose the ng-simple-state adapter, forward
         // the optional adapter config so it's available via DI.
-        if (ngHttpCachingConfig.store instanceof NgHttpCachingNgSimpleStateSentinel
-            && ngHttpCachingConfig.store.adapterConfig) {
-            providers.push({
-                provide: NG_HTTP_CACHING_NG_SIMPLE_STATE_CONFIG,
-                useValue: ngHttpCachingConfig.store.adapterConfig,
-            });
+        if (ngHttpCachingConfig.store instanceof NgHttpCachingNgSimpleStateSentinel) {
+            providers.push(ngHttpCachingConfig.store.adapterClass);
+            if (ngHttpCachingConfig.store.adapterConfig) {
+                providers.push({
+                    provide: NG_HTTP_CACHING_NG_SIMPLE_STATE_CONFIG,
+                    useValue: ngHttpCachingConfig.store.adapterConfig,
+                });
+            }
         }
     }
     return makeEnvironmentProviders(providers);

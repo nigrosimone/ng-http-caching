@@ -1,13 +1,15 @@
 import { HttpContext, HttpHeaders, HttpRequest, HttpResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { NgHttpCachingEntry } from '../ng-http-caching.service';
 import {
-    NG_HTTP_CACHING_NG_SIMPLE_STATE_CONFIG,
-    NgHttpCachingNgSimpleStateAdapter,
+    NgHttpCachingEntry,
+    NgHttpCachingStorageInterface,
     NgHttpCachingNgSimpleStateSentinel,
+    NG_HTTP_CACHING_NG_SIMPLE_STATE_CONFIG
+} from 'ng-http-caching';
+import {
+    NgHttpCachingNgSimpleStateAdapter,
     withNgHttpCachingNgSimpleState,
 } from './ng-http-caching-ng-simple-state-adapter';
-import { NgHttpCachingStorageInterface } from './ng-http-caching-storage.interface';
 
 
 describe('NgHttpCachingNgSimpleStateAdapter', () => {
@@ -51,6 +53,7 @@ describe('NgHttpCachingNgSimpleStateAdapter', () => {
         expect(cache).toBeTruthy();
         expect(cache?.response.body).toEqual({ OK: true });
 
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         let count = 0;
         store.forEach((value, key) => {
             count++;
@@ -73,28 +76,17 @@ describe('NgHttpCachingNgSimpleStateAdapter', () => {
 });
 
 describe('NgHttpCachingNgSimpleStateSentinel', () => {
-    it('should be creatable without injection context', () => {
-        const sentinel = new NgHttpCachingNgSimpleStateSentinel();
+    it('should be creatable', () => {
+        const sentinel = new NgHttpCachingNgSimpleStateSentinel(NgHttpCachingNgSimpleStateAdapter);
         expect(sentinel).toBeTruthy();
+        expect(sentinel.adapterClass).toBe(NgHttpCachingNgSimpleStateAdapter);
         expect(sentinel.adapterConfig).toBeUndefined();
     });
 
     it('should store adapter config', () => {
         const config = { storeName: 'Custom', enableDevTool: false };
-        const sentinel = new NgHttpCachingNgSimpleStateSentinel(config);
+        const sentinel = new NgHttpCachingNgSimpleStateSentinel(NgHttpCachingNgSimpleStateAdapter, config);
         expect(sentinel.adapterConfig).toEqual(config);
-    });
-
-    it('should throw on any method call', () => {
-        const sentinel = new NgHttpCachingNgSimpleStateSentinel();
-        const errMsg = /placeholder and must not be used/;
-        expect(() => sentinel.size).toThrowError(errMsg);
-        expect(() => sentinel.has('key')).toThrowError(errMsg);
-        expect(() => sentinel.get('key')).toThrowError(errMsg);
-        expect(() => sentinel.delete('key')).toThrowError(errMsg);
-        expect(() => sentinel.clear()).toThrowError(errMsg);
-        expect(() => sentinel.set('key', {} as any)).toThrowError(errMsg);
-        expect(() => sentinel.forEach(() => {})).toThrowError(errMsg);
     });
 });
 
@@ -102,14 +94,16 @@ describe('withNgHttpCachingNgSimpleState', () => {
     it('should return a sentinel instance', () => {
         const result = withNgHttpCachingNgSimpleState();
         expect(result).toBeInstanceOf(NgHttpCachingNgSimpleStateSentinel);
-        expect((result as NgHttpCachingNgSimpleStateSentinel).adapterConfig).toBeUndefined();
+        expect(result.adapterClass).toBe(NgHttpCachingNgSimpleStateAdapter);
+        expect(result.adapterConfig).toBeUndefined();
     });
 
     it('should return a sentinel with config', () => {
         const config = { storeName: 'MyCache', enableDevTool: true };
         const result = withNgHttpCachingNgSimpleState(config);
         expect(result).toBeInstanceOf(NgHttpCachingNgSimpleStateSentinel);
-        expect((result as NgHttpCachingNgSimpleStateSentinel).adapterConfig).toEqual(config);
+        expect(result.adapterClass).toBe(NgHttpCachingNgSimpleStateAdapter);
+        expect(result.adapterConfig).toEqual(config);
     });
 });
 

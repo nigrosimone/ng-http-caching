@@ -34,12 +34,14 @@ export class NgHttpCachingModule {
       },
     ];
     // Forward optional ng-simple-state adapter config
-    if (ngHttpCachingConfig?.store instanceof NgHttpCachingNgSimpleStateSentinel
-      && ngHttpCachingConfig.store.adapterConfig) {
-      providers.push({
-        provide: NG_HTTP_CACHING_NG_SIMPLE_STATE_CONFIG,
-        useValue: ngHttpCachingConfig.store.adapterConfig,
-      });
+    if (ngHttpCachingConfig?.store instanceof NgHttpCachingNgSimpleStateSentinel) {
+      providers.push(ngHttpCachingConfig.store.adapterClass);
+      if (ngHttpCachingConfig.store.adapterConfig) {
+        providers.push({
+          provide: NG_HTTP_CACHING_NG_SIMPLE_STATE_CONFIG,
+          useValue: ngHttpCachingConfig.store.adapterConfig,
+        });
+      }
     }
     return {
       ngModule: NgHttpCachingModule,

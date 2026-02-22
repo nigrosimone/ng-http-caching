@@ -5,7 +5,7 @@ import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage
 import { NgHttpCachingMemoryStorage } from './storage/ng-http-caching-memory-storage';
 import { NgHttpCachingNgSimpleStateSentinel } from './storage/ng-http-caching-ng-simple-state-sentinel';
 
-export type NgHttpCachingContext = Pick<NgHttpCachingConfig, 'getKey' | 'isCacheable' | 'isExpired' | 'isValid'>;
+export type NgHttpCachingContext = Pick<NgHttpCachingConfig, 'getKey' | 'isCacheable' | 'isExpired' | 'isValid' | 'clearCacheOnMutation'>;
 
 export const NG_HTTP_CACHING_CONTEXT = new HttpContextToken<NgHttpCachingContext>(() => ({}));
 
@@ -75,6 +75,26 @@ export const NgHttpCachingStrategy = {
   DISALLOW_ALL: 'DISALLOW_ALL'
 }
 export type NgHttpCachingStrategy = typeof NgHttpCachingStrategy[keyof typeof NgHttpCachingStrategy];
+
+export const NgHttpCachingMutationStrategy = {
+  /**
+   * No invalidation on mutation
+   */
+  NONE: 'NONE',
+  /**
+   * Clear all cache on mutation
+   */
+  ALL: 'ALL',
+  /**
+   * Clear only the cache entries with the same URL as the mutation request
+   */
+  IDENTICAL: 'IDENTICAL',
+  /**
+   * Clear the cache entries with the same URL or the parent URL as the mutation request
+   */
+  COLLECTION: 'COLLECTION',
+}
+export type NgHttpCachingMutationStrategy = typeof NgHttpCachingMutationStrategy[keyof typeof NgHttpCachingMutationStrategy];
 
 export const NgHttpCachingHeaders = {
   /**
@@ -161,6 +181,12 @@ export interface NgHttpCachingConfig {
    * If the result is `undefined`, the normal behaviour is provided.
    */
   isValid?: <K, T>(entry: NgHttpCachingEntry<K, T>) => boolean | undefined | void;
+  /**
+   * Set the mutation strategy.
+   * If `true`, it behaves like `NgHttpCachingMutationStrategy.ALL`.
+   * If `false`, it behaves like `NgHttpCachingMutationStrategy.NONE`.
+   */
+  clearCacheOnMutation?: NgHttpCachingMutationStrategy | boolean | (<K>(req: HttpRequest<K>) => boolean | undefined | void);
 }
 
 export interface NgHttpCachingDefaultConfig extends NgHttpCachingConfig {
@@ -178,7 +204,8 @@ export const NgHttpCachingConfigDefault: Readonly<NgHttpCachingDefaultConfig> = 
   version: VERSION.major,
   allowedMethod: ['GET', 'HEAD'],
   cacheStrategy: NgHttpCachingStrategy.ALLOW_ALL,
-  checkResponseHeaders: false
+  checkResponseHeaders: false,
+  clearCacheOnMutation: NgHttpCachingMutationStrategy.NONE
 };
 
 @Injectable({ providedIn: 'root' })
@@ -347,6 +374,67 @@ export class NgHttpCachingService {
     this.clearCacheByKeys(keys);
     this.gcLock = false;
     return true;
+  }
+
+  /**
+   * Clear the cache by mutation
+   */
+  clearCacheByMutation<K>(req: HttpRequest<K>): boolean {
+    const context = req.context.get(NG_HTTP_CACHING_CONTEXT);
+    let strategy = context.clearCacheOnMutation !== undefined ? context.clearCacheOnMutation : this.config.clearCacheOnMutation;
+
+    if (typeof strategy === 'function') {
+      const result = strategy(req);
+      if (result === true) {
+        this.clearCache();
+        return true;
+      }
+      return false;
+    }
+
+    if (strategy === false || strategy === NgHttpCachingMutationStrategy.NONE) {
+      return false;
+    }
+
+    if (!['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
+      return false;
+    }
+
+    if (strategy === true || strategy === NgHttpCachingMutationStrategy.ALL) {
+      this.clearCache();
+      return true;
+    }
+
+    const url = req.urlWithParams.split('?')[0];
+
+    if (strategy === NgHttpCachingMutationStrategy.IDENTICAL) {
+      const regex = new RegExp('^.*@' + this.escapeRegExp(url) + '(\\?|$)');
+      this.clearCacheByRegex(regex);
+      return true;
+    }
+
+    if (strategy === NgHttpCachingMutationStrategy.COLLECTION) {
+      const regexStr = '^.*@' + this.escapeRegExp(url) + '(\\?|$)';
+      const parts = url.split('/');
+      if (parts.length > 1) {
+        parts.pop();
+        const parentUrl = parts.join('/');
+        const parentRegexStr = '^.*@' + this.escapeRegExp(parentUrl) + '(\\?|$)';
+        this.clearCacheByRegex(new RegExp(`(${regexStr})|(${parentRegexStr})`));
+      } else {
+        this.clearCacheByRegex(new RegExp(regexStr));
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Escape regex special characters
+   */
+  private escapeRegExp(str: string): string {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   /**

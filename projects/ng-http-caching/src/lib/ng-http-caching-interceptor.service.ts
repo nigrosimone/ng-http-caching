@@ -15,7 +15,13 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
 
     // Don't cache if it's not cacheable
     if (!this.cacheService.isCacheable(req)) {
-      return this.sendRequest(req, next);
+      return this.sendRequest(req, next).pipe(
+        tap(event => {
+          if (event.type === HttpEventType.Response && event.ok) {
+            this.cacheService.clearCacheByMutation(req);
+          }
+        })
+      );
     }
 
     // Checked if there is pending response for this request

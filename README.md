@@ -16,6 +16,7 @@ See the [stackblitz demo](https://stackblitz.com/edit/demo-ng-http-caching-21?fi
 ✅ More than 90% unit tested<br>
 ✅ LocalStorage, SessionStorage, MemoryStorage and custom cache storage<br>
 ✅ Check response headers cache-control and expires<br>
+✅ Automatic cache invalidation on mutations (POST, PUT, DELETE, PATCH)<br>
 
 ## Get Started
 
@@ -78,6 +79,7 @@ export interface NgHttpCachingConfig {
   isValid?: (entry: NgHttpCachingEntry) => boolean | undefined | void;
   isCacheable?: (req: HttpRequest<any>) => boolean | undefined | void;
   getKey?: (req: HttpRequest<any>) => string | undefined | void;
+  clearCacheOnMutation?: NgHttpCachingMutationStrategy | boolean | ((req: HttpRequest<any>) => boolean | undefined | void);
 }
 ```
 
@@ -249,6 +251,27 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
     // This is important if you want support method like POST or PUT.
     return req.method + '@' + req.urlWithParams + '@' + hash(req.params, hashOptions) + '@' + hash(req.body, hashOptions);
   },
+};
+```
+
+### clearCacheOnMutation (enum NgHttpCachingMutationStrategy | boolean | Function - default: NgHttpCachingMutationStrategy.NONE)
+
+Set the mutation strategy for automatically clear the cache when a mutation request (POST, PUT, DELETE, PATCH) is successful.
+Possible strategies are:
+- `NgHttpCachingMutationStrategy.NONE` (or `false`): No automatic invalidation.
+- `NgHttpCachingMutationStrategy.ALL` (or `true`): Clears the entire cache store on any successful mutation.
+- `NgHttpCachingMutationStrategy.IDENTICAL`: Clears entries with the same URL (ignoring method and query params).
+- `NgHttpCachingMutationStrategy.COLLECTION`: Clears entries with the same URL AND its parent collection URL (eg. `DELETE /api/users/24` invalidate also `GET /api/users`).
+- `Function`: Custom logic: `(req: HttpRequest<any>) => boolean`.
+
+Example of customization:
+
+```ts
+import { NgHttpCachingConfig, NgHttpCachingMutationStrategy } from 'ng-http-caching';
+
+const ngHttpCachingConfig: NgHttpCachingConfig = {
+  // clear the entire cache only if the mutation is on a specific endpoint
+  clearCacheOnMutation: (req) => req.url.includes('/api/critical-data')
 };
 ```
 

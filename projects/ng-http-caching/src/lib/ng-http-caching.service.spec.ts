@@ -18,6 +18,7 @@ import {
   withNgHttpCachingContext,
   checkCacheHeaders,
   NG_HTTP_CACHING_CONTEXT,
+  NgHttpCachingMutationStrategy,
 } from './ng-http-caching.service';
 import { VERSION, Type } from '@angular/core';
 import { provideNgHttpCaching } from './ng-http-caching-provider';
@@ -1316,5 +1317,120 @@ describe('NgHttpCachingService: sentinel detection', () => {
     });
     const service = TestBed.inject(NgHttpCachingService);
     expect(service.getStore()).toBeInstanceOf(MockAdapter);
+  });
+});
+
+describe('NgHttpCachingService: clearCacheByMutation', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching()],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+    service.clearCache();
+  });
+
+  it('strategy NONE', () => {
+    const httpRequest = new HttpRequest('POST' as any, 'https://angular.io/api/users');
+    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/users'), new HttpResponse({}));
+    expect(service.getStore().size).toBe(1);
+
+    // Default is NONE
+    service.clearCacheByMutation(httpRequest);
+    expect(service.getStore().size).toBe(1);
+  });
+
+  it('strategy ALL', () => {
+    const config: NgHttpCachingConfig = { clearCacheOnMutation: NgHttpCachingMutationStrategy.ALL };
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching(config)],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+    service.clearCache();
+
+    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/users'), new HttpResponse({}));
+    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/other'), new HttpResponse({}));
+    expect(service.getStore().size).toBe(2);
+
+    service.clearCacheByMutation(new HttpRequest('POST' as any, 'https://angular.io/api/users'));
+    expect(service.getStore().size).toBe(0);
+  });
+
+  it('strategy IDENTICAL', () => {
+    const config: NgHttpCachingConfig = { clearCacheOnMutation: NgHttpCachingMutationStrategy.IDENTICAL };
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching(config)],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+    service.clearCache();
+
+    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/users'), new HttpResponse({}));
+    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/users', null, { params: { id: '1' } as any }), new HttpResponse({}));
+    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/other'), new HttpResponse({}));
+    expect(service.getStore().size).toBe(3);
+
+    service.clearCacheByMutation(new HttpRequest('POST' as any, 'https://angular.io/api/users'));
+    // Should clear both /api/users and /api/users?id=1 but NOT /api/other
+    expect(service.getStore().size).toBe(1);
+    expect(service.getStore().has('GET@https://angular.io/api/other')).toBeTrue();
+  });
+
+  it('strategy COLLECTION', () => {
+    const config: NgHttpCachingConfig = { clearCacheOnMutation: NgHttpCachingMutationStrategy.COLLECTION };
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching(config)],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+    service.clearCache();
+
+    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/users'), new HttpResponse({}));
+    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/users/24'), new HttpResponse({}));
+    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/other'), new HttpResponse({}));
+    expect(service.getStore().size).toBe(3);
+
+    service.clearCacheByMutation(new HttpRequest('DELETE' as any, 'https://angular.io/api/users/24'));
+    // Should clear /api/users/24 AND /api/users
+    expect(service.getStore().size).toBe(1);
+    expect(service.getStore().has('GET@https://angular.io/api/other')).toBeTrue();
+  });
+
+  it('custom function strategy', () => {
+    const config: NgHttpCachingConfig = {
+      clearCacheOnMutation: (req) => req.url.includes('users')
+    };
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching(config)],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+    service.clearCache();
+
+    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/users'), new HttpResponse({}));
+    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/other'), new HttpResponse({}));
+
+    service.clearCacheByMutation(new HttpRequest('POST' as any, 'https://angular.io/api/users'));
+    expect(service.getStore().size).toBe(0); // My mock logic for function strategy returns 'ALL' if true
+
+    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/other'), new HttpResponse({}));
+    service.clearCacheByMutation(new HttpRequest('POST' as any, 'https://angular.io/api/products'));
+    expect(service.getStore().size).toBe(1);
+  });
+
+  it('boolean shortcut true (ALL)', () => {
+    const config: NgHttpCachingConfig = { clearCacheOnMutation: true };
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching(config)],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+    service.clearCache();
+
+    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/users'), new HttpResponse({}));
+    service.clearCacheByMutation(new HttpRequest('POST' as any, 'https://angular.io/api/other'));
+    expect(service.getStore().size).toBe(0);
   });
 });

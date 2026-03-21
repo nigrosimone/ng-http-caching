@@ -1,7 +1,7 @@
 import { HttpEvent, HttpEventType, HttpHandler, HttpHeaders, HttpInterceptor, HttpRequest, HttpResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { asyncScheduler, Observable, of, scheduled } from 'rxjs';
-import { tap, shareReplay } from 'rxjs/operators';
+import { tap, shareReplay, finalize } from 'rxjs/operators';
 import { NgHttpCachingService, NgHttpCachingHeadersList } from './ng-http-caching.service';
 
 @Injectable()
@@ -45,11 +45,15 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
       tap(event => {
         if (event.type === HttpEventType.Response) {
           this.cacheService.addToCache(req, event);
-          // delete pending request
-          this.cacheService.deleteFromQueue(req);
         }
       }),
-      shareReplay()
+      finalize(() => {
+        // delete pending request
+        this.cacheService.deleteFromQueue(req);
+      }),
+      shareReplay({
+        bufferSize: 1, refCount: true
+      })
     );
 
     // add pending request to queue for cache parallel request

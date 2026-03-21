@@ -1,6 +1,6 @@
 import { Injectable, InjectionToken, VERSION, isDevMode, inject } from '@angular/core';
 import { HttpRequest, HttpResponse, HttpEvent, HttpContextToken, HttpContext, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs/internal/Observable';
+import type { Observable } from 'rxjs';
 import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
 import { NgHttpCachingMemoryStorage } from './storage/ng-http-caching-memory-storage';
 import { NgHttpCachingNgSimpleStateSentinel } from './storage/ng-http-caching-ng-simple-state-sentinel';
@@ -365,14 +365,17 @@ export class NgHttpCachingService {
       return false;
     }
     this.gcLock = true;
-    const keys: Array<string> = [];
-    this.config.store.forEach<K, T>((entry: NgHttpCachingEntry<K, T>, key: string) => {
-      if (this.isExpired(entry)) {
-        keys.push(key);
-      }
-    });
-    this.clearCacheByKeys(keys);
-    this.gcLock = false;
+    try {
+      const keys: Array<string> = [];
+      this.config.store.forEach<K, T>((entry: NgHttpCachingEntry<K, T>, key: string) => {
+        if (this.isExpired(entry)) {
+          keys.push(key);
+        }
+      });
+      this.clearCacheByKeys(keys);
+    } finally {
+      this.gcLock = false;
+    }
     return true;
   }
 

@@ -31,8 +31,7 @@
     "build": "ng build",
     "test": "ng test",
     "lint": "ng lint",
-    "e2e": "ng e2e",
-    "start-proxy": "ng serve --proxy-config proxy.config.json"
+    "e2e": "ng e2e"
   },
   "dependencies": {
     "@angular/animations": "^21.0.3",

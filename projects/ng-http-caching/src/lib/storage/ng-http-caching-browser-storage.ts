@@ -136,7 +136,7 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
                 const parsedItem: NgHttpCachingStorageEntry = JSON.parse(item);
                 return this.deserialize(parsedItem);
             } catch (e) {
-                console.warn('Failed to parse cached entry:', e);
+                console.error('Failed to parse cached entry:', key, e);
                 this.storage.removeItem(key);
                 return undefined;
             }
@@ -161,8 +161,12 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
         if (!key.startsWith(KEY_PREFIX)) {
             key = KEY_PREFIX + key;
         }
-        const unParsedItem: NgHttpCachingStorageEntry = this.serialize(value);
-        this.storage.setItem(key, JSON.stringify(unParsedItem));
+        try {
+            const unParsedItem: NgHttpCachingStorageEntry = this.serialize(value);
+            this.storage.setItem(key, JSON.stringify(unParsedItem));
+        } catch (error) {
+            console.error('Failed to serialize cache entry:', key, error);
+        }
     }
 
     protected serialize(value: NgHttpCachingEntry): NgHttpCachingStorageEntry {

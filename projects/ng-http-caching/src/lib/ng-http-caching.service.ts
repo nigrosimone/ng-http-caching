@@ -1,4 +1,4 @@
-import { Injectable, InjectionToken, VERSION, isDevMode, inject } from '@angular/core';
+import { Injectable, InjectionToken, VERSION, isDevMode, inject, OnDestroy } from '@angular/core';
 import { HttpRequest, HttpResponse, HttpEvent, HttpContextToken, HttpContext, HttpHeaders } from '@angular/common/http';
 import type { Observable } from 'rxjs';
 import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
@@ -209,7 +209,7 @@ export const NgHttpCachingConfigDefault: Readonly<NgHttpCachingDefaultConfig> = 
 };
 
 @Injectable({ providedIn: 'root' })
-export class NgHttpCachingService {
+export class NgHttpCachingService implements OnDestroy {
 
   private readonly queue = new Map<string, Observable<HttpEvent<any>>>();
 
@@ -646,5 +646,9 @@ export class NgHttpCachingService {
     Object.keys(object).forEach(key => this.deepFreeze((object as any)[key]));
 
     return object as Readonly<S>;
+  }
+
+  ngOnDestroy(): void {
+    this.queue.clear();
   }
 }

@@ -51,9 +51,11 @@ export const serializeResponse = (res: HttpResponse<any>): string => {
 export const deserializeRequest = <T = unknown>(req: string): HttpRequest<T> => {
     const request = JSON.parse(req);
     const headers = new HttpHeaders(request.headers);
-    const params = new HttpParams(); // Probably some way to make this a one-liner, but alas, there are no good docs
+    let params = new HttpParams();
     for (const parameter in request.params) {
-        request.params[parameter].forEach((paramValue: string) => params.append(parameter, paramValue));
+        for (const paramValue of request.params[parameter]) {
+            params = params.append(parameter, paramValue);
+        }
     }
     return new HttpRequest(request.method, request.url, request.body, {
         headers,

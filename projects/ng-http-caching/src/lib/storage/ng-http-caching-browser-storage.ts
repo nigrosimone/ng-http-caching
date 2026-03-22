@@ -48,7 +48,7 @@ export const serializeResponse = (res: HttpResponse<any>): string => {
     });
 }
 
-export const deserializeRequest = <T = any>(req: string): HttpRequest<T> => {
+export const deserializeRequest = <T = unknown>(req: string): HttpRequest<T> => {
     const request = JSON.parse(req);
     const headers = new HttpHeaders(request.headers);
     const params = new HttpParams(); // Probably some way to make this a one-liner, but alas, there are no good docs
@@ -63,7 +63,7 @@ export const deserializeRequest = <T = any>(req: string): HttpRequest<T> => {
     });
 }
 
-export const deserializeResponse = <T = any>(res: string): HttpResponse<T> => {
+export const deserializeResponse = <T = unknown>(res: string): HttpResponse<T> => {
     const response = JSON.parse(res);
     return new HttpResponse<T>({
         url: response.url,
@@ -165,6 +165,10 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
             const unParsedItem: NgHttpCachingStorageEntry = this.serialize(value);
             this.storage.setItem(key, JSON.stringify(unParsedItem));
         } catch (error) {
+            if ((error as Error).name === 'QuotaExceededError') {
+                // Handle storage quota exceeded
+                this.clear(); // Clear all cache entries
+            }
             console.error('Failed to serialize cache entry:', key, error);
         }
     }

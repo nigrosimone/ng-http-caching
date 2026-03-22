@@ -216,6 +216,7 @@ export class NgHttpCachingService {
   private readonly config: NgHttpCachingDefaultConfig;
 
   private gcLock = false;
+  private gcLastRun: number = 0;
 
   private devMode: boolean = isDevMode();
 
@@ -361,10 +362,11 @@ export class NgHttpCachingService {
    * Run garbage collector (delete expired cache entry)
    */
   runGc<K, T>(): boolean {
-    if (this.gcLock) {
+    if (this.gcLock || (this.gcLastRun && (Date.now() - this.gcLastRun < 1000))) {
       return false;
     }
     this.gcLock = true;
+    this.gcLastRun = Date.now();
     try {
       const keys: Array<string> = [];
       this.config.store.forEach<K, T>((entry: NgHttpCachingEntry<K, T>, key: string) => {

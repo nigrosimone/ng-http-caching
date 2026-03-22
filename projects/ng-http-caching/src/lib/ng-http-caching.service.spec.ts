@@ -945,6 +945,7 @@ describe('NgHttpCachingService: runGc', () => {
     expect(service.getFromCache(reqFresh)).toEqual(res);
 
     setTimeout(() => {
+      service['gcLastRun'] = 0;
       expect(service.runGc()).toBeTrue();
 
       expect(service.getFromCache(reqExp)).toBeUndefined();

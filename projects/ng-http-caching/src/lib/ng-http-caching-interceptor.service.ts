@@ -27,20 +27,20 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
     // Checked if there is pending response for this request
     const cachedObservable: Observable<HttpEvent<any>> | undefined = this.cacheService.getFromQueue(req);
     if (cachedObservable) {
-      // console.log('cachedObservable',cachedObservable);
+
       return cachedObservable;
     }
 
     // Checked if there is cached response for this request
     const cachedResponse: HttpResponse<any> | undefined = this.cacheService.getFromCache(req);
     if (cachedResponse) {
-      // console.log('cachedResponse');
+
       return scheduled(of(cachedResponse.clone()), asyncScheduler);
     }
 
     // If the request of going through for first time
     // then let the request proceed and cache the response
-    // console.log('sendRequest', req);
+
     const shared = this.sendRequest(req, next).pipe(
       tap(event => {
         if (event.type === HttpEventType.Response) {

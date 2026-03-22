@@ -23,8 +23,8 @@ export const serializeRequest = (req: HttpRequest<any>): string => {
         method: request.method, // The Request Method, e.g. GET, POST, DELETE
         url: request.url, // The URL
         params: Object.fromEntries( // Just a helper to make this into an object, not really required but makes the output nicer
-            request.headers.keys().map( // Get all of the headers
-                (key: string) => [key, request.headers.getAll(key)] // Get all of the corresponding values for the headers
+            Array.from(request.params.keys()).map(
+                (key: string) => [key, request.params.getAll(key)]
             )
         ), // The request parameters
         withCredentials: request.withCredentials, // Whether credentials are being sent
@@ -90,7 +90,7 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
     }
 
     clear(): void {
-        for (let i = this.storage.length; i >= 0; i--) {
+        for (let i = this.storage.length - 1; i >= 0; i--) {
             const key = this.storage.key(i);
             if (key && key.startsWith(KEY_PREFIX)) {
                 this.storage.removeItem(key);
@@ -132,8 +132,14 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
         }
         const item = this.storage.getItem(key);
         if (item) {
-            const parsedItem: NgHttpCachingStorageEntry = JSON.parse(item);
-            return this.deserialize(parsedItem);
+            try {
+                const parsedItem: NgHttpCachingStorageEntry = JSON.parse(item);
+                return this.deserialize(parsedItem);
+            } catch (e) {
+                console.warn('Failed to parse cached entry:', e);
+                this.storage.removeItem(key);
+                return undefined;
+            }
         }
         return undefined;
     }

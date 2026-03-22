@@ -64,9 +64,6 @@
               "base": "dist/ng-http-caching-demo"
             },
             "index": "projects/ng-http-caching-demo/src/index.html",
-            "polyfills": [
-              "projects/ng-http-caching-demo/src/polyfills.ts"
-            ],
             "tsConfig": "projects/ng-http-caching-demo/tsconfig.app.json",
             "inlineStyleLanguage": "sass",
             "assets": [
@@ -132,7 +129,6 @@
           "builder": "@angular/build:karma",
           "options": {
             "main": "projects/ng-http-caching-demo/src/test.ts",
-            "polyfills": ["projects/ng-http-caching-demo/src/polyfills.ts"],
             "tsConfig": "projects/ng-http-caching-demo/tsconfig.spec.json",
             "karmaConfig": "projects/ng-http-caching-demo/karma.conf.js",
             "inlineStyleLanguage": "sass",

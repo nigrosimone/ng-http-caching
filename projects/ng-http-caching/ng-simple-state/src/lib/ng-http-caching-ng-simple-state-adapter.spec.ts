@@ -53,7 +53,6 @@ describe('NgHttpCachingNgSimpleStateAdapter', () => {
         expect(cache).toBeTruthy();
         expect(cache?.response.body).toEqual({ OK: true });
 
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         let count = 0;
         store.forEach((value, key) => {
             count++;

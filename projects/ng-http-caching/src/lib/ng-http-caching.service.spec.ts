@@ -24,7 +24,6 @@ import { VERSION, Type } from '@angular/core';
 import { provideNgHttpCaching } from './ng-http-caching-provider';
 import { NgHttpCachingNgSimpleStateSentinel } from './storage/ng-http-caching-ng-simple-state-sentinel';
 import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
-import { HttpContext } from '@angular/common/http';
 
 
 describe('NgHttpCachingService: no config', () => {

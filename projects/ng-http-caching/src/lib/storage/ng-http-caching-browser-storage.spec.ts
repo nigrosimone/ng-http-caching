@@ -1,4 +1,4 @@
-import { HttpContext, HttpHeaders, HttpRequest, HttpResponse } from '@angular/common/http';
+import { HttpRequest, HttpResponse } from '@angular/common/http';
 import { NgHttpCachingBrowserStorage } from './ng-http-caching-browser-storage';
 import { NgHttpCachingEntry } from '../ng-http-caching.service';
 

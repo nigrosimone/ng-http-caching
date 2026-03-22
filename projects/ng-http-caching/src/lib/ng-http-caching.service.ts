@@ -386,7 +386,7 @@ export class NgHttpCachingService {
    */
   clearCacheByMutation<K>(req: HttpRequest<K>): boolean {
     const context = req.context.get(NG_HTTP_CACHING_CONTEXT);
-    let strategy = context.clearCacheOnMutation !== undefined ? context.clearCacheOnMutation : this.config.clearCacheOnMutation;
+    const strategy = context.clearCacheOnMutation !== undefined ? context.clearCacheOnMutation : this.config.clearCacheOnMutation;
 
     if (typeof strategy === 'function') {
       const result = strategy(req);

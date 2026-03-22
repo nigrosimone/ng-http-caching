@@ -1255,7 +1255,7 @@ describe('NgHttpCachingService: context and edge cases', () => {
   });
 
   it('checkCacheHeaders coverage', () => {
-    expect(checkCacheHeaders(new HttpHeaders({ 'cache-control': 'public, max-age=3600' }))).toBe(true);
+    expect(checkCacheHeaders(new HttpHeaders({ 'cache-control': 'public, max-age=3600' }))).toBe(3600000);
     expect(checkCacheHeaders(new HttpHeaders({ 'expires': 'invalid' }))).toBe(true);
   });
 

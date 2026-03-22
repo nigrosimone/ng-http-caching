@@ -11,7 +11,7 @@ export const NG_HTTP_CACHING_CONTEXT = new HttpContextToken<NgHttpCachingContext
 
 export const withNgHttpCachingContext = (value: NgHttpCachingContext, context: HttpContext = new HttpContext()) => context.set(NG_HTTP_CACHING_CONTEXT, value)
 
-export const checkCacheHeaders = (headers: HttpHeaders): boolean => {
+export const checkCacheHeaders = (headers: HttpHeaders): boolean | number => {
   // check Cache-Control
   const cacheControlHeader = headers.get('cache-control');
   if (cacheControlHeader) {
@@ -20,12 +20,18 @@ export const checkCacheHeaders = (headers: HttpHeaders): boolean => {
       return false;
     } else if (cacheControl.includes('no-cache')) {
       return false;
-    } else {
-      return true;
     }
+    // extract max-age value if present
+    const maxAgeMatch = cacheControl.match(/max-age\s*=\s*(\d+)/);
+    if (maxAgeMatch) {
+      const maxAgeSec = parseInt(maxAgeMatch[1], 10);
+      // return the max-age in milliseconds so the caller can use it as lifetime
+      return maxAgeSec * 1000;
+    }
+    return true;
   }
 
-  // check Expires header Expires if response is without Cache-Control
+  // check Expires header if response is without Cache-Control
   const expiresHeader = headers.get('expires');
   if (expiresHeader) {
     const expires = Date.parse(expiresHeader);
@@ -60,7 +66,7 @@ export interface NgHttpCachingEntry<K = any, T = any> {
   version: string;
 }
 
-export const NG_HTTP_CACHING_CONFIG = new InjectionToken<NgHttpCachingContext>(
+export const NG_HTTP_CACHING_CONFIG = new InjectionToken<NgHttpCachingConfig>(
   'ng-http-caching.config'
 );
 
@@ -185,6 +191,8 @@ export interface NgHttpCachingConfig {
    * Set the mutation strategy.
    * If `true`, it behaves like `NgHttpCachingMutationStrategy.ALL`.
    * If `false`, it behaves like `NgHttpCachingMutationStrategy.NONE`.
+   * If a custom function is provided, returning `true` will clear the **entire** cache store.
+   * Returning `false` (or `undefined`) will skip invalidation for that request.
    */
   clearCacheOnMutation?: NgHttpCachingMutationStrategy | boolean | (<K>(req: HttpRequest<K>) => boolean | undefined | void);
 }
@@ -208,6 +216,14 @@ export const NgHttpCachingConfigDefault: Readonly<NgHttpCachingDefaultConfig> = 
   clearCacheOnMutation: NgHttpCachingMutationStrategy.NONE
 };
 
+/**
+ * Creates a fresh default config with a new store instance.
+ * This avoids sharing a single Map across multiple service instances (important in tests).
+ */
+function createDefaultConfig(): NgHttpCachingDefaultConfig {
+  return { ...NgHttpCachingConfigDefault, store: new NgHttpCachingMemoryStorage() };
+}
+
 @Injectable({ providedIn: 'root' })
 export class NgHttpCachingService implements OnDestroy {
 
@@ -227,9 +243,9 @@ export class NgHttpCachingService implements OnDestroy {
       if (config.store instanceof NgHttpCachingNgSimpleStateSentinel) {
         config.store = inject(config.store.adapterClass);
       }
-      this.config = { ...NgHttpCachingConfigDefault, ...config } as NgHttpCachingDefaultConfig;
+      this.config = { ...createDefaultConfig(), ...config } as NgHttpCachingDefaultConfig;
     } else {
-      this.config = { ...NgHttpCachingConfigDefault };
+      this.config = createDefaultConfig();
     }
     // start cache clean
     this.runGc();
@@ -469,10 +485,16 @@ export class NgHttpCachingService implements OnDestroy {
     }
     // config/default lifetime
     let lifetime: number = this.config.lifetime;
-    // request has own lifetime
+    // request has own lifetime header (takes highest priority)
     const headerLifetime = entry.request.headers.get(NgHttpCachingHeaders.LIFETIME);
     if (headerLifetime) {
       lifetime = +headerLifetime;
+    } else if (this.config.checkResponseHeaders) {
+      // check response headers for max-age
+      const headerResult = checkCacheHeaders(entry.response.headers);
+      if (typeof headerResult === 'number') {
+        lifetime = headerResult;
+      }
     }
     // never expire if 0
     if (lifetime === 0) {
@@ -512,12 +534,14 @@ export class NgHttpCachingService implements OnDestroy {
       return false;
     }
 
-    let fromHeader = true;
     if (this.config.checkResponseHeaders) {
       // check if response headers allow cache
-      fromHeader = checkCacheHeaders(entry.response.headers);
+      const headerResult = checkCacheHeaders(entry.response.headers);
+      if (headerResult === false) {
+        return false;
+      }
     }
-    return entry.response.ok && fromHeader;
+    return entry.response.ok;
   }
 
   /**

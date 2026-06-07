@@ -2,8 +2,8 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "baseUrl": "./",
     "outDir": "./dist/out-tsc",
+    "rootDir": "./projects",
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
     "strict": true,
@@ -14,10 +14,10 @@
     "sourceMap": true,
     "paths": {
       "ng-http-caching": [
-        "projects/ng-http-caching/src/public-api.ts"
+        "./projects/ng-http-caching/src/public-api.ts"
       ],
       "ng-http-caching/ng-simple-state": [
-        "projects/ng-http-caching/ng-simple-state/src/public-api.ts"
+        "./projects/ng-http-caching/ng-simple-state/src/public-api.ts"
       ]
     },
     "declaration": false,
@@ -33,5 +33,8 @@
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
     "strictTemplates": true
-  }
+  },
+  "exclude": [
+    "**/*.spec.ts"
+  ]
 }

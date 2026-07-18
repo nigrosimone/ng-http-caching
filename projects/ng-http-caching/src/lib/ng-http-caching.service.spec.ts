@@ -1093,6 +1093,82 @@ describe('NgHttpCachingService: clearCacheByTag', () => {
 
   });
 
+  it('clearCacheByTag: matches tags in a comma separated list ignoring surrounding whitespace', () => {
+    const req = new HttpRequest('GET', 'https://angular.io/docs?foo=multi', null, {
+      headers: new HttpHeaders({
+        [NgHttpCachingHeaders.TAG]: 'foo, bar , baz',
+      }),
+    });
+    const res = new HttpResponse({ body: { foo: true } });
+
+    expect(service.addToCache(req, res)).toBeTrue();
+    // "bar" has surrounding whitespace in the header and must still match
+    expect(service.clearCacheByTag('bar')).toEqual(1);
+    expect(service.getFromCache(req)).toBeUndefined();
+  });
+
+  it('clearCacheByTag: returns 0 when no entry matches', () => {
+    const req = new HttpRequest('GET', 'https://angular.io/docs?foo=none', null, {
+      headers: new HttpHeaders({
+        [NgHttpCachingHeaders.TAG]: 'foo',
+      }),
+    });
+    expect(service.addToCache(req, new HttpResponse({ body: {} }))).toBeTrue();
+    expect(service.clearCacheByTag('does-not-exist')).toEqual(0);
+  });
+
+});
+
+describe('NgHttpCachingService: checkResponseHeaders lifetime', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching({ checkResponseHeaders: true })],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('caches a response with a positive max-age and expires it accordingly', () => {
+    const req = new HttpRequest('GET', 'https://angular.io/docs?foo=maxage');
+    const res = new HttpResponse({
+      body: { foo: true },
+      headers: new HttpHeaders({ 'cache-control': 'max-age=3600' }),
+    });
+    const entry: NgHttpCachingEntry = {
+      url: req.urlWithParams,
+      addedTime: Date.now(),
+      response: res,
+      request: req,
+      version: VERSION.major,
+    };
+    expect(service.isValid(entry)).toBeTrue();
+    expect(service.isExpired(entry)).toBeFalse();
+
+    // an entry cached more than max-age ago must be expired
+    const oldEntry: NgHttpCachingEntry = { ...entry, addedTime: Date.now() - (NG_HTTP_CACHING_HOUR_IN_MS + NG_HTTP_CACHING_SECOND_IN_MS) };
+    expect(service.isExpired(oldEntry)).toBeTrue();
+  });
+
+  it('does not cache a response with max-age=0 (must not live forever)', () => {
+    const req = new HttpRequest('GET', 'https://angular.io/docs?foo=zero');
+    const res = new HttpResponse({
+      body: { foo: true },
+      headers: new HttpHeaders({ 'cache-control': 'max-age=0' }),
+    });
+    // regression: max-age=0 previously made the entry valid AND never-expiring
+    expect(service.addToCache(req, res)).toBeFalse();
+    expect(service.getFromCache(req)).toBeUndefined();
+  });
+
+  it('does not cache a response with no-store', () => {
+    const req = new HttpRequest('GET', 'https://angular.io/docs?foo=nostore');
+    const res = new HttpResponse({
+      body: { foo: true },
+      headers: new HttpHeaders({ 'cache-control': 'no-store' }),
+    });
+    expect(service.addToCache(req, res)).toBeFalse();
+  });
 });
 
 describe('NgHttpCachingService: default isValid', () => {
@@ -1257,6 +1333,31 @@ describe('NgHttpCachingService: context and edge cases', () => {
   it('checkCacheHeaders coverage', () => {
     expect(checkCacheHeaders(new HttpHeaders({ 'cache-control': 'public, max-age=3600' }))).toBe(3600000);
     expect(checkCacheHeaders(new HttpHeaders({ 'expires': 'invalid' }))).toBe(true);
+  });
+
+  it('checkCacheHeaders: no-store and no-cache are not cacheable', () => {
+    expect(checkCacheHeaders(new HttpHeaders({ 'cache-control': 'no-store' }))).toBe(false);
+    expect(checkCacheHeaders(new HttpHeaders({ 'cache-control': 'no-cache' }))).toBe(false);
+  });
+
+  it('checkCacheHeaders: max-age=0 is not cacheable (must not be cached forever)', () => {
+    // `max-age=0` means immediately stale: it must NOT be interpreted as the
+    // "0 = never expire" lifetime sentinel.
+    expect(checkCacheHeaders(new HttpHeaders({ 'cache-control': 'public, max-age=0' }))).toBe(false);
+  });
+
+  it('checkCacheHeaders: no headers default to cacheable', () => {
+    expect(checkCacheHeaders(new HttpHeaders())).toBe(true);
+  });
+
+  it('checkCacheHeaders: expired Expires header is not cacheable', () => {
+    const past = new Date(Date.now() - NG_HTTP_CACHING_HOUR_IN_MS).toUTCString();
+    expect(checkCacheHeaders(new HttpHeaders({ 'expires': past }))).toBe(false);
+  });
+
+  it('checkCacheHeaders: future Expires header is cacheable', () => {
+    const future = new Date(Date.now() + NG_HTTP_CACHING_HOUR_IN_MS).toUTCString();
+    expect(checkCacheHeaders(new HttpHeaders({ 'expires': future }))).toBe(true);
   });
 
   it('isExpired: HttpContext override', () => {

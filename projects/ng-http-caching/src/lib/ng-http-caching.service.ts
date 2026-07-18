@@ -25,6 +25,12 @@ export const checkCacheHeaders = (headers: HttpHeaders): boolean | number => {
     const maxAgeMatch = cacheControl.match(/max-age\s*=\s*(\d+)/);
     if (maxAgeMatch) {
       const maxAgeSec = parseInt(maxAgeMatch[1], 10);
+      // `max-age=0` means the response is immediately stale, so it isn't cacheable.
+      // Returning a `0` lifetime here would collide with the "0 = never expire"
+      // sentinel used by `isExpired`, caching the response forever.
+      if (maxAgeSec === 0) {
+        return false;
+      }
       // return the max-age in milliseconds so the caller can use it as lifetime
       return maxAgeSec * 1000;
     }
@@ -367,7 +373,7 @@ export class NgHttpCachingService implements OnDestroy {
     const keys: Array<string> = [];
     this.config.store.forEach<K, T>((entry: NgHttpCachingEntry<K, T>, key: string) => {
       const tagHeader = entry.request.headers.get(NgHttpCachingHeaders.TAG);
-      if (tagHeader && tagHeader.split(',').includes(tag)) {
+      if (tagHeader && tagHeader.split(',').map(t => t.trim()).includes(tag)) {
         keys.push(key);
       }
     });

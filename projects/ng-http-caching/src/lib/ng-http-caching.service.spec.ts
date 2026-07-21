@@ -1538,3 +1538,45 @@ describe('NgHttpCachingService: clearCacheByMutation', () => {
     expect(service.getStore().size).toBe(0);
   });
 });
+
+describe('NgHttpCachingService: entry with a corrupted lifetime', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching()],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  const requestWithLifetime = (lifetime: string): HttpRequest<null> =>
+    new HttpRequest('GET', 'https://angular.io/docs?foo=bar', null, {
+      headers: new HttpHeaders({ [NgHttpCachingHeaders.LIFETIME]: lifetime }),
+    });
+
+  it('should not enter the cache', () => {
+    for (const lifetime of ['test', '-1']) {
+      const req = requestWithLifetime(lifetime);
+      expect(service.addToCache(req, new HttpResponse({ status: 200 }))).toBe(false);
+      expect(service.getStore().size).toBe(0);
+    }
+  });
+
+  it('runGc should drop it instead of throwing', () => {
+    // simulate an entry stored by a previous version (or a persistent store)
+    const req = requestWithLifetime('test');
+    service.getStore().set(service.getKey(req), {
+      url: req.urlWithParams,
+      response: new HttpResponse({ status: 200 }),
+      request: req,
+      addedTime: Date.now(),
+      version: VERSION.major,
+    });
+    expect(service.getStore().size).toBe(1);
+
+    // bypass the 1s throttle set by the runGc() call in the constructor
+    (service as unknown as { gcLastRun: number }).gcLastRun = 0;
+    expect(() => service.runGc()).not.toThrow();
+    expect(service.getStore().size).toBe(0);
+  });
+});

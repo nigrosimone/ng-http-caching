@@ -109,20 +109,28 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
     if (!key.startsWith(KEY_PREFIX)) {
       key = KEY_PREFIX + key;
     }
+    // report the real outcome, like `Map.delete` does
+    if (this.storage.getItem(key) === null) {
+      return false;
+    }
     this.storage.removeItem(key);
     return true;
   }
 
   forEach(callbackfn: (value: NgHttpCachingEntry, key: string) => void): void {
-    // iterate this.storage
+    // snapshot the keys first: `get` drops corrupted entries and the callback may
+    // delete entries too, both of which would shift the index based iteration
+    const keysWithPrefix: string[] = [];
     for (let i = 0, e = this.storage.length; i < e; i++) {
       const keyWithPrefix = this.storage.key(i);
       if (keyWithPrefix?.startsWith(KEY_PREFIX)) {
-        const value = this.get(keyWithPrefix);
-        if (value) {
-          const keyWithoutPrefix = keyWithPrefix.substring(KEY_PREFIX.length);
-          callbackfn(value, keyWithoutPrefix);
-        }
+        keysWithPrefix.push(keyWithPrefix);
+      }
+    }
+    for (const keyWithPrefix of keysWithPrefix) {
+      const value = this.get(keyWithPrefix);
+      if (value) {
+        callbackfn(value, keyWithPrefix.substring(KEY_PREFIX.length));
       }
     }
   }

@@ -11,7 +11,11 @@ import {
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { of, Observable, throwError, firstValueFrom } from 'rxjs';
 import { delay } from 'rxjs/operators';
-import { NgHttpCachingService, NgHttpCachingHeaders } from './ng-http-caching.service';
+import {
+  NgHttpCachingService,
+  NgHttpCachingHeaders,
+  NgHttpCachingMutationStrategy,
+} from './ng-http-caching.service';
 import { NgHttpCachingInterceptorService } from './ng-http-caching-interceptor.service';
 import { provideNgHttpCaching } from './ng-http-caching-provider';
 
@@ -275,5 +279,42 @@ describe('NgHttpCachingInterceptorService: cache headers', () => {
     const result = await firstValueFrom(interceptor.intercept(request, new BaseHandler(response)));
     expect(result).toBeTruthy();
     expect(service.getFromCache(request)).toBeUndefined();
+  }, 1000);
+});
+
+describe('NgHttpCachingInterceptorService: mutation on a cacheable method', () => {
+  let interceptor: NgHttpCachingInterceptorService;
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideNgHttpCaching({
+          allowedMethod: ['ALL'],
+          clearCacheOnMutation: NgHttpCachingMutationStrategy.ALL,
+        }),
+        provideHttpClient(withInterceptorsFromDi()),
+        provideHttpClientTesting(),
+      ],
+    });
+    interceptor = TestBed.inject(NgHttpCachingInterceptorService);
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  afterEach(() => {
+    service.clearCache();
+  });
+
+  it('should invalidate the cache even when the mutation itself is cacheable', async () => {
+    const get = new HttpRequest('GET', 'https://angular.io/items');
+    await firstValueFrom(interceptor.intercept(get, new MockHandler()));
+    expect(service.getFromCache(get)).toBeTruthy();
+
+    const post = new HttpRequest('POST', 'https://angular.io/items', { foo: 'bar' });
+    await firstValueFrom(interceptor.intercept(post, new MockHandler()));
+
+    expect(service.getFromCache(get)).toBeUndefined();
+    // the response of the mutation itself is still cached
+    expect(service.getFromCache(post)).toBeTruthy();
   }, 1000);
 });

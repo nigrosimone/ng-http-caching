@@ -119,4 +119,48 @@ describe('NgHttpCachingBrowserStorage', () => {
     mockStorage.setItem('other', 'val');
     expect(store.size).toBe(1);
   });
+
+  it('delete of a missing key should return false, like Map', () => {
+    expect(store.delete('missing')).toBe(false);
+    expect(store.delete('NgHttpCaching::missing')).toBe(false);
+  });
+
+  it('forEach should not skip entries when a corrupted one is dropped', () => {
+    const entry: NgHttpCachingEntry = {
+      url: 'http://test.com',
+      response: new HttpResponse({ body: 'test' }),
+      request: new HttpRequest('GET', 'http://test.com'),
+      addedTime: Date.now(),
+      version: '1',
+    };
+    // the corrupted entry is removed by `get` during the iteration
+    mockStorage.setItem('NgHttpCaching::corrupted', 'not-json');
+    store.set('k1', entry);
+    store.set('k2', entry);
+
+    const keys: string[] = [];
+    store.forEach((_val, key) => keys.push(key));
+    expect(keys.sort()).toEqual(['k1', 'k2']);
+  });
+
+  it('forEach should not skip entries when the callback deletes them', () => {
+    const entry: NgHttpCachingEntry = {
+      url: 'http://test.com',
+      response: new HttpResponse({ body: 'test' }),
+      request: new HttpRequest('GET', 'http://test.com'),
+      addedTime: Date.now(),
+      version: '1',
+    };
+    store.set('k1', entry);
+    store.set('k2', entry);
+    store.set('k3', entry);
+
+    const keys: string[] = [];
+    store.forEach((_val, key) => {
+      keys.push(key);
+      store.delete(key);
+    });
+    expect(keys.sort()).toEqual(['k1', 'k2', 'k3']);
+    expect(store.size).toBe(0);
+  });
 });

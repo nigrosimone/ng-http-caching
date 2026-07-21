@@ -50,6 +50,11 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
     const shared = this.sendRequest(req, next).pipe(
       tap((event) => {
         if (event.type === HttpEventType.Response) {
+          if (event.ok) {
+            // a mutation can be cacheable too (eg. `allowedMethod: ['ALL']`):
+            // invalidate before caching, so the response of this very request survives
+            this.cacheService.clearCacheByMutation(req);
+          }
           this.cacheService.addToCache(req, event);
         }
       }),

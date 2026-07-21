@@ -416,7 +416,15 @@ export class NgHttpCachingService implements OnDestroy {
     try {
       const keys: string[] = [];
       this.config.store.forEach<K, T>((entry: NgHttpCachingEntry<K, T>, key: string) => {
-        if (this.isExpired(entry)) {
+        let expired: boolean;
+        try {
+          expired = this.isExpired(entry);
+        } catch {
+          // an entry we can't evaluate (eg. corrupted lifetime, throwing custom `isExpired`)
+          // must not break every request going through the interceptor: drop it instead.
+          expired = true;
+        }
+        if (expired) {
           keys.push(key);
         }
       });
@@ -562,6 +570,16 @@ export class NgHttpCachingService implements OnDestroy {
     // different version
     if (this.config.version !== entry.version) {
       return false;
+    }
+
+    // an entry with an unusable lifetime would make `isExpired` throw on every read
+    // and on every garbage collection, so it must not enter the cache at all.
+    const headerLifetime = entry.request.headers.get(NgHttpCachingHeaders.LIFETIME);
+    if (headerLifetime) {
+      const lifetime = +headerLifetime;
+      if (isNaN(lifetime) || lifetime < 0) {
+        return false;
+      }
     }
 
     if (this.config.checkResponseHeaders) {

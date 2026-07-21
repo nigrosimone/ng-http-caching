@@ -24,6 +24,7 @@ import { VERSION } from '@angular/core';
 import { provideNgHttpCaching } from './ng-http-caching-provider';
 import { NgHttpCachingNgSimpleStateSentinel } from './storage/ng-http-caching-ng-simple-state-sentinel';
 import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
+import { NgHttpCachingMemoryStorage } from './storage/ng-http-caching-memory-storage';
 
 function sleep(time: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, time));
@@ -1760,5 +1761,123 @@ describe('NgHttpCachingService: function mutation strategy is limited to mutatio
       service.clearCacheByMutation(new HttpRequest('POST', 'https://angular.io/api/other', null)),
     ).toBe(false);
     expect(service.getStore().size).toBe(1);
+  });
+});
+
+describe('NgHttpCachingService: store factory', () => {
+  const inject2 = (config: NgHttpCachingConfig): NgHttpCachingService => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideNgHttpCaching(config)] });
+    return TestBed.inject(NgHttpCachingService);
+  };
+
+  it('should invoke the factory once per service instance', () => {
+    let created = 0;
+    const config: NgHttpCachingConfig = {
+      store: () => {
+        created++;
+        return new NgHttpCachingMemoryStorage();
+      },
+    };
+
+    const serviceA = inject2(config);
+    expect(created).toBe(1);
+    expect(serviceA.getStore()).toBeInstanceOf(NgHttpCachingMemoryStorage);
+
+    // a second injector, eg. another server side rendered request
+    const serviceB = inject2(config);
+    expect(created).toBe(2);
+    expect(serviceB.getStore()).not.toBe(serviceA.getStore());
+  });
+
+  it('should not share the cache between two service instances', () => {
+    const config: NgHttpCachingConfig = { store: () => new NgHttpCachingMemoryStorage() };
+    const req = new HttpRequest('GET', 'https://angular.io/docs?factory');
+
+    const serviceA = inject2(config);
+    serviceA.addToCache(req, new HttpResponse({ status: 200 }));
+    expect(serviceA.getStore().size).toBe(1);
+
+    const serviceB = inject2(config);
+    expect(serviceB.getStore().size).toBe(0);
+  });
+
+  it('a shared instance is still supported, and stays shared', () => {
+    const shared = new NgHttpCachingMemoryStorage();
+    const config: NgHttpCachingConfig = { store: shared };
+
+    const serviceA = inject2(config);
+    const serviceB = inject2(config);
+    expect(serviceA.getStore()).toBe(shared);
+    expect(serviceB.getStore()).toBe(shared);
+  });
+});
+
+describe('NgHttpCachingService: maxSize', () => {
+  const req = (id: string): HttpRequest<null> =>
+    new HttpRequest('GET', `https://angular.io/docs?id=${id}`);
+
+  const setup = (maxSize: number): NgHttpCachingService => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideNgHttpCaching({ maxSize })] });
+    return TestBed.inject(NgHttpCachingService);
+  };
+
+  it('should keep the store within the limit', () => {
+    const service = setup(3);
+    for (let i = 0; i < 10; i++) {
+      service.addToCache(req(String(i)), new HttpResponse({ status: 200 }));
+    }
+    expect(service.getStore().size).toBe(3);
+  });
+
+  it('should evict the least recently used entry', async () => {
+    const service = setup(2);
+
+    service.addToCache(req('a'), new HttpResponse({ status: 200 }));
+    await sleep(5);
+    service.addToCache(req('b'), new HttpResponse({ status: 200 }));
+    await sleep(5);
+    // reading "a" makes it the most recently used
+    expect(service.getFromCache(req('a'))).toBeTruthy();
+    await sleep(5);
+    service.addToCache(req('c'), new HttpResponse({ status: 200 }));
+
+    expect(service.getStore().size).toBe(2);
+    expect(service.getStore().has(service.getKey(req('a')))).toBe(true);
+    expect(service.getStore().has(service.getKey(req('c')))).toBe(true);
+    expect(service.getStore().has(service.getKey(req('b')))).toBe(false);
+  });
+
+  it('should evict in insertion order when nothing was ever read', async () => {
+    const service = setup(2);
+    service.addToCache(req('a'), new HttpResponse({ status: 200 }));
+    await sleep(5);
+    service.addToCache(req('b'), new HttpResponse({ status: 200 }));
+    await sleep(5);
+    service.addToCache(req('c'), new HttpResponse({ status: 200 }));
+
+    expect(service.getStore().has(service.getKey(req('a')))).toBe(false);
+    expect(service.getStore().has(service.getKey(req('b')))).toBe(true);
+    expect(service.getStore().has(service.getKey(req('c')))).toBe(true);
+  });
+
+  it('maxSize 0 should mean no limit', () => {
+    const service = setup(0);
+    for (let i = 0; i < 50; i++) {
+      service.addToCache(req(String(i)), new HttpResponse({ status: 200 }));
+    }
+    expect(service.getStore().size).toBe(50);
+  });
+
+  it('should be unlimited by default', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideNgHttpCaching()] });
+    const service = TestBed.inject(NgHttpCachingService);
+    expect(service.getConfig().maxSize).toBe(0);
+    for (let i = 0; i < 20; i++) {
+      service.addToCache(req(String(i)), new HttpResponse({ status: 200 }));
+    }
+    expect(service.getStore().size).toBe(20);
   });
 });

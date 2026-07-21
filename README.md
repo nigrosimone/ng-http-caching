@@ -73,10 +73,14 @@ This is all the configuration interface, see below for the detail of each config
 export interface NgHttpCachingConfig {
   version?: string;
   lifetime?: number;
+  maxSize?: number;
   allowedMethod?: string[];
   cacheStrategy?: NgHttpCachingStrategy;
   checkResponseHeaders?: boolean;
-  store?: NgHttpCachingStorageInterface | NgHttpCachingNgSimpleStateSentinel;
+  store?:
+    | NgHttpCachingStorageInterface
+    | NgHttpCachingNgSimpleStateSentinel
+    | (() => NgHttpCachingStorageInterface);
   isExpired?: (entry: NgHttpCachingEntry) => boolean | undefined | void;
   isValid?: (entry: NgHttpCachingEntry) => boolean | undefined | void;
   isCacheable?: (req: HttpRequest<any>) => boolean | undefined | void;
@@ -92,6 +96,20 @@ The default value is Angular major version (eg. 13), in this way, the cache is i
 ### lifetime (number - default: 3.600.000)
 Number of millisecond that a response is stored in the cache. 
 You can set specific "lifetime" for each request by add the header `X-NG-HTTP-CACHING-LIFETIME` (see example below).
+
+### maxSize (number - default: 0)
+Maximum number of entries kept into the cache store. When the limit is exceeded, the least
+recently used entries are evicted. `0` (the default) means no limit.
+
+```ts
+const ngHttpCachingConfig: NgHttpCachingConfig = {
+  maxSize: 100, // keep at most 100 responses
+};
+```
+
+The access time is tracked in memory by the service. For a persistent store
+(`localStorage`, `sessionStorage`) the entries restored by a previous page load have no
+known access time, so they are evicted by the time they were added until they are read again.
 
 ### checkResponseHeaders (boolean - default false);
 If true response headers cache-control and expires are respected.
@@ -157,6 +175,26 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
 Both are safe to use with server side rendering: when `localStorage`/`sessionStorage` isn't
 reachable (SSR, prerendering, sandboxed iframe, storage disabled by the user) they
 transparently fall back to an in-memory storage, so nothing is persisted and nothing throws.
+
+#### Server side rendering: pass a factory, not an instance
+
+`store` also accepts a factory. This matters with server side rendering: the config object
+is created once, when its module is loaded, so a store **instance** put in there is shared
+by every request the server renders — and with it the cached responses of every user.
+A factory is invoked once per `NgHttpCachingService`, so each rendered request gets its own:
+
+```ts
+import { NgHttpCachingConfig, withNgHttpCachingMemoryStorage } from 'ng-http-caching';
+
+const ngHttpCachingConfig: NgHttpCachingConfig = {
+  // ✅ one store per request
+  store: () => withNgHttpCachingMemoryStorage(),
+  // ❌ one store shared by all the server side rendered requests
+  // store: withNgHttpCachingMemoryStorage(),
+};
+```
+
+In the browser there is a single user per process, so both forms behave the same.
 
 and a `withNgHttpCachingNgSimpleState` adapter for use [ng-simple-state](https://www.npmjs.com/package/ng-simple-state) as the cache storage.
 
@@ -708,6 +746,51 @@ export class AppComponent {
   }
 }
 ```
+
+## Limitations
+
+`NgHttpCaching` is a TTL cache with request deduplication, **not** a full implementation of
+the HTTP caching semantics. Know what it doesn't do before you rely on it.
+
+### ⚠️ The cache key ignores the request headers
+
+The default key is `method@url` (see the `getKey` section):
+two requests to the same URL share the same cache entry **even if they carry different
+headers**. For an `Authorization` header this means that, after a user switch, the previous
+user's response can still be served from the cache.
+
+If you cache anything user specific, do one of the following:
+
+- clear the cache when the identity changes — the simplest and safest option:
+
+  ```ts
+  // on login, logout, tenant or language switch
+  this.ngHttpCachingService.clearCache();
+  ```
+
+- or make the identity part of the key:
+
+  ```ts
+  const ngHttpCachingConfig: NgHttpCachingConfig = {
+    getKey: (req) => req.method + '@' + req.urlWithParams + '@' + (req.headers.get('Authorization') ?? ''),
+  };
+  ```
+
+- or keep user specific requests out of the cache entirely, with the
+  `X-NG-HTTP-CACHING-DISALLOW-CACHE` header or a custom `isCacheable`.
+
+### `Vary` is not supported
+
+The `Vary` response header is ignored. A response negotiated on `Accept-Language`,
+`Accept-Encoding` or any other header is served to every request matching the cache key,
+whatever the negotiation was. Use `getKey` to include the relevant headers yourself.
+
+### No conditional revalidation
+
+There is no `ETag`/`Last-Modified` handling and no conditional request (`If-None-Match`,
+`If-Modified-Since`, `304 Not Modified`). An entry is either fresh, and used as is, or
+expired, and refetched in full. Likewise `no-cache` is treated as "don't store" rather than
+"store, but revalidate before use".
 
 ## Alternatives
 

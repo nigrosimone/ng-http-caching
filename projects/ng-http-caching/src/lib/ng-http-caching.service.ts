@@ -184,13 +184,26 @@ export const NG_HTTP_CACHING_YEAR_IN_MS = NG_HTTP_CACHING_DAY_IN_MS * 365;
 export interface NgHttpCachingConfig {
   /**
    * Set the cache store. You can implement your custom store by implement the `NgHttpCachingStorageInterface` interface, eg.:
+   *
+   * A factory can be provided instead of an instance: it is invoked once per
+   * `NgHttpCachingService`, in the injection context, so that every server side rendered
+   * request gets its own store instead of sharing one across all the rendered requests.
    */
-  store?: NgHttpCachingStorageInterface | NgHttpCachingNgSimpleStateSentinel;
+  store?:
+    | NgHttpCachingStorageInterface
+    | NgHttpCachingNgSimpleStateSentinel
+    | (() => NgHttpCachingStorageInterface);
   /**
    * Number of millisecond that a response is stored in the cache.
    * You can set specific "lifetime" for each request by add the header `X-NG-HTTP-CACHING-LIFETIME` (see example below).
    */
   lifetime?: number;
+  /**
+   * Maximum number of entries kept into the cache store.
+   * When the limit is exceeded, the least recently used entries are evicted.
+   * `0` (the default) means no limit.
+   */
+  maxSize?: number;
   /**
    * Array of allowed HTTP methods to cache.
    * You can allow multiple methods, eg.: `['GET', 'POST', 'PUT', 'DELETE', 'HEAD']` or
@@ -251,6 +264,7 @@ export interface NgHttpCachingConfig {
 export interface NgHttpCachingDefaultConfig extends NgHttpCachingConfig {
   store: NgHttpCachingStorageInterface;
   lifetime: number;
+  maxSize: number;
   allowedMethod: string[];
   cacheStrategy: NgHttpCachingStrategy;
   version: string;
@@ -264,6 +278,7 @@ export const NgHttpCachingConfigDefault: Readonly<NgHttpCachingDefaultConfig> = 
     return new NgHttpCachingMemoryStorage();
   },
   lifetime: NG_HTTP_CACHING_HOUR_IN_MS,
+  maxSize: 0,
   version: VERSION.major,
   allowedMethod: ['GET', 'HEAD'],
   cacheStrategy: NgHttpCachingStrategy.ALLOW_ALL,
@@ -285,6 +300,13 @@ export class NgHttpCachingService implements OnDestroy {
 
   private readonly config: NgHttpCachingDefaultConfig;
 
+  /**
+   * Last access time by cache key, used to evict the least recently used entries when
+   * `maxSize` is exceeded. It is kept here, and not into the entries, so that reading
+   * from the cache doesn't need to write back to the store.
+   */
+  private readonly lastAccess = new Map<string, number>();
+
   private gcLock = false;
   private gcLastRun = 0;
 
@@ -298,6 +320,10 @@ export class NgHttpCachingService implements OnDestroy {
       const config: NgHttpCachingConfig = { ...userConfig };
       if (config.store instanceof NgHttpCachingNgSimpleStateSentinel) {
         config.store = inject(config.store.adapterClass);
+      } else if (typeof config.store === 'function') {
+        // a factory: invoked here, in the injection context, so that every service
+        // instance (eg. every server side rendered request) owns its store
+        config.store = config.store();
       }
       this.config = { ...createDefaultConfig(), ...config } as NgHttpCachingDefaultConfig;
     } else {
@@ -344,6 +370,8 @@ export class NgHttpCachingService implements OnDestroy {
       return undefined;
     }
 
+    this.lastAccess.set(key, Date.now());
+
     return this.deepFreeze(cached.response);
   }
 
@@ -361,9 +389,29 @@ export class NgHttpCachingService implements OnDestroy {
     if (this.isValid(entry)) {
       const key: string = this.getKey(req);
       this.config.store.set(key, entry);
+      this.lastAccess.set(key, entry.addedTime);
+      this.enforceMaxSize();
       return true;
     }
     return false;
+  }
+
+  /**
+   * Evict the least recently used entries until the store fits into `maxSize`
+   */
+  private enforceMaxSize<K, T>(): void {
+    const maxSize = this.config.maxSize;
+    if (!maxSize || maxSize < 1 || this.config.store.size <= maxSize) {
+      return;
+    }
+    const keys: { key: string; lastAccess: number }[] = [];
+    this.config.store.forEach<K, T>((entry: NgHttpCachingEntry<K, T>, key: string) => {
+      // when the last access is unknown (eg. an entry restored from a persistent store
+      // by a previous page load) fall back to the time the entry was added
+      keys.push({ key, lastAccess: this.lastAccess.get(key) ?? entry.addedTime });
+    });
+    keys.sort((a, b) => a.lastAccess - b.lastAccess);
+    this.clearCacheByKeys(keys.slice(0, keys.length - maxSize).map((k) => k.key));
   }
 
   /**
@@ -378,6 +426,7 @@ export class NgHttpCachingService implements OnDestroy {
    * Clear the cache
    */
   clearCache(): void {
+    this.lastAccess.clear();
     this.config.store.clear();
   }
 
@@ -385,6 +434,7 @@ export class NgHttpCachingService implements OnDestroy {
    * Clear the cache by key
    */
   clearCacheByKey(key: string): boolean {
+    this.lastAccess.delete(key);
     return this.config.store.delete(key);
   }
 
@@ -769,5 +819,6 @@ export class NgHttpCachingService implements OnDestroy {
 
   ngOnDestroy(): void {
     this.queue.clear();
+    this.lastAccess.clear();
   }
 }

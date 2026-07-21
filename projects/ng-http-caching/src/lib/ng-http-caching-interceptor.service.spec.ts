@@ -5,6 +5,7 @@ import {
   HttpResponse,
   HttpEvent,
   HttpHeaders,
+  HttpContext,
   provideHttpClient,
   withInterceptorsFromDi,
 } from '@angular/common/http';
@@ -15,6 +16,9 @@ import {
   NgHttpCachingService,
   NgHttpCachingHeaders,
   NgHttpCachingMutationStrategy,
+  NgHttpCachingStrategy,
+  NgHttpCachingConfig,
+  withNgHttpCachingContext,
 } from './ng-http-caching.service';
 import { NgHttpCachingInterceptorService } from './ng-http-caching-interceptor.service';
 import { provideNgHttpCaching } from './ng-http-caching-provider';
@@ -316,5 +320,190 @@ describe('NgHttpCachingInterceptorService: mutation on a cacheable method', () =
     expect(service.getFromCache(get)).toBeUndefined();
     // the response of the mutation itself is still cached
     expect(service.getFromCache(post)).toBeTruthy();
+  }, 1000);
+});
+
+/**
+ * Counts how many times the backend was actually reached.
+ */
+class CountingHandler extends HttpHandler {
+  public calls = 0;
+  constructor(private readonly delayMs = 0) {
+    super();
+  }
+  handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
+    this.calls++;
+    const res = new HttpResponse({
+      status: 200,
+      body: { call: this.calls, url: req.urlWithParams },
+    });
+    return this.delayMs > 0 ? of(res).pipe(delay(this.delayMs)) : of(res);
+  }
+}
+
+function setup(config?: NgHttpCachingConfig): {
+  interceptor: NgHttpCachingInterceptorService;
+  service: NgHttpCachingService;
+} {
+  TestBed.resetTestingModule();
+  TestBed.configureTestingModule({
+    providers: [
+      config ? provideNgHttpCaching(config) : provideNgHttpCaching(),
+      provideHttpClient(withInterceptorsFromDi()),
+      provideHttpClientTesting(),
+    ],
+  });
+  return {
+    interceptor: TestBed.inject(NgHttpCachingInterceptorService),
+    service: TestBed.inject(NgHttpCachingService),
+  };
+}
+
+const GET = (url: string, options?: { headers?: HttpHeaders; context?: HttpContext }) =>
+  new HttpRequest('GET', url, options);
+
+describe('NgHttpCachingInterceptorService: behaviour through the interceptor', () => {
+  it('a cache hit should not reach the backend', async () => {
+    const { interceptor } = setup();
+    const handler = new CountingHandler();
+    const req = GET('https://angular.io/docs?hit');
+
+    const first = await firstValueFrom(interceptor.intercept(req, handler));
+    const second = await firstValueFrom(interceptor.intercept(req, handler));
+
+    expect(handler.calls).toBe(1);
+    expect((first as HttpResponse<any>).body).toEqual((second as HttpResponse<any>).body);
+  }, 1000);
+
+  it('an expired entry should reach the backend again', async () => {
+    const { interceptor } = setup({ lifetime: 20 });
+    const handler = new CountingHandler();
+    const req = GET('https://angular.io/docs?expire');
+
+    await firstValueFrom(interceptor.intercept(req, handler));
+    await sleep(40);
+    await firstValueFrom(interceptor.intercept(req, handler));
+
+    expect(handler.calls).toBe(2);
+  }, 1000);
+
+  it('the X-NG-HTTP-CACHING-LIFETIME header should drive the expiration', async () => {
+    const { interceptor } = setup();
+    const handler = new CountingHandler();
+    const req = GET('https://angular.io/docs?header-lifetime', {
+      headers: new HttpHeaders({ [NgHttpCachingHeaders.LIFETIME]: '20' }),
+    });
+
+    await firstValueFrom(interceptor.intercept(req, handler));
+    await sleep(40);
+    await firstValueFrom(interceptor.intercept(req, handler));
+
+    expect(handler.calls).toBe(2);
+  }, 1000);
+
+  it('the queue should be empty once the request completed', async () => {
+    const { interceptor, service } = setup();
+    await firstValueFrom(
+      interceptor.intercept(GET('https://angular.io/docs?q'), new CountingHandler()),
+    );
+    expect(service.getQueue().size).toBe(0);
+  }, 1000);
+
+  it('an error should empty the queue and cache nothing', async () => {
+    const { interceptor, service } = setup();
+    await expect(
+      firstValueFrom(
+        interceptor.intercept(GET('https://angular.io/docs?err'), new ErrorMockHandler()),
+      ),
+    ).rejects.toBe('This is an error!');
+    expect(service.getQueue().size).toBe(0);
+    expect(service.getStore().size).toBe(0);
+  }, 1000);
+
+  it('DISALLOW_ALL should cache only the requests carrying the allow header', async () => {
+    const { interceptor, service } = setup({
+      cacheStrategy: NgHttpCachingStrategy.DISALLOW_ALL,
+    });
+    const handler = new CountingHandler();
+
+    await firstValueFrom(interceptor.intercept(GET('https://angular.io/docs?plain'), handler));
+    expect(service.getStore().size).toBe(0);
+
+    await firstValueFrom(
+      interceptor.intercept(
+        GET('https://angular.io/docs?allowed', {
+          headers: new HttpHeaders({ [NgHttpCachingHeaders.ALLOW_CACHE]: '1' }),
+        }),
+        handler,
+      ),
+    );
+    expect(service.getStore().size).toBe(1);
+  }, 1000);
+
+  it('a context override should win over the config', async () => {
+    const { interceptor, service } = setup();
+    const context = withNgHttpCachingContext({ isCacheable: () => false });
+
+    await firstValueFrom(
+      interceptor.intercept(GET('https://angular.io/docs?ctx', { context }), new CountingHandler()),
+    );
+
+    expect(service.getStore().size).toBe(0);
+  }, 1000);
+
+  it('IDENTICAL should invalidate only the mutated url', async () => {
+    const { interceptor, service } = setup({
+      clearCacheOnMutation: NgHttpCachingMutationStrategy.IDENTICAL,
+    });
+    const handler = new CountingHandler();
+
+    await firstValueFrom(interceptor.intercept(GET('https://angular.io/api/users'), handler));
+    await firstValueFrom(interceptor.intercept(GET('https://angular.io/api/posts'), handler));
+    expect(service.getStore().size).toBe(2);
+
+    await firstValueFrom(
+      interceptor.intercept(new HttpRequest('POST', 'https://angular.io/api/users', {}), handler),
+    );
+
+    expect(service.getStore().has('GET@https://angular.io/api/users')).toBe(false);
+    expect(service.getStore().has('GET@https://angular.io/api/posts')).toBe(true);
+  }, 1000);
+
+  it('COLLECTION should invalidate also the parent collection', async () => {
+    const { interceptor, service } = setup({
+      clearCacheOnMutation: NgHttpCachingMutationStrategy.COLLECTION,
+    });
+    const handler = new CountingHandler();
+
+    await firstValueFrom(interceptor.intercept(GET('https://angular.io/api/users'), handler));
+    await firstValueFrom(interceptor.intercept(GET('https://angular.io/api/users/24'), handler));
+    await firstValueFrom(interceptor.intercept(GET('https://angular.io/api/other'), handler));
+    expect(service.getStore().size).toBe(3);
+
+    await firstValueFrom(
+      interceptor.intercept(new HttpRequest('DELETE', 'https://angular.io/api/users/24'), handler),
+    );
+
+    expect(service.getStore().size).toBe(1);
+    expect(service.getStore().has('GET@https://angular.io/api/other')).toBe(true);
+  }, 1000);
+
+  it('maxSize should evict the least recently used entry', async () => {
+    const { interceptor, service } = setup({ maxSize: 2 });
+    const handler = new CountingHandler();
+
+    await firstValueFrom(interceptor.intercept(GET('https://angular.io/a'), handler));
+    await sleep(5);
+    await firstValueFrom(interceptor.intercept(GET('https://angular.io/b'), handler));
+    await sleep(5);
+    // touch "a": it becomes the most recently used
+    await firstValueFrom(interceptor.intercept(GET('https://angular.io/a'), handler));
+    await sleep(5);
+    await firstValueFrom(interceptor.intercept(GET('https://angular.io/c'), handler));
+
+    expect(service.getStore().size).toBe(2);
+    expect(service.getStore().has('GET@https://angular.io/a')).toBe(true);
+    expect(service.getStore().has('GET@https://angular.io/c')).toBe(true);
+    expect(service.getStore().has('GET@https://angular.io/b')).toBe(false);
   }, 1000);
 });

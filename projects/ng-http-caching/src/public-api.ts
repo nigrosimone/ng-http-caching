@@ -10,4 +10,5 @@ export * from './lib/storage/ng-http-caching-memory-storage';
 export * from './lib/storage/ng-http-caching-local-storage';
 export * from './lib/storage/ng-http-caching-session-storage';
 export * from './lib/storage/ng-http-caching-browser-storage';
+export * from './lib/storage/ng-http-caching-web-storage';
 export * from './lib/storage/ng-http-caching-ng-simple-state-sentinel';

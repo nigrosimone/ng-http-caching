@@ -17,6 +17,7 @@ See the [stackblitz demo](https://stackblitz.com/edit/demo-ng-http-caching-21?fi
 ✅ LocalStorage, SessionStorage, MemoryStorage and custom cache storage<br>
 ✅ Check response headers cache-control and expires<br>
 ✅ Automatic cache invalidation on mutations (POST, PUT, DELETE, PATCH)<br>
+✅ Server side rendering (SSR) safe<br>
 
 ## Get Started
 
@@ -141,6 +142,10 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
   store: withNgHttpCachingSessionStorage(),
 };
 ```
+
+Both are safe to use with server side rendering: when `localStorage`/`sessionStorage` isn't
+reachable (SSR, prerendering, sandboxed iframe, storage disabled by the user) they
+transparently fall back to an in-memory storage, so nothing is persisted and nothing throws.
 
 and a `withNgHttpCachingNgSimpleState` adapter for use [ng-simple-state](https://www.npmjs.com/package/ng-simple-state) as the cache storage.
 

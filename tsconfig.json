@@ -16,9 +16,7 @@
     "noFallthroughCasesInSwitch": true,
     "sourceMap": true,
     "paths": {
-      "ng-http-caching": [
-        "./projects/ng-http-caching/src/public-api.ts"
-      ],
+      "ng-http-caching": ["./projects/ng-http-caching/src/public-api.ts"],
       "ng-http-caching/ng-simple-state": [
         "./projects/ng-http-caching/ng-simple-state/src/public-api.ts"
       ]
@@ -35,7 +33,5 @@
     "strictInputAccessModifiers": true,
     "strictTemplates": true
   },
-  "exclude": [
-    "**/*.spec.ts"
-  ]
+  "exclude": ["**/*.spec.ts"]
 }

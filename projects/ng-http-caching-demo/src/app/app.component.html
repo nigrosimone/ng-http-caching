@@ -2,7 +2,7 @@
   <ul class="form-style-1">
     <li>
       <label>URL <span class="required">*</span></label>
-      <input type="text" [(ngModel)]="url" style="width: 400px;" />
+      <input type="text" [(ngModel)]="url" style="width: 400px" />
     </li>
     <li>
       <label>Add TAG to request</label>
@@ -14,23 +14,21 @@
     </li>
     <li>
       <label>Mark request as "NO CACHEABLE"</label>
-      <input type="checkbox" [(ngModel)]="nocache" [ngModelOptions]="{standalone: true}" />
+      <input type="checkbox" [(ngModel)]="nocache" [ngModelOptions]="{ standalone: true }" />
     </li>
     <li>
       <select [(ngModel)]="typeOfRequest">
-        @for(t of typeOfRequests(); track t){
-        <option [ngValue]="t">{{ t }}</option>
+        @for (t of typeOfRequests(); track t) {
+          <option [ngValue]="t">{{ t }}</option>
         }
       </select>
       <button (click)="getRequest()">EXECUTE REQUEST</button>
       <br />
-      @if(timeSpan() !== null){
-      <em>
-        HTTP server respond in {{ timeSpan() }} ms
-      </em>
+      @if (timeSpan() !== null) {
+        <em> HTTP server respond in {{ timeSpan() }} ms </em>
       }
-      @if(count()){
-      <em> (for {{ count() }} requests)</em>
+      @if (count()) {
+        <em> (for {{ count() }} requests)</em>
       }
     </li>
     <li>
@@ -74,22 +72,22 @@
       <th>Status</th>
     </thead>
     <tbody>
-      @for(cachedKey of cachedKeys(); track trackByCachedKey(cachedKey)){
-      <tr [class.queue]="cachedKey.status === 'queue'">
-        <td style="width: 30%; text-align: left;">
-          {{ cachedKey.key }}
-        </td>
-        <td style="width: 60%; text-align: left;">
-          {{ cachedKey.headers | json }}
-        </td>
-        <td style="width: 10%; text-align: left;">
-          {{ cachedKey.status }}
-        </td>
-      </tr>
+      @for (cachedKey of cachedKeys(); track trackByCachedKey(cachedKey)) {
+        <tr [class.queue]="cachedKey.status === 'queue'">
+          <td style="width: 30%; text-align: left">
+            {{ cachedKey.key }}
+          </td>
+          <td style="width: 60%; text-align: left">
+            {{ cachedKey.headers | json }}
+          </td>
+          <td style="width: 10%; text-align: left">
+            {{ cachedKey.status }}
+          </td>
+        </tr>
       } @empty {
-      <tr>
-        <td style="text-align: center;" colspan="3">No cached keys</td>
-      </tr>
+        <tr>
+          <td style="text-align: center" colspan="3">No cached keys</td>
+        </tr>
       }
     </tbody>
   </table>

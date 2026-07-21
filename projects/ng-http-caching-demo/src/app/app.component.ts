@@ -8,12 +8,12 @@ import {
   NgHttpCachingHeaders,
   NgHttpCachingConfig,
   NgHttpCachingHeadersList,
-  withNgHttpCachingContext
+  withNgHttpCachingContext,
 } from 'ng-http-caching';
 
 interface CachedKey {
   key: string;
-  headers: Array<Record<string, string>>;
+  headers: Record<string, string>[];
   status: 'cached' | 'queue';
 }
 
@@ -22,7 +22,7 @@ interface CachedKey {
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule]
+  imports: [CommonModule, FormsModule],
 })
 export class AppComponent implements OnInit {
   private readonly ngHttpCachingService = inject(NgHttpCachingService);
@@ -43,7 +43,7 @@ export class AppComponent implements OnInit {
         }
       }
       return true;
-    }
+    },
   });
   public readonly timeSpan = signal<number | null>(null);
   public readonly nocache = signal(false);
@@ -74,8 +74,8 @@ export class AppComponent implements OnInit {
     const timeStart = new Date();
 
     /**
-    * @see https://github.com/nigrosimone/ng-http-caching?tab=readme-ov-file#headers
-    */
+     * @see https://github.com/nigrosimone/ng-http-caching?tab=readme-ov-file#headers
+     */
     let headers = new HttpHeaders();
     if (this.tag()) {
       headers = headers.set(NgHttpCachingHeaders.TAG, this.tag());
@@ -89,9 +89,9 @@ export class AppComponent implements OnInit {
     }
 
     /**
-    * You can override NgHttpCachingConfig
-    * @see https://github.com/nigrosimone/ng-http-caching?tab=readme-ov-file#httpcontext
-    */
+     * You can override NgHttpCachingConfig
+     * @see https://github.com/nigrosimone/ng-http-caching?tab=readme-ov-file#httpcontext
+     */
     const context = withNgHttpCachingContext({
       isExpired: () => {
         console.log('context:isExpired');
@@ -104,22 +104,18 @@ export class AppComponent implements OnInit {
       },
       isValid: () => {
         console.log('context:isValid');
-      }
+      },
     });
 
     switch (this.typeOfRequest()) {
       case 'SEQUENTIAL': {
         // test sequential requests
-        const result1 = await lastValueFrom(
-          this.http.get(this.url(), { headers, context })
-        );
+        const result1 = await lastValueFrom(this.http.get(this.url(), { headers, context }));
         console.log('Sequential response 1', result1);
-        this.count.update(value => value + 1);
-        const result2 = await lastValueFrom(
-          this.http.get(this.url(), { headers, context })
-        );
+        this.count.update((value) => value + 1);
+        const result2 = await lastValueFrom(this.http.get(this.url(), { headers, context }));
         console.log('Sequential response 2', result2);
-        this.count.update(value => value + 1);
+        this.count.update((value) => value + 1);
         this.timeSpan.set(new Date().getTime() - timeStart.getTime());
         this.updateCachedKeys();
         break;
@@ -130,8 +126,8 @@ export class AppComponent implements OnInit {
           lastValueFrom(this.http.get(this.url(), { headers, context })),
           lastValueFrom(this.http.get(this.url(), { headers, context })),
         ]);
-        this.count.update(value => value + 1);
-        this.count.update(value => value + 1);
+        this.count.update((value) => value + 1);
+        this.count.update((value) => value + 1);
         this.timeSpan.set(new Date().getTime() - timeStart.getTime());
         this.updateCachedKeys();
         console.log('Parallel responses', results);
@@ -141,10 +137,10 @@ export class AppComponent implements OnInit {
         // test nested requests
         this.http.get(this.url(), { headers, context }).subscribe((result1) => {
           console.log('Nested response 1', result1);
-          this.count.update(value => value + 1);
+          this.count.update((value) => value + 1);
           this.http.get(this.url(), { headers, context }).subscribe((result2) => {
             console.log('Nested response 2', result2);
-            this.count.update(value => value + 1);
+            this.count.update((value) => value + 1);
             this.timeSpan.set(new Date().getTime() - timeStart.getTime());
             this.updateCachedKeys();
           });
@@ -184,17 +180,14 @@ export class AppComponent implements OnInit {
     const keys: CachedKey[] = [];
 
     this.ngHttpCachingService.getStore().forEach((value, key) => {
-      const headers: Array<Record<string, string>> = [];
-      NgHttpCachingHeadersList.forEach(
-        (ngHttpCachingHeaders: NgHttpCachingHeaders) => {
-          if (value.request.headers.has(ngHttpCachingHeaders)) {
-            headers.push({
-              [ngHttpCachingHeaders]:
-                value.request.headers.get(ngHttpCachingHeaders) as string,
-            });
-          }
+      const headers: Record<string, string>[] = [];
+      NgHttpCachingHeadersList.forEach((ngHttpCachingHeaders: NgHttpCachingHeaders) => {
+        if (value.request.headers.has(ngHttpCachingHeaders)) {
+          headers.push({
+            [ngHttpCachingHeaders]: value.request.headers.get(ngHttpCachingHeaders)!,
+          });
         }
-      );
+      });
       keys.push({ key, headers, status: 'cached' });
     });
     this.ngHttpCachingService.getQueue().forEach((_, key) => {

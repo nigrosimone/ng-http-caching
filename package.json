@@ -31,7 +31,9 @@
     "build": "ng build",
     "test": "ng test",
     "lint": "ng lint",
-    "test:ci": "ng test ng-http-caching --coverage --no-watch"
+    "test:ci": "ng test ng-http-caching --coverage --no-watch",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@angular/common": "^22.0.0",
@@ -67,10 +69,12 @@
     "@vitest/coverage-v8": "^4.1.10",
     "angular-eslint": "^22.0.0",
     "eslint": "^10.4.1",
+    "eslint-config-prettier": "^10.1.8",
     "globals": "^17.6.0",
     "jsdom": "^29.1.1",
     "ng-packagr": "^22.0.0",
     "ng-simple-state": "^21.1.5",
+    "prettier": "^3.9.5",
     "typescript": "^6.0.3",
     "vitest": "^4.0.8"
   },

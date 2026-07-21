@@ -1,5 +1,13 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpRequest, HttpHandler, HttpResponse, HttpEvent, HttpHeaders, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import {
+  HttpRequest,
+  HttpHandler,
+  HttpResponse,
+  HttpEvent,
+  HttpHeaders,
+  provideHttpClient,
+  withInterceptorsFromDi,
+} from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { of, Observable, throwError, firstValueFrom } from 'rxjs';
 import { delay } from 'rxjs/operators';
@@ -10,8 +18,11 @@ import { provideNgHttpCaching } from './ng-http-caching-provider';
 const DELAY = 50;
 
 class BaseHandler extends HttpHandler {
-  constructor(private response: HttpResponse<any>, private delay?: number) {
-    super()
+  constructor(
+    private response: HttpResponse<any>,
+    private delay?: number,
+  ) {
+    super();
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   handle(_req: HttpRequest<any>): Observable<HttpEvent<any>> {
@@ -24,7 +35,7 @@ class BaseHandler extends HttpHandler {
 
 class MockHandler extends BaseHandler {
   constructor() {
-    super(new HttpResponse({ status: 200, body: { date: new Date().toJSON() } }), DELAY)
+    super(new HttpResponse({ status: 200, body: { date: new Date().toJSON() } }), DELAY);
   }
 }
 
@@ -41,8 +52,6 @@ class ErrorMockHandler extends HttpHandler {
   }
 }
 
-
-
 function sleep(time: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, time));
 }
@@ -57,7 +66,7 @@ describe('NgHttpCachingInterceptorService', () => {
         provideNgHttpCaching(),
         provideHttpClient(withInterceptorsFromDi()),
         provideHttpClientTesting(),
-      ]
+      ],
     });
     service = TestBed.inject(NgHttpCachingInterceptorService);
     httpCacheService = TestBed.inject(NgHttpCachingService);
@@ -75,7 +84,9 @@ describe('NgHttpCachingInterceptorService', () => {
 
   it('should cached', async () => {
     const url = 'https://angular.io/docs?foo=bar';
-    const response1 = await firstValueFrom(service.intercept(new HttpRequest('GET', url), new MockHandler()));
+    const response1 = await firstValueFrom(
+      service.intercept(new HttpRequest('GET', url), new MockHandler()),
+    );
     expect(response1).toBeTruthy();
 
     const cached1 = httpCacheService.getStore().get('GET@' + url);
@@ -83,7 +94,9 @@ describe('NgHttpCachingInterceptorService', () => {
 
     await sleep(DELAY / 3);
 
-    const response2 = await firstValueFrom(service.intercept(new HttpRequest('GET', url), new MockHandler()));
+    const response2 = await firstValueFrom(
+      service.intercept(new HttpRequest('GET', url), new MockHandler()),
+    );
     expect(response2).toBeTruthy();
     const cached2 = httpCacheService.getStore().get('GET@' + url);
     expect(cached2).toBeTruthy();
@@ -92,20 +105,21 @@ describe('NgHttpCachingInterceptorService', () => {
 
   it('not should cached', async () => {
     const url = 'https://angular.io/docs?foo=bar';
-    const response = await firstValueFrom(service.intercept(new HttpRequest('DELETE', url), new MockHandler()));
+    const response = await firstValueFrom(
+      service.intercept(new HttpRequest('DELETE', url), new MockHandler()),
+    );
     expect(response).toBeTruthy();
     expect(httpCacheService.getStore().get(url)).toBeUndefined();
   }, 1000);
 
   it('sendRequest trim headers', async () => {
-
     const req = new HttpRequest('GET', 'https://angular.io/docs?foo=bar', null, {
       headers: new HttpHeaders({
         CHECK: '1',
         [NgHttpCachingHeaders.ALLOW_CACHE]: '1',
         [NgHttpCachingHeaders.DISALLOW_CACHE]: '1',
         [NgHttpCachingHeaders.LIFETIME]: '1',
-      })
+      }),
     });
 
     expect(req.headers.has(NgHttpCachingHeaders.ALLOW_CACHE)).toBe(true);
@@ -131,14 +145,13 @@ describe('NgHttpCachingInterceptorService', () => {
   }, 1000);
 
   it('parallel requests', async () => {
-
     const req = new HttpRequest('GET', 'https://angular.io/docs?foo=parallel');
 
     const responses: HttpEvent<any>[] = [];
 
     expect(httpCacheService.getFromQueue(req)).toBeUndefined();
 
-    service.intercept(req, new MockHandler()).subscribe(response => {
+    service.intercept(req, new MockHandler()).subscribe((response) => {
       expect(response).toBeTruthy();
       responses.push(response);
     });
@@ -147,13 +160,13 @@ describe('NgHttpCachingInterceptorService', () => {
 
     expect(httpCacheService.getFromQueue(req)).toBeTruthy();
 
-    service.intercept(req, new MockHandler()).subscribe(response => {
+    service.intercept(req, new MockHandler()).subscribe((response) => {
       expect(response).toBeTruthy();
       responses.push(response);
     });
     expect(httpCacheService.getFromQueue(req)).toBeTruthy();
 
-    service.intercept(req, new MockHandler()).subscribe(response => {
+    service.intercept(req, new MockHandler()).subscribe((response) => {
       expect(response).toBeTruthy();
       responses.push(response);
     });
@@ -169,7 +182,6 @@ describe('NgHttpCachingInterceptorService', () => {
   }, 1000);
 
   it('nested requests', async () => {
-
     const req = new HttpRequest('GET', 'https://angular.io/docs?foo=nested');
 
     expect(httpCacheService.getFromQueue(req)).toBeUndefined();
@@ -199,18 +211,15 @@ describe('NgHttpCachingInterceptorService', () => {
   }, 1000);
 
   it('error requests', async () => {
-
     const req = new HttpRequest('GET', 'https://angular.io/docs?foo=error');
 
-    await expect(firstValueFrom(service.intercept(req, new ErrorMockHandler())))
-      .rejects.toBe('This is an error!');
+    await expect(firstValueFrom(service.intercept(req, new ErrorMockHandler()))).rejects.toBe(
+      'This is an error!',
+    );
 
     expect(httpCacheService.getFromCache(req)).toBeUndefined();
   }, 1000);
 });
-
-
-
 
 describe('NgHttpCachingInterceptorService: cache headers', () => {
   let interceptor: NgHttpCachingInterceptorService;
@@ -222,14 +231,14 @@ describe('NgHttpCachingInterceptorService: cache headers', () => {
         provideNgHttpCaching({ checkResponseHeaders: true }),
         provideHttpClient(withInterceptorsFromDi()),
         provideHttpClientTesting(),
-      ]
+      ],
     });
     interceptor = TestBed.inject(NgHttpCachingInterceptorService);
     service = TestBed.inject(NgHttpCachingService);
   });
 
   afterEach(() => {
-    service.clearCache()
+    service.clearCache();
   });
 
   it('not should cached by header cache control no-cache', async () => {
@@ -237,7 +246,7 @@ describe('NgHttpCachingInterceptorService: cache headers', () => {
     const response = new HttpResponse({
       status: 200,
       headers: new HttpHeaders({ 'cache-control': 'no-cache' }),
-      body: { result: true }
+      body: { result: true },
     });
     const result = await firstValueFrom(interceptor.intercept(request, new BaseHandler(response)));
     expect(result).toBeTruthy();
@@ -249,7 +258,7 @@ describe('NgHttpCachingInterceptorService: cache headers', () => {
     const response = new HttpResponse({
       status: 200,
       headers: new HttpHeaders({ 'cache-control': 'no-store' }),
-      body: { result: true }
+      body: { result: true },
     });
     const result = await firstValueFrom(interceptor.intercept(request, new BaseHandler(response)));
     expect(result).toBeTruthy();
@@ -260,12 +269,11 @@ describe('NgHttpCachingInterceptorService: cache headers', () => {
     const request = new HttpRequest('GET', 'https://angular.io/docs?foo=bar-no-cache');
     const response = new HttpResponse({
       status: 200,
-      headers: new HttpHeaders({ 'expires': new Date().toJSON() }),
-      body: { result: true }
+      headers: new HttpHeaders({ expires: new Date().toJSON() }),
+      body: { result: true },
     });
     const result = await firstValueFrom(interceptor.intercept(request, new BaseHandler(response)));
     expect(result).toBeTruthy();
     expect(service.getFromCache(request)).toBeUndefined();
   }, 1000);
-
 });

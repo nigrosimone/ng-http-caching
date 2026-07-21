@@ -3,7 +3,5 @@
    project, spec files included (the workspace root tsconfig excludes them). */
 {
   "extends": "./tsconfig.spec.json",
-  "include": [
-    "src/**/*.ts"
-  ]
+  "include": ["src/**/*.ts"]
 }

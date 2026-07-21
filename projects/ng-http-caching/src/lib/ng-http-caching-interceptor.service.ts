@@ -1,4 +1,12 @@
-import { HttpEvent, HttpEventType, HttpHandler, HttpHeaders, HttpInterceptor, HttpRequest, HttpResponse } from '@angular/common/http';
+import {
+  HttpEvent,
+  HttpEventType,
+  HttpHandler,
+  HttpHeaders,
+  HttpInterceptor,
+  HttpRequest,
+  HttpResponse,
+} from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { asyncScheduler, Observable, of, scheduled } from 'rxjs';
 import { tap, shareReplay, finalize } from 'rxjs/operators';
@@ -6,7 +14,6 @@ import { NgHttpCachingService, NgHttpCachingHeadersList } from './ng-http-cachin
 
 @Injectable()
 export class NgHttpCachingInterceptorService implements HttpInterceptor {
-
   private readonly cacheService: NgHttpCachingService = inject(NgHttpCachingService);
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
@@ -16,25 +23,24 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
     // Don't cache if it's not cacheable
     if (!this.cacheService.isCacheable(req)) {
       return this.sendRequest(req, next).pipe(
-        tap(event => {
+        tap((event) => {
           if (event.type === HttpEventType.Response && event.ok) {
             this.cacheService.clearCacheByMutation(req);
           }
-        })
+        }),
       );
     }
 
     // Checked if there is pending response for this request
-    const cachedObservable: Observable<HttpEvent<any>> | undefined = this.cacheService.getFromQueue(req);
+    const cachedObservable: Observable<HttpEvent<any>> | undefined =
+      this.cacheService.getFromQueue(req);
     if (cachedObservable) {
-
       return cachedObservable;
     }
 
     // Checked if there is cached response for this request
     const cachedResponse: HttpResponse<any> | undefined = this.cacheService.getFromCache(req);
     if (cachedResponse) {
-
       return scheduled(of(cachedResponse.clone()), asyncScheduler);
     }
 
@@ -42,7 +48,7 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
     // then let the request proceed and cache the response
 
     const shared = this.sendRequest(req, next).pipe(
-      tap(event => {
+      tap((event) => {
         if (event.type === HttpEventType.Response) {
           this.cacheService.addToCache(req, event);
         }
@@ -52,8 +58,9 @@ export class NgHttpCachingInterceptorService implements HttpInterceptor {
         this.cacheService.deleteFromQueue(req);
       }),
       shareReplay({
-        bufferSize: 1, refCount: true
-      })
+        bufferSize: 1,
+        refCount: true,
+      }),
     );
 
     // add pending request to queue for cache parallel request

@@ -1,4 +1,4 @@
-import { provideZonelessChangeDetection } from "@angular/core"
+import { provideZonelessChangeDetection } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { AppComponent } from './app/app.component';
 import { provideNgHttpCaching } from 'ng-http-caching';
@@ -9,10 +9,10 @@ bootstrapApplication(AppComponent, {
   providers: [
     provideNgHttpCaching({
       store: withNgHttpCachingNgSimpleState({
-        enableDevTool: true
+        enableDevTool: true,
       }),
     }),
     provideHttpClient(withInterceptorsFromDi()),
     provideZonelessChangeDetection(),
-  ]
-});
+  ],
+}).catch((err: unknown) => console.error(err));

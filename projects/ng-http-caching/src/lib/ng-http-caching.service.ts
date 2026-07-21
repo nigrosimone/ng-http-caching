@@ -1,15 +1,28 @@
 import { Injectable, InjectionToken, VERSION, isDevMode, inject, OnDestroy } from '@angular/core';
-import { HttpRequest, HttpResponse, HttpEvent, HttpContextToken, HttpContext, HttpHeaders } from '@angular/common/http';
+import {
+  HttpRequest,
+  HttpResponse,
+  HttpEvent,
+  HttpContextToken,
+  HttpContext,
+  HttpHeaders,
+} from '@angular/common/http';
 import type { Observable } from 'rxjs';
 import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
 import { NgHttpCachingMemoryStorage } from './storage/ng-http-caching-memory-storage';
 import { NgHttpCachingNgSimpleStateSentinel } from './storage/ng-http-caching-ng-simple-state-sentinel';
 
-export type NgHttpCachingContext = Pick<NgHttpCachingConfig, 'getKey' | 'isCacheable' | 'isExpired' | 'isValid' | 'clearCacheOnMutation'>;
+export type NgHttpCachingContext = Pick<
+  NgHttpCachingConfig,
+  'getKey' | 'isCacheable' | 'isExpired' | 'isValid' | 'clearCacheOnMutation'
+>;
 
 export const NG_HTTP_CACHING_CONTEXT = new HttpContextToken<NgHttpCachingContext>(() => ({}));
 
-export const withNgHttpCachingContext = (value: NgHttpCachingContext, context: HttpContext = new HttpContext()) => context.set(NG_HTTP_CACHING_CONTEXT, value)
+export const withNgHttpCachingContext = (
+  value: NgHttpCachingContext,
+  context: HttpContext = new HttpContext(),
+) => context.set(NG_HTTP_CACHING_CONTEXT, value);
 
 export const checkCacheHeaders = (headers: HttpHeaders): boolean | number => {
   // check Cache-Control
@@ -22,7 +35,7 @@ export const checkCacheHeaders = (headers: HttpHeaders): boolean | number => {
       return false;
     }
     // extract max-age value if present
-    const maxAgeMatch = cacheControl.match(/max-age\s*=\s*(\d+)/);
+    const maxAgeMatch = /max-age\s*=\s*(\d+)/.exec(cacheControl);
     if (maxAgeMatch) {
       const maxAgeSec = parseInt(maxAgeMatch[1], 10);
       // `max-age=0` means the response is immediately stale, so it isn't cacheable.
@@ -47,7 +60,7 @@ export const checkCacheHeaders = (headers: HttpHeaders): boolean | number => {
   }
 
   return true;
-}
+};
 
 export interface NgHttpCachingEntry<K = any, T = any> {
   /**
@@ -73,7 +86,7 @@ export interface NgHttpCachingEntry<K = any, T = any> {
 }
 
 export const NG_HTTP_CACHING_CONFIG = new InjectionToken<NgHttpCachingConfig>(
-  'ng-http-caching.config'
+  'ng-http-caching.config',
 );
 
 export const NgHttpCachingStrategy = {
@@ -84,9 +97,10 @@ export const NgHttpCachingStrategy = {
   /**
    * Only the request with `X-NG-HTTP-CACHING-ALLOW-CACHE` header are cacheable if HTTP method is into `allowedMethod`
    */
-  DISALLOW_ALL: 'DISALLOW_ALL'
-}
-export type NgHttpCachingStrategy = typeof NgHttpCachingStrategy[keyof typeof NgHttpCachingStrategy];
+  DISALLOW_ALL: 'DISALLOW_ALL',
+};
+export type NgHttpCachingStrategy =
+  (typeof NgHttpCachingStrategy)[keyof typeof NgHttpCachingStrategy];
 
 export const NgHttpCachingMutationStrategy = {
   /**
@@ -105,8 +119,9 @@ export const NgHttpCachingMutationStrategy = {
    * Clear the cache entries with the same URL or the parent URL as the mutation request
    */
   COLLECTION: 'COLLECTION',
-}
-export type NgHttpCachingMutationStrategy = typeof NgHttpCachingMutationStrategy[keyof typeof NgHttpCachingMutationStrategy];
+};
+export type NgHttpCachingMutationStrategy =
+  (typeof NgHttpCachingMutationStrategy)[keyof typeof NgHttpCachingMutationStrategy];
 
 export const NgHttpCachingHeaders = {
   /**
@@ -122,12 +137,12 @@ export const NgHttpCachingHeaders = {
    */
   LIFETIME: 'X-NG-HTTP-CACHING-LIFETIME',
   /**
-   * You can tag multiple request by adding this header with the same tag and 
+   * You can tag multiple request by adding this header with the same tag and
    * using `NgHttpCachingService.clearCacheByTag(tag: string)` for delete all the tagged request
    */
-  TAG: 'X-NG-HTTP-CACHING-TAG'
-}
-export type NgHttpCachingHeaders = typeof NgHttpCachingHeaders[keyof typeof NgHttpCachingHeaders];
+  TAG: 'X-NG-HTTP-CACHING-TAG',
+};
+export type NgHttpCachingHeaders = (typeof NgHttpCachingHeaders)[keyof typeof NgHttpCachingHeaders];
 
 export const NgHttpCachingHeadersList = Object.values(NgHttpCachingHeaders);
 
@@ -145,16 +160,16 @@ export interface NgHttpCachingConfig {
    */
   store?: NgHttpCachingStorageInterface | NgHttpCachingNgSimpleStateSentinel;
   /**
-   * Number of millisecond that a response is stored in the cache. 
+   * Number of millisecond that a response is stored in the cache.
    * You can set specific "lifetime" for each request by add the header `X-NG-HTTP-CACHING-LIFETIME` (see example below).
    */
   lifetime?: number;
   /**
-   * Array of allowed HTTP methods to cache. 
-   * You can allow multiple methods, eg.: `['GET', 'POST', 'PUT', 'DELETE', 'HEAD']` or 
+   * Array of allowed HTTP methods to cache.
+   * You can allow multiple methods, eg.: `['GET', 'POST', 'PUT', 'DELETE', 'HEAD']` or
    * allow all methods by: `['ALL']`. If `allowedMethod` is an empty array (`[]`), no response are cached.
    * *Warning!* `NgHttpCaching` use the full url (url with query parameters) as unique key for the cached response,
-   * this is correct for the `GET` request but is _potentially_ wrong for other type of request (eg. `POST`, `PUT`). 
+   * this is correct for the `GET` request but is _potentially_ wrong for other type of request (eg. `POST`, `PUT`).
    * You can set a different "key" by customizing the `getKey` config method (see `getKey` section).
    */
   allowedMethod?: string[];
@@ -174,22 +189,22 @@ export interface NgHttpCachingConfig {
    */
   checkResponseHeaders?: boolean;
   /**
-   * If this function return `true` the request is expired and a new request is send to backend, if return `false` isn't expired. 
+   * If this function return `true` the request is expired and a new request is send to backend, if return `false` isn't expired.
    * If the result is `undefined`, the normal behaviour is provided.
    */
   isExpired?: <K, T>(entry: NgHttpCachingEntry<K, T>) => boolean | undefined | void;
   /**
-   * If this function return `true` the request is cacheable, if return `false` isn't cacheable. 
+   * If this function return `true` the request is cacheable, if return `false` isn't cacheable.
    * If the result is `undefined`, the normal behaviour is provided.
    */
   isCacheable?: <K>(req: HttpRequest<K>) => boolean | undefined | void;
   /**
-   * This function return the unique key (`string`) for store the response into the cache. 
+   * This function return the unique key (`string`) for store the response into the cache.
    * If the result is `undefined`, the normal behaviour is provided.
    */
   getKey?: <K>(req: HttpRequest<K>) => string | undefined | void;
   /**
-   * If this function return `true` the cache entry is valid and can be stored, if return `false` isn't valid. 
+   * If this function return `true` the cache entry is valid and can be stored, if return `false` isn't valid.
    * If the result is `undefined`, the normal behaviour is provided.
    */
   isValid?: <K, T>(entry: NgHttpCachingEntry<K, T>) => boolean | undefined | void;
@@ -200,7 +215,10 @@ export interface NgHttpCachingConfig {
    * If a custom function is provided, returning `true` will clear the **entire** cache store.
    * Returning `false` (or `undefined`) will skip invalidation for that request.
    */
-  clearCacheOnMutation?: NgHttpCachingMutationStrategy | boolean | (<K>(req: HttpRequest<K>) => boolean | undefined | void);
+  clearCacheOnMutation?:
+    | NgHttpCachingMutationStrategy
+    | boolean
+    | (<K>(req: HttpRequest<K>) => boolean | undefined | void);
 }
 
 export interface NgHttpCachingDefaultConfig extends NgHttpCachingConfig {
@@ -219,7 +237,7 @@ export const NgHttpCachingConfigDefault: Readonly<NgHttpCachingDefaultConfig> = 
   allowedMethod: ['GET', 'HEAD'],
   cacheStrategy: NgHttpCachingStrategy.ALLOW_ALL,
   checkResponseHeaders: false,
-  clearCacheOnMutation: NgHttpCachingMutationStrategy.NONE
+  clearCacheOnMutation: NgHttpCachingMutationStrategy.NONE,
 };
 
 /**
@@ -232,18 +250,19 @@ function createDefaultConfig(): NgHttpCachingDefaultConfig {
 
 @Injectable({ providedIn: 'root' })
 export class NgHttpCachingService implements OnDestroy {
-
   private readonly queue = new Map<string, Observable<HttpEvent<any>>>();
 
   private readonly config: NgHttpCachingDefaultConfig;
 
   private gcLock = false;
-  private gcLastRun: number = 0;
+  private gcLastRun = 0;
 
   private devMode: boolean = isDevMode();
 
   constructor() {
-    const userConfig: Readonly<NgHttpCachingConfig | null> = inject(NG_HTTP_CACHING_CONFIG, { optional: true });
+    const userConfig: Readonly<NgHttpCachingConfig | null> = inject(NG_HTTP_CACHING_CONFIG, {
+      optional: true,
+    });
     if (userConfig) {
       const config: NgHttpCachingConfig = { ...userConfig };
       if (config.store instanceof NgHttpCachingNgSimpleStateSentinel) {
@@ -341,7 +360,7 @@ export class NgHttpCachingService implements OnDestroy {
   /**
    * Clear the cache by keys
    */
-  clearCacheByKeys(keys: Array<string>): number {
+  clearCacheByKeys(keys: string[]): number {
     let counter = 0;
     if (keys) {
       for (const key of keys) {
@@ -357,7 +376,7 @@ export class NgHttpCachingService implements OnDestroy {
    * Clear the cache by regex
    */
   clearCacheByRegex<K, T>(regex: RegExp): number {
-    const keys: Array<string> = [];
+    const keys: string[] = [];
     this.config.store.forEach<K, T>((_: NgHttpCachingEntry<K, T>, key: string) => {
       if (regex.test(key)) {
         keys.push(key);
@@ -370,10 +389,15 @@ export class NgHttpCachingService implements OnDestroy {
    * Clear the cache by TAG
    */
   clearCacheByTag<K, T>(tag: string): number {
-    const keys: Array<string> = [];
+    const keys: string[] = [];
     this.config.store.forEach<K, T>((entry: NgHttpCachingEntry<K, T>, key: string) => {
       const tagHeader = entry.request.headers.get(NgHttpCachingHeaders.TAG);
-      if (tagHeader && tagHeader.split(',').map(t => t.trim()).includes(tag)) {
+      if (
+        tagHeader
+          ?.split(',')
+          .map((t) => t.trim())
+          .includes(tag)
+      ) {
         keys.push(key);
       }
     });
@@ -384,13 +408,13 @@ export class NgHttpCachingService implements OnDestroy {
    * Run garbage collector (delete expired cache entry)
    */
   runGc<K, T>(): boolean {
-    if (this.gcLock || (this.gcLastRun && (Date.now() - this.gcLastRun < 1000))) {
+    if (this.gcLock || (this.gcLastRun && Date.now() - this.gcLastRun < 1000)) {
       return false;
     }
     this.gcLock = true;
     this.gcLastRun = Date.now();
     try {
-      const keys: Array<string> = [];
+      const keys: string[] = [];
       this.config.store.forEach<K, T>((entry: NgHttpCachingEntry<K, T>, key: string) => {
         if (this.isExpired(entry)) {
           keys.push(key);
@@ -408,7 +432,7 @@ export class NgHttpCachingService implements OnDestroy {
    */
   clearCacheByMutation<K>(req: HttpRequest<K>): boolean {
     const context = req.context.get(NG_HTTP_CACHING_CONTEXT);
-    const strategy = context.clearCacheOnMutation !== undefined ? context.clearCacheOnMutation : this.config.clearCacheOnMutation;
+    const strategy = context.clearCacheOnMutation ?? this.config.clearCacheOnMutation;
 
     if (typeof strategy === 'function') {
       const result = strategy(req);
@@ -657,7 +681,7 @@ export class NgHttpCachingService implements OnDestroy {
   private deepFreeze<S>(object: S): Readonly<S> {
     // No freezing in production (for better performance).
     if (!this.devMode || !object || typeof object !== 'object') {
-      return object as Readonly<S>;
+      return object;
     }
 
     // When already frozen, we assume its children are frozen (for better performance).
@@ -667,15 +691,15 @@ export class NgHttpCachingService implements OnDestroy {
     // strings, booleans, undefined, null), so there is no need to check for
     // those explicitly.
     if (Object.isFrozen(object)) {
-      return object as Readonly<S>;
+      return object;
     }
 
     // At this point we know that we're dealing with either an array or plain object, so
     // just freeze it and recurse on its values.
     Object.freeze(object);
-    Object.keys(object).forEach(key => this.deepFreeze((object as any)[key]));
+    Object.keys(object).forEach((key) => this.deepFreeze((object as any)[key]));
 
-    return object as Readonly<S>;
+    return object;
   }
 
   ngOnDestroy(): void {

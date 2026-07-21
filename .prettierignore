@@ -1,0 +1,15 @@
+# Build output and generated files
+/dist
+/out-tsc
+/coverage
+/.angular
+/node_modules
+package-lock.json
+
+# Prettier treats this as JSON5 and adds trailing commas, which breaks strict JSON parsers
+prj.code-workspace
+
+# Documentation kept under manual formatting
+/README.md
+/projects/ng-http-caching/README.md
+/CODE_OF_CONDUCT.md

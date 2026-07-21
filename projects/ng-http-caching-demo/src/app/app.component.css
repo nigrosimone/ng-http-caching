@@ -27,14 +27,14 @@ label {
   font-weight: bold;
 }
 
-input[type="text"],
-input[type="date"],
-input[type="datetime"],
-input[type="number"],
-input[type="search"],
-input[type="time"],
-input[type="url"],
-input[type="email"],
+input[type='text'],
+input[type='date'],
+input[type='datetime'],
+input[type='number'],
+input[type='search'],
+input[type='time'],
+input[type='url'],
+input[type='email'],
 textarea,
 select {
   box-sizing: border-box;
@@ -46,14 +46,14 @@ select {
   outline: none;
 }
 
-input[type="text"]:focus,
-input[type="date"]:focus,
-input[type="datetime"]:focus,
-input[type="number"]:focus,
-input[type="search"]:focus,
-input[type="time"]:focus,
-input[type="url"]:focus,
-input[type="email"]:focus,
+input[type='text']:focus,
+input[type='date']:focus,
+input[type='datetime']:focus,
+input[type='number']:focus,
+input[type='search']:focus,
+input[type='time']:focus,
+input[type='url']:focus,
+input[type='email']:focus,
 textarea:focus,
 select:focus {
   -moz-box-shadow: 0 0 8px #88d5e9;
@@ -78,8 +78,8 @@ select:focus {
   height: 100px;
 }
 
-input[type="submit"],
-input[type="button"],
+input[type='submit'],
+input[type='button'],
 button {
   background: #4b99ad;
   padding: 8px 15px 8px 15px;
@@ -87,8 +87,8 @@ button {
   color: #fff;
 }
 
-input[type="submit"]:hover,
-input[type="button"]:hover,
+input[type='submit']:hover,
+input[type='button']:hover,
 button:hover {
   background: #4691a4;
   box-shadow: none;

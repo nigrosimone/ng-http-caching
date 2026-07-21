@@ -29,18 +29,9 @@
           "options": {
             "tsConfig": "projects/ng-http-caching/tsconfig.spec.json",
             "runner": "vitest",
-            "setupFiles": [
-              "projects/ng-http-caching/src/test-setup.ts"
-            ],
-            "include": [
-              "**/*.spec.ts",
-              "../ng-simple-state/**/*.spec.ts"
-            ],
-            "coverageReporters": [
-              "html",
-              "lcovonly",
-              "text-summary"
-            ]
+            "setupFiles": ["projects/ng-http-caching/src/test-setup.ts"],
+            "include": ["**/*.spec.ts", "../ng-simple-state/**/*.spec.ts"],
+            "coverageReporters": ["html", "lcovonly", "text-summary"]
           }
         },
         "lint": {
@@ -81,9 +72,7 @@
               "projects/ng-http-caching-demo/src/favicon.ico",
               "projects/ng-http-caching-demo/src/assets"
             ],
-            "styles": [
-              "projects/ng-http-caching-demo/src/styles.sass"
-            ],
+            "styles": ["projects/ng-http-caching-demo/src/styles.sass"],
             "scripts": [],
             "browser": "projects/ng-http-caching-demo/src/main.ts"
           },
@@ -147,11 +136,7 @@
             "tsConfig": "projects/ng-http-caching-demo/tsconfig.spec.json",
             "buildTarget": ":build:testing",
             "runner": "vitest",
-            "coverageReporters": [
-              "html",
-              "lcovonly",
-              "text-summary"
-            ]
+            "coverageReporters": ["html", "lcovonly", "text-summary"]
           }
         },
         "lint": {
@@ -167,9 +152,7 @@
     }
   },
   "cli": {
-    "schematicCollections": [
-      "@angular-eslint/schematics"
-    ]
+    "schematicCollections": ["@angular-eslint/schematics"]
   },
   "schematics": {
     "@schematics/angular:component": {

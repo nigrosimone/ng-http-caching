@@ -20,7 +20,7 @@ import {
   NG_HTTP_CACHING_CONTEXT,
   NgHttpCachingMutationStrategy,
 } from './ng-http-caching.service';
-import { VERSION, Type } from '@angular/core';
+import { VERSION } from '@angular/core';
 import { provideNgHttpCaching } from './ng-http-caching-provider';
 import { NgHttpCachingNgSimpleStateSentinel } from './storage/ng-http-caching-ng-simple-state-sentinel';
 import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
@@ -34,9 +34,7 @@ describe('NgHttpCachingService: no config', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        provideNgHttpCaching()
-      ]
+      providers: [provideNgHttpCaching()],
     });
     service = TestBed.inject(NgHttpCachingService);
   });
@@ -92,9 +90,7 @@ describe('NgHttpCachingService: override config', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        provideNgHttpCaching(config),
-      ],
+      providers: [provideNgHttpCaching(config)],
     });
     service = TestBed.inject(NgHttpCachingService);
   });
@@ -104,12 +100,8 @@ describe('NgHttpCachingService: override config', () => {
   });
 
   it('should have: override value', () => {
-    expect(service.getConfig().lifetime).not.toEqual(
-      NgHttpCachingConfigDefault.lifetime
-    );
-    expect(service.getConfig().allowedMethod).not.toEqual(
-      NgHttpCachingConfigDefault.allowedMethod
-    );
+    expect(service.getConfig().lifetime).not.toEqual(NgHttpCachingConfigDefault.lifetime);
+    expect(service.getConfig().allowedMethod).not.toEqual(NgHttpCachingConfigDefault.allowedMethod);
     expect(service.getConfig().lifetime).toEqual(config.lifetime);
     expect(service.getConfig().allowedMethod).toEqual(config.allowedMethod);
   });
@@ -141,7 +133,7 @@ describe('NgHttpCachingService: getStore()', () => {
       addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', keyUrl),
-      version: VERSION.major
+      version: VERSION.major,
     };
     store.set(keyUrl, cacheEntry);
     expect(store.has(keyUrl)).toBe(true);
@@ -229,10 +221,7 @@ describe('NgHttpCachingService: override getKey return undefined', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        NgHttpCachingService,
-        { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
-      ],
+      providers: [NgHttpCachingService, { provide: NG_HTTP_CACHING_CONFIG, useValue: config }],
     });
     service = TestBed.inject(NgHttpCachingService);
   });
@@ -263,14 +252,11 @@ describe('NgHttpCachingService: default isCacheable', () => {
   });
 
   it('GET is cacheable', () => {
-    const httpRequest = new HttpRequest(
-      'GET',
-      'https://angular.io/docs?foo=bar'
-    );
+    const httpRequest = new HttpRequest('GET', 'https://angular.io/docs?foo=bar');
     expect(service.isCacheable(httpRequest)).toBe(true);
   });
 
-  it('DELETE isn\'t cacheable', () => {
+  it("DELETE isn't cacheable", () => {
     const httpRequest = new HttpRequest('DELETE', 'https://angular.io/docs');
     expect(service.isCacheable(httpRequest)).toBe(false);
   });
@@ -279,7 +265,7 @@ describe('NgHttpCachingService: default isCacheable', () => {
 describe('NgHttpCachingService: default isCacheable allow ALL', () => {
   let service: NgHttpCachingService;
   const config: NgHttpCachingConfig = {
-    allowedMethod: ['ALL']
+    allowedMethod: ['ALL'],
   };
 
   beforeEach(() => {
@@ -294,10 +280,7 @@ describe('NgHttpCachingService: default isCacheable allow ALL', () => {
   });
 
   it('GET is cacheable', () => {
-    const httpRequest = new HttpRequest(
-      'GET',
-      'https://angular.io/docs?foo=bar'
-    );
+    const httpRequest = new HttpRequest('GET', 'https://angular.io/docs?foo=bar');
     expect(service.isCacheable(httpRequest)).toBe(true);
   });
 
@@ -310,7 +293,7 @@ describe('NgHttpCachingService: default isCacheable allow ALL', () => {
 describe('NgHttpCachingService: default isCacheable allow two', () => {
   let service: NgHttpCachingService;
   const config: NgHttpCachingConfig = {
-    allowedMethod: ['GET', 'DELETE']
+    allowedMethod: ['GET', 'DELETE'],
   };
 
   beforeEach(() => {
@@ -325,10 +308,7 @@ describe('NgHttpCachingService: default isCacheable allow two', () => {
   });
 
   it('GET is cacheable', () => {
-    const httpRequest = new HttpRequest(
-      'GET',
-      'https://angular.io/docs?foo=bar'
-    );
+    const httpRequest = new HttpRequest('GET', 'https://angular.io/docs?foo=bar');
     expect(service.isCacheable(httpRequest)).toBe(true);
   });
 
@@ -344,7 +324,7 @@ describe('NgHttpCachingService: override isCacheable', () => {
   const config: NgHttpCachingConfig = {
     isCacheable: (req: HttpRequest<any>): boolean => {
       // cacheable only if without query parameters
-      return req.urlWithParams.indexOf('?') === -1;
+      return !req.urlWithParams.includes('?');
     },
   };
 
@@ -359,11 +339,8 @@ describe('NgHttpCachingService: override isCacheable', () => {
     expect(service).toBeTruthy();
   });
 
-  it('GET with query parameters isn\'t cacheable', () => {
-    const httpRequest = new HttpRequest(
-      'GET',
-      'https://angular.io/docs?foo=bar'
-    );
+  it("GET with query parameters isn't cacheable", () => {
+    const httpRequest = new HttpRequest('GET', 'https://angular.io/docs?foo=bar');
     expect(service.isCacheable(httpRequest)).toBe(false);
   });
 
@@ -395,14 +372,11 @@ describe('NgHttpCachingService: override isCacheable return undefined', () => {
   });
 
   it('cacheable', () => {
-    const httpRequest = new HttpRequest(
-      'GET',
-      'https://angular.io/docs?foo=bar'
-    );
+    const httpRequest = new HttpRequest('GET', 'https://angular.io/docs?foo=bar');
     expect(service.isCacheable(httpRequest)).toBe(true);
   });
 
-  it('don\'t cacheable', () => {
+  it("don't cacheable", () => {
     const httpRequest = new HttpRequest('DELETE', 'https://angular.io/docs');
     expect(service.isCacheable(httpRequest)).toBe(false);
   });
@@ -426,11 +400,8 @@ describe('NgHttpCachingService: isCacheable strategy DISALLOW_ALL', () => {
     expect(service).toBeTruthy();
   });
 
-  it('GET without allow header ins\'t cacheable', () => {
-    const httpRequest = new HttpRequest(
-      'GET',
-      'https://angular.io/docs?foo=bar'
-    );
+  it("GET without allow header ins't cacheable", () => {
+    const httpRequest = new HttpRequest('GET', 'https://angular.io/docs?foo=bar');
     expect(service.isCacheable(httpRequest)).toBe(false);
   });
 
@@ -438,12 +409,9 @@ describe('NgHttpCachingService: isCacheable strategy DISALLOW_ALL', () => {
     const headers = new HttpHeaders({
       [NgHttpCachingHeaders.ALLOW_CACHE]: '1',
     });
-    const httpRequest = new HttpRequest(
-      'GET',
-      'https://angular.io/docs?foo=bar',
-      null,
-      { headers }
-    );
+    const httpRequest = new HttpRequest('GET', 'https://angular.io/docs?foo=bar', null, {
+      headers,
+    });
     expect(service.isCacheable(httpRequest)).toBe(true);
   });
 });
@@ -467,23 +435,17 @@ describe('NgHttpCachingService: isCacheable strategy ALLOW_ALL', () => {
   });
 
   it('GET without disallow header is cacheable', () => {
-    const httpRequest = new HttpRequest(
-      'GET',
-      'https://angular.io/docs?foo=bar'
-    );
+    const httpRequest = new HttpRequest('GET', 'https://angular.io/docs?foo=bar');
     expect(service.isCacheable(httpRequest)).toBe(true);
   });
 
-  it('GET with disallow header isn\'t cacheable', () => {
+  it("GET with disallow header isn't cacheable", () => {
     const headers = new HttpHeaders({
       [NgHttpCachingHeaders.DISALLOW_CACHE]: '1',
     });
-    const httpRequest = new HttpRequest(
-      'GET',
-      'https://angular.io/docs?foo=bar',
-      null,
-      { headers }
-    );
+    const httpRequest = new HttpRequest('GET', 'https://angular.io/docs?foo=bar', null, {
+      headers,
+    });
     expect(service.isCacheable(httpRequest)).toBe(false);
   });
 });
@@ -508,7 +470,7 @@ describe('NgHttpCachingService: default isExpired', () => {
       addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
-      version: VERSION.major
+      version: VERSION.major,
     };
     expect(service.isExpired(cacheEntry)).toBe(false);
   });
@@ -519,11 +481,10 @@ describe('NgHttpCachingService: default isExpired', () => {
       addedTime: Date.now() - NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
-      version: VERSION.major
+      version: VERSION.major,
     };
     expect(service.isExpired(cacheEntry)).toBe(true);
   });
-
 });
 
 describe('NgHttpCachingService: override isExpired', () => {
@@ -552,7 +513,7 @@ describe('NgHttpCachingService: override isExpired', () => {
       addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
-      version: VERSION.major
+      version: VERSION.major,
     };
     expect(service.isExpired(cacheEntry)).toBe(true);
   });
@@ -563,7 +524,7 @@ describe('NgHttpCachingService: override isExpired', () => {
       addedTime: Date.now() - NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
-      version: VERSION.major
+      version: VERSION.major,
     };
     expect(service.isExpired(cacheEntry)).toBe(true);
   });
@@ -595,7 +556,7 @@ describe('NgHttpCachingService: override isExpired return undefined', () => {
       addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
-      version: VERSION.major
+      version: VERSION.major,
     };
     expect(service.isExpired(cacheEntry)).toBe(false);
   });
@@ -606,7 +567,7 @@ describe('NgHttpCachingService: override isExpired return undefined', () => {
       addedTime: Date.now() - NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
-      version: VERSION.major
+      version: VERSION.major,
     };
     expect(service.isExpired(cacheEntry)).toBe(true);
   });
@@ -635,7 +596,7 @@ describe('NgHttpCachingService: default isExpired with long lifetime', () => {
       addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
-      version: VERSION.major
+      version: VERSION.major,
     };
     expect(service.isExpired(cacheEntry)).toBe(false);
   });
@@ -646,7 +607,7 @@ describe('NgHttpCachingService: default isExpired with long lifetime', () => {
       addedTime: Date.now() - NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
-      version: VERSION.major
+      version: VERSION.major,
     };
     expect(service.isExpired(cacheEntry)).toBe(false);
   });
@@ -675,7 +636,7 @@ describe('NgHttpCachingService: default isExpired with infinite lifetime', () =>
       addedTime: Date.now() - NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
-      version: VERSION.major
+      version: VERSION.major,
     };
     expect(service.isExpired(cacheEntry)).toBe(false);
   });
@@ -702,10 +663,10 @@ describe('NgHttpCachingService: default isExpired with request lifetime', () => 
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar', null, {
         headers: new HttpHeaders({
-          [NgHttpCachingHeaders.LIFETIME]: (NG_HTTP_CACHING_YEAR_IN_MS).toString(),
+          [NgHttpCachingHeaders.LIFETIME]: NG_HTTP_CACHING_YEAR_IN_MS.toString(),
         }),
       }),
-      version: VERSION.major
+      version: VERSION.major,
     };
     expect(service.isExpired(cacheEntry)).toBe(true);
   });
@@ -717,10 +678,10 @@ describe('NgHttpCachingService: default isExpired with request lifetime', () => 
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar', null, {
         headers: new HttpHeaders({
-          [NgHttpCachingHeaders.LIFETIME]: (NG_HTTP_CACHING_YEAR_IN_MS).toString(),
+          [NgHttpCachingHeaders.LIFETIME]: NG_HTTP_CACHING_YEAR_IN_MS.toString(),
         }),
       }),
-      version: VERSION.major
+      version: VERSION.major,
     };
     expect(service.isExpired(cacheEntry)).toBe(false);
   });
@@ -735,9 +696,11 @@ describe('NgHttpCachingService: default isExpired with request lifetime', () => 
           [NgHttpCachingHeaders.LIFETIME]: '-1',
         }),
       }),
-      version: VERSION.major
+      version: VERSION.major,
     };
-    expect(() => service.isExpired(cacheEntry)).toThrow(new Error('lifetime must be greater than or equal 0'));
+    expect(() => service.isExpired(cacheEntry)).toThrow(
+      new Error('lifetime must be greater than or equal 0'),
+    );
   });
 
   it('wrong NaN expired', () => {
@@ -750,9 +713,11 @@ describe('NgHttpCachingService: default isExpired with request lifetime', () => 
           [NgHttpCachingHeaders.LIFETIME]: 'test',
         }),
       }),
-      version: VERSION.major
+      version: VERSION.major,
     };
-    expect(() => service.isExpired(cacheEntry)).toThrow(new Error('lifetime must be greater than or equal 0'));
+    expect(() => service.isExpired(cacheEntry)).toThrow(
+      new Error('lifetime must be greater than or equal 0'),
+    );
   });
 });
 
@@ -779,7 +744,7 @@ describe('NgHttpCachingService: change of version', () => {
       addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
-      version: (+VERSION.major + 1).toString()
+      version: (+VERSION.major + 1).toString(),
     };
     expect(service.isExpired(cacheEntry)).toBe(true);
   });
@@ -790,7 +755,7 @@ describe('NgHttpCachingService: change of version', () => {
       addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
-      version: (+VERSION.major + 1).toString()
+      version: (+VERSION.major + 1).toString(),
     };
     expect(service.isValid(cacheEntry)).toBe(false);
   });
@@ -801,7 +766,7 @@ describe('NgHttpCachingService: change of version', () => {
       addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({ status: 500 }),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
-      version: VERSION.major
+      version: VERSION.major,
     };
     expect(service.isValid(cacheEntry)).toBe(false);
   });
@@ -889,7 +854,6 @@ describe('NgHttpCachingService: get override config', () => {
   });
 });
 
-
 describe('NgHttpCachingService: clearCache', () => {
   let service: NgHttpCachingService;
 
@@ -913,7 +877,6 @@ describe('NgHttpCachingService: clearCache', () => {
     expect(service.getFromCache(req)).toBeUndefined();
   });
 });
-
 
 describe('NgHttpCachingService: runGc', () => {
   let service: NgHttpCachingService;
@@ -988,7 +951,6 @@ describe('NgHttpCachingService: clearCacheByRegex', () => {
 
     expect(service.getFromCache(req1)).toBeUndefined();
     expect(service.getFromCache(req2)).toEqual(res);
-
   });
 
   it('clearCacheByRegex RegExp object', () => {
@@ -1006,7 +968,6 @@ describe('NgHttpCachingService: clearCacheByRegex', () => {
 
     expect(service.getFromCache(req1)).toBeUndefined();
     expect(service.getFromCache(req2)).toEqual(res);
-
   });
 });
 
@@ -1039,10 +1000,8 @@ describe('NgHttpCachingService: clearCacheByKey', () => {
 
     expect(service.getFromCache(req1)).toBeUndefined();
     expect(service.getFromCache(req2)).toEqual(res);
-
   });
 });
-
 
 describe('NgHttpCachingService: clearCacheByTag', () => {
   let service: NgHttpCachingService;
@@ -1089,7 +1048,6 @@ describe('NgHttpCachingService: clearCacheByTag', () => {
     expect(service.getFromCache(req1)).toBeUndefined();
     expect(service.getFromCache(req2)).toBeUndefined();
     expect(service.getFromCache(req3)).toEqual(res);
-
   });
 
   it('clearCacheByTag: matches tags in a comma separated list ignoring surrounding whitespace', () => {
@@ -1115,7 +1073,6 @@ describe('NgHttpCachingService: clearCacheByTag', () => {
     expect(service.addToCache(req, new HttpResponse({ body: {} }))).toBe(true);
     expect(service.clearCacheByTag('does-not-exist')).toEqual(0);
   });
-
 });
 
 describe('NgHttpCachingService: checkResponseHeaders lifetime', () => {
@@ -1145,7 +1102,10 @@ describe('NgHttpCachingService: checkResponseHeaders lifetime', () => {
     expect(service.isExpired(entry)).toBe(false);
 
     // an entry cached more than max-age ago must be expired
-    const oldEntry: NgHttpCachingEntry = { ...entry, addedTime: Date.now() - (NG_HTTP_CACHING_HOUR_IN_MS + NG_HTTP_CACHING_SECOND_IN_MS) };
+    const oldEntry: NgHttpCachingEntry = {
+      ...entry,
+      addedTime: Date.now() - (NG_HTTP_CACHING_HOUR_IN_MS + NG_HTTP_CACHING_SECOND_IN_MS),
+    };
     expect(service.isExpired(oldEntry)).toBe(true);
   });
 
@@ -1190,7 +1150,7 @@ describe('NgHttpCachingService: default isValid', () => {
       addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
-      version: VERSION.major
+      version: VERSION.major,
     };
     expect(service.isValid(cacheEntry)).toBe(true);
   });
@@ -1206,10 +1166,7 @@ describe('NgHttpCachingService: override isValid', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        NgHttpCachingService,
-        { provide: NG_HTTP_CACHING_CONFIG, useValue: config },
-      ],
+      providers: [NgHttpCachingService, { provide: NG_HTTP_CACHING_CONFIG, useValue: config }],
     });
     service = TestBed.inject(NgHttpCachingService);
   });
@@ -1226,7 +1183,7 @@ describe('NgHttpCachingService: override isValid', () => {
       addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: res,
       request: req,
-      version: VERSION.major
+      version: VERSION.major,
     };
     expect(service.isValid(cacheEntry)).toBe(true);
     expect(service.addToCache(req, res)).toBe(true);
@@ -1240,7 +1197,7 @@ describe('NgHttpCachingService: override isValid', () => {
       addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: res,
       request: req,
-      version: VERSION.major
+      version: VERSION.major,
     };
     expect(service.isValid(cacheEntry)).toBe(false);
     expect(service.addToCache(req, res)).toBe(false);
@@ -1273,11 +1230,10 @@ describe('NgHttpCachingService: override isValid return undefined', () => {
       addedTime: Date.now() + NG_HTTP_CACHING_YEAR_IN_MS,
       response: new HttpResponse({ status: 200 }),
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
-      version: VERSION.major
+      version: VERSION.major,
     };
     expect(service.isValid(cacheEntry)).toBe(true);
   });
-
 });
 
 describe('NgHttpCachingService: deep freeze', () => {
@@ -1306,7 +1262,9 @@ describe('NgHttpCachingService: deep freeze', () => {
       (state?.body as any).count = 2;
       expect(true).toEqual(false);
     } catch (error: any) {
-      expect(error.message).toEqual("Cannot assign to read only property 'count' of object '#<Object>'");
+      expect(error.message).toEqual(
+        "Cannot assign to read only property 'count' of object '#<Object>'",
+      );
     } finally {
       service['devMode'] = true;
       expect(service['devMode']).toEqual(true);
@@ -1330,8 +1288,10 @@ describe('NgHttpCachingService: context and edge cases', () => {
   });
 
   it('checkCacheHeaders coverage', () => {
-    expect(checkCacheHeaders(new HttpHeaders({ 'cache-control': 'public, max-age=3600' }))).toBe(3600000);
-    expect(checkCacheHeaders(new HttpHeaders({ 'expires': 'invalid' }))).toBe(true);
+    expect(checkCacheHeaders(new HttpHeaders({ 'cache-control': 'public, max-age=3600' }))).toBe(
+      3600000,
+    );
+    expect(checkCacheHeaders(new HttpHeaders({ expires: 'invalid' }))).toBe(true);
   });
 
   it('checkCacheHeaders: no-store and no-cache are not cacheable', () => {
@@ -1342,7 +1302,9 @@ describe('NgHttpCachingService: context and edge cases', () => {
   it('checkCacheHeaders: max-age=0 is not cacheable (must not be cached forever)', () => {
     // `max-age=0` means immediately stale: it must NOT be interpreted as the
     // "0 = never expire" lifetime sentinel.
-    expect(checkCacheHeaders(new HttpHeaders({ 'cache-control': 'public, max-age=0' }))).toBe(false);
+    expect(checkCacheHeaders(new HttpHeaders({ 'cache-control': 'public, max-age=0' }))).toBe(
+      false,
+    );
   });
 
   it('checkCacheHeaders: no headers default to cacheable', () => {
@@ -1351,12 +1313,12 @@ describe('NgHttpCachingService: context and edge cases', () => {
 
   it('checkCacheHeaders: expired Expires header is not cacheable', () => {
     const past = new Date(Date.now() - NG_HTTP_CACHING_HOUR_IN_MS).toUTCString();
-    expect(checkCacheHeaders(new HttpHeaders({ 'expires': past }))).toBe(false);
+    expect(checkCacheHeaders(new HttpHeaders({ expires: past }))).toBe(false);
   });
 
   it('checkCacheHeaders: future Expires header is cacheable', () => {
     const future = new Date(Date.now() + NG_HTTP_CACHING_HOUR_IN_MS).toUTCString();
-    expect(checkCacheHeaders(new HttpHeaders({ 'expires': future }))).toBe(true);
+    expect(checkCacheHeaders(new HttpHeaders({ expires: future }))).toBe(true);
   });
 
   it('isExpired: HttpContext override', () => {
@@ -1366,7 +1328,7 @@ describe('NgHttpCachingService: context and edge cases', () => {
       addedTime: Date.now(),
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io', { context }),
-      version: VERSION.major
+      version: VERSION.major,
     };
     expect(service.isExpired(cacheEntry)).toBe(true);
   });
@@ -1384,7 +1346,7 @@ describe('NgHttpCachingService: context and edge cases', () => {
       addedTime: Date.now(),
       response: new HttpResponse({}),
       request: new HttpRequest('GET', 'https://angular.io', { context }),
-      version: VERSION.major
+      version: VERSION.major,
     };
     expect(service.isValid(cacheEntry)).toBe(false);
   });
@@ -1400,20 +1362,17 @@ describe('NgHttpCachingService: sentinel detection', () => {
   class MockAdapter implements NgHttpCachingStorageInterface {
     size = 0;
     get = () => undefined;
-    set = () => { };
+    set = () => {};
     delete = () => true;
-    clear = () => { };
-    forEach = () => { };
+    clear = () => {};
+    forEach = () => {};
     has = () => false;
   }
 
   it('should inject adapter from sentinel', () => {
-    const sentinel = new NgHttpCachingNgSimpleStateSentinel(MockAdapter as any as Type<NgHttpCachingStorageInterface>);
+    const sentinel = new NgHttpCachingNgSimpleStateSentinel(MockAdapter);
     TestBed.configureTestingModule({
-      providers: [
-        provideNgHttpCaching({ store: sentinel }),
-        MockAdapter
-      ],
+      providers: [provideNgHttpCaching({ store: sentinel }), MockAdapter],
     });
     const service = TestBed.inject(NgHttpCachingService);
     expect(service.getStore()).toBeInstanceOf(MockAdapter);
@@ -1433,7 +1392,10 @@ describe('NgHttpCachingService: clearCacheByMutation', () => {
 
   it('strategy NONE', () => {
     const httpRequest = new HttpRequest('POST' as any, 'https://angular.io/api/users');
-    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/users'), new HttpResponse({}));
+    service.addToCache(
+      new HttpRequest('GET', 'https://angular.io/api/users'),
+      new HttpResponse({}),
+    );
     expect(service.getStore().size).toBe(1);
 
     // Default is NONE
@@ -1450,8 +1412,14 @@ describe('NgHttpCachingService: clearCacheByMutation', () => {
     service = TestBed.inject(NgHttpCachingService);
     service.clearCache();
 
-    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/users'), new HttpResponse({}));
-    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/other'), new HttpResponse({}));
+    service.addToCache(
+      new HttpRequest('GET', 'https://angular.io/api/users'),
+      new HttpResponse({}),
+    );
+    service.addToCache(
+      new HttpRequest('GET', 'https://angular.io/api/other'),
+      new HttpResponse({}),
+    );
     expect(service.getStore().size).toBe(2);
 
     service.clearCacheByMutation(new HttpRequest('POST' as any, 'https://angular.io/api/users'));
@@ -1459,7 +1427,9 @@ describe('NgHttpCachingService: clearCacheByMutation', () => {
   });
 
   it('strategy IDENTICAL', () => {
-    const config: NgHttpCachingConfig = { clearCacheOnMutation: NgHttpCachingMutationStrategy.IDENTICAL };
+    const config: NgHttpCachingConfig = {
+      clearCacheOnMutation: NgHttpCachingMutationStrategy.IDENTICAL,
+    };
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [provideNgHttpCaching(config)],
@@ -1467,9 +1437,18 @@ describe('NgHttpCachingService: clearCacheByMutation', () => {
     service = TestBed.inject(NgHttpCachingService);
     service.clearCache();
 
-    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/users'), new HttpResponse({}));
-    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/users', null, { params: { id: '1' } as any }), new HttpResponse({}));
-    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/other'), new HttpResponse({}));
+    service.addToCache(
+      new HttpRequest('GET', 'https://angular.io/api/users'),
+      new HttpResponse({}),
+    );
+    service.addToCache(
+      new HttpRequest('GET', 'https://angular.io/api/users', null, { params: { id: '1' } as any }),
+      new HttpResponse({}),
+    );
+    service.addToCache(
+      new HttpRequest('GET', 'https://angular.io/api/other'),
+      new HttpResponse({}),
+    );
     expect(service.getStore().size).toBe(3);
 
     service.clearCacheByMutation(new HttpRequest('POST' as any, 'https://angular.io/api/users'));
@@ -1479,28 +1458,8 @@ describe('NgHttpCachingService: clearCacheByMutation', () => {
   });
 
   it('strategy COLLECTION', () => {
-    const config: NgHttpCachingConfig = { clearCacheOnMutation: NgHttpCachingMutationStrategy.COLLECTION };
-    TestBed.resetTestingModule();
-    TestBed.configureTestingModule({
-      providers: [provideNgHttpCaching(config)],
-    });
-    service = TestBed.inject(NgHttpCachingService);
-    service.clearCache();
-
-    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/users'), new HttpResponse({}));
-    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/users/24'), new HttpResponse({}));
-    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/other'), new HttpResponse({}));
-    expect(service.getStore().size).toBe(3);
-
-    service.clearCacheByMutation(new HttpRequest('DELETE' as any, 'https://angular.io/api/users/24'));
-    // Should clear /api/users/24 AND /api/users
-    expect(service.getStore().size).toBe(1);
-    expect(service.getStore().has('GET@https://angular.io/api/other')).toBe(true);
-  });
-
-  it('custom function strategy', () => {
     const config: NgHttpCachingConfig = {
-      clearCacheOnMutation: (req) => req.url.includes('users')
+      clearCacheOnMutation: NgHttpCachingMutationStrategy.COLLECTION,
     };
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -1509,13 +1468,55 @@ describe('NgHttpCachingService: clearCacheByMutation', () => {
     service = TestBed.inject(NgHttpCachingService);
     service.clearCache();
 
-    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/users'), new HttpResponse({}));
-    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/other'), new HttpResponse({}));
+    service.addToCache(
+      new HttpRequest('GET', 'https://angular.io/api/users'),
+      new HttpResponse({}),
+    );
+    service.addToCache(
+      new HttpRequest('GET', 'https://angular.io/api/users/24'),
+      new HttpResponse({}),
+    );
+    service.addToCache(
+      new HttpRequest('GET', 'https://angular.io/api/other'),
+      new HttpResponse({}),
+    );
+    expect(service.getStore().size).toBe(3);
+
+    service.clearCacheByMutation(
+      new HttpRequest('DELETE' as any, 'https://angular.io/api/users/24'),
+    );
+    // Should clear /api/users/24 AND /api/users
+    expect(service.getStore().size).toBe(1);
+    expect(service.getStore().has('GET@https://angular.io/api/other')).toBe(true);
+  });
+
+  it('custom function strategy', () => {
+    const config: NgHttpCachingConfig = {
+      clearCacheOnMutation: (req) => req.url.includes('users'),
+    };
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching(config)],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+    service.clearCache();
+
+    service.addToCache(
+      new HttpRequest('GET', 'https://angular.io/api/users'),
+      new HttpResponse({}),
+    );
+    service.addToCache(
+      new HttpRequest('GET', 'https://angular.io/api/other'),
+      new HttpResponse({}),
+    );
 
     service.clearCacheByMutation(new HttpRequest('POST' as any, 'https://angular.io/api/users'));
     expect(service.getStore().size).toBe(0); // My mock logic for function strategy returns 'ALL' if true
 
-    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/other'), new HttpResponse({}));
+    service.addToCache(
+      new HttpRequest('GET', 'https://angular.io/api/other'),
+      new HttpResponse({}),
+    );
     service.clearCacheByMutation(new HttpRequest('POST' as any, 'https://angular.io/api/products'));
     expect(service.getStore().size).toBe(1);
   });
@@ -1529,7 +1530,10 @@ describe('NgHttpCachingService: clearCacheByMutation', () => {
     service = TestBed.inject(NgHttpCachingService);
     service.clearCache();
 
-    service.addToCache(new HttpRequest('GET', 'https://angular.io/api/users'), new HttpResponse({}));
+    service.addToCache(
+      new HttpRequest('GET', 'https://angular.io/api/users'),
+      new HttpResponse({}),
+    );
     service.clearCacheByMutation(new HttpRequest('POST' as any, 'https://angular.io/api/other'));
     expect(service.getStore().size).toBe(0);
   });

@@ -1,0 +1,6 @@
+# Revisions to skip in `git blame` because they only reformat code.
+#
+# Enable locally with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# Add the full SHA of the Prettier sweep commit below once it is committed.

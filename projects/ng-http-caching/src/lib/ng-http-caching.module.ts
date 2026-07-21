@@ -21,11 +21,11 @@ import {
       useClass: NgHttpCachingInterceptorService,
       multi: true,
     },
-  ]
+  ],
 })
 export class NgHttpCachingModule {
   static forRoot(
-    ngHttpCachingConfig?: NgHttpCachingConfig
+    ngHttpCachingConfig?: NgHttpCachingConfig,
   ): ModuleWithProviders<NgHttpCachingModule> {
     const providers: Provider[] = [
       {

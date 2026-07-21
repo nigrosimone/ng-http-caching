@@ -75,7 +75,8 @@ export interface NgHttpCachingConfig {
   lifetime?: number;
   allowedMethod?: string[];
   cacheStrategy?: NgHttpCachingStrategy;
-  store?: NgHttpCachingStorageInterface;
+  checkResponseHeaders?: boolean;
+  store?: NgHttpCachingStorageInterface | NgHttpCachingNgSimpleStateSentinel;
   isExpired?: (entry: NgHttpCachingEntry) => boolean | undefined | void;
   isValid?: (entry: NgHttpCachingEntry) => boolean | undefined | void;
   isCacheable?: (req: HttpRequest<any>) => boolean | undefined | void;
@@ -120,6 +121,16 @@ class MyCustomStore implements NgHttpCachingStorageInterface {
 
 const ngHttpCachingConfig: NgHttpCachingConfig = {
   store: new MyCustomStore(),
+};
+```
+
+the default store is `withNgHttpCachingMemoryStorage`, an in-memory cache store:
+
+```ts
+import { NgHttpCachingConfig, withNgHttpCachingMemoryStorage } from 'ng-http-caching';
+
+const ngHttpCachingConfig: NgHttpCachingConfig = {
+  store: withNgHttpCachingMemoryStorage(),
 };
 ```
 
@@ -185,10 +196,12 @@ import { NgHttpCachingConfig, NgHttpCachingEntry } from 'ng-http-caching';
 const ngHttpCachingConfig: NgHttpCachingConfig = {
   isExpired: (entry: NgHttpCachingEntry): boolean | undefined => {
       // In this example a special API endpoint (/my-endpoint) send into the body response
-      // an expireAt Date property. Only for this endpoint the expiration is provided by expireAt value.
+      // an expireAt property (an ISO date string). Only for this endpoint the expiration
+      // is provided by expireAt value.
       // For all the other endpoint normal behaviour is provided.
       if( entry.request.urlWithParams.indexOf('/my-endpoint') !== -1 ){
-        return entry.response.body.expireAt.getTime() > Date.now();
+        // return true when the entry is expired, so a new request is sent to the backend
+        return Date.parse(entry.response.body.expireAt) <= Date.now();
       }
       // by returning "undefined" normal "ng-http-caching" workflow is applied
       return undefined;
@@ -267,7 +280,7 @@ Possible strategies are:
 - `NgHttpCachingMutationStrategy.ALL` (or `true`): Clears the entire cache store on any successful mutation.
 - `NgHttpCachingMutationStrategy.IDENTICAL`: Clears entries with the same URL (ignoring method and query params).
 - `NgHttpCachingMutationStrategy.COLLECTION`: Clears entries with the same URL AND its parent collection URL (eg. `DELETE /api/users/24` invalidate also `GET /api/users`).
-- `Function`: Custom logic: `(req: HttpRequest<any>) => boolean`.
+- `Function`: Custom logic: `(req: HttpRequest<any>) => boolean`. It is called only for mutation requests; returning `true` clears the **entire** cache store, returning `false` (or `undefined`) skips the invalidation for that request.
 
 Example of customization:
 
@@ -275,7 +288,8 @@ Example of customization:
 import { NgHttpCachingConfig, NgHttpCachingMutationStrategy } from 'ng-http-caching';
 
 const ngHttpCachingConfig: NgHttpCachingConfig = {
-  // clear the entire cache only if the mutation is on a specific endpoint
+  // clear the entire cache only if the mutation (POST, PUT, DELETE, PATCH)
+  // is on a specific endpoint
   clearCacheOnMutation: (req) => req.url.includes('/api/critical-data')
 };
 ```
@@ -283,15 +297,15 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
 ## Headers
 
 `NgHttpCaching` use some custom headers for customize the caching behaviour.
-The supported headers are exported from the enum `NgHttpCachingHeaders`:
+The supported headers are exported from `NgHttpCachingHeaders`:
 
 ```ts
-export enum NgHttpCachingHeaders {
-  ALLOW_CACHE = 'X-NG-HTTP-CACHING-ALLOW-CACHE',
-  DISALLOW_CACHE = 'X-NG-HTTP-CACHING-DISALLOW-CACHE',
-  LIFETIME = 'X-NG-HTTP-CACHING-LIFETIME',
-  TAG = 'X-NG-HTTP-CACHING-TAG',
-}
+export const NgHttpCachingHeaders = {
+  ALLOW_CACHE: 'X-NG-HTTP-CACHING-ALLOW-CACHE',
+  DISALLOW_CACHE: 'X-NG-HTTP-CACHING-DISALLOW-CACHE',
+  LIFETIME: 'X-NG-HTTP-CACHING-LIFETIME',
+  TAG: 'X-NG-HTTP-CACHING-TAG',
+};
 ```
 
 All those headers are removed before send the request to the backend.
@@ -305,7 +319,7 @@ this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
   headers: {
     [NgHttpCachingHeaders.ALLOW_CACHE]: '1',
   }
-}).subscribe(e => console.log);
+}).subscribe(e => console.log(e));
 ```
 
 ### X-NG-HTTP-CACHING-DISALLOW-CACHE (string: any value);
@@ -317,7 +331,7 @@ this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
   headers: { 
     [NgHttpCachingHeaders.DISALLOW_CACHE]: '1',
   }
-}).subscribe(e => console.log);
+}).subscribe(e => console.log(e));
 ```
 
 ### X-NG-HTTP-CACHING-LIFETIME (string: number of millisecond);
@@ -329,7 +343,7 @@ this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
   headers: {
     [NgHttpCachingHeaders.LIFETIME]: (1000 * 60 * 60 * 24 * 365).toString(), // one year
   }
-}).subscribe(e => console.log);
+}).subscribe(e => console.log(e));
 ```
 
 ### X-NG-HTTP-CACHING-TAG (string: tag name);
@@ -342,7 +356,7 @@ this.http.get('https://my-json-server.typicode.com/typicode/demo/db?id=1', {
   headers: {
     [NgHttpCachingHeaders.TAG]: 'foo',
   }
-}).subscribe(e => console.log);
+}).subscribe(e => console.log(e));
 ```
 
 ## HttpContext
@@ -354,6 +368,7 @@ You can override `NgHttpCachingConfig` methods:
   isValid?: (entry: NgHttpCachingEntry) => boolean | undefined | void;
   isCacheable?: (req: HttpRequest<any>) => boolean | undefined | void;
   getKey?: (req: HttpRequest<any>) => string | undefined | void;
+  clearCacheOnMutation?: NgHttpCachingMutationStrategy | boolean | ((req: HttpRequest<any>) => boolean | undefined | void);
 }
 ```
 with `HttpContextToken`, eg.:
@@ -374,7 +389,7 @@ const context = withNgHttpCachingContext({
     console.log('context:isValid', entry);
   }
 });
-this.http.get('https://my-json-server.typicode.com/typicode/demo/db?id=1', { context }).subscribe(e => console.log);
+this.http.get('https://my-json-server.typicode.com/typicode/demo/db?id=1', { context }).subscribe(e => console.log(e));
 ```
 
 ## Cache service
@@ -440,6 +455,12 @@ export class NgHttpCachingService {
   clearCacheByTag<K, T>(tag: string): number;
 
   /**
+   * Clear the cache according to the `clearCacheOnMutation` strategy.
+   * Called automatically by the interceptor on every successful mutation.
+   */
+  clearCacheByMutation<K>(req: HttpRequest<K>): boolean;
+
+  /**
    * Run garbage collector (delete expired cache entry)
    */
   runGc<K, T>(): boolean;
@@ -493,8 +514,8 @@ Below there are some examples of use case.
 You can disallow specific request by add the header `X-NG-HTTP-CACHING-DISALLOW-CACHE`, eg.:
 
 ```ts
-import { Component, OnInit } from '@angular/core';
-import { HttpClient } from "@angular/common/http";
+import { Component, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { NgHttpCachingHeaders } from 'ng-http-caching';
 
 @Component({
@@ -502,18 +523,17 @@ import { NgHttpCachingHeaders } from 'ng-http-caching';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements OnInit {
+export class AppComponent {
+  private readonly http = inject(HttpClient);
 
-  constructor(private http: HttpClient) {}
-
-  ngOnInit(): void {
+  constructor() {
     // This request will never cache.
     // Note: all the "special" headers in NgHttpCachingHeaders are removed before send the request to the backend.
     this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
       headers: {
         [NgHttpCachingHeaders.DISALLOW_CACHE]: '1',
       }
-    }).subscribe(e => console.log);
+    }).subscribe(e => console.log(e));
   }
 }
 ```
@@ -523,8 +543,8 @@ export class AppComponent implements OnInit {
 You can set specific lifetime for request by add the header `X-NG-HTTP-CACHING-LIFETIME` with a string value as the number of millisecond, eg.:
 
 ```ts
-import { Component, OnInit } from '@angular/core';
-import { HttpClient } from "@angular/common/http";
+import { Component, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { NgHttpCachingHeaders } from 'ng-http-caching';
 
 @Component({
@@ -532,18 +552,17 @@ import { NgHttpCachingHeaders } from 'ng-http-caching';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements OnInit {
+export class AppComponent {
+  private readonly http = inject(HttpClient);
 
-  constructor(private http: HttpClient) {}
-
-  ngOnInit(): void {
+  constructor() {
     // This request will expire from 365 days.
     // Note: all the "special" headers in NgHttpCachingHeaders are removed before send the request to the backend.
     this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
       headers: {
         [NgHttpCachingHeaders.LIFETIME]: (1000 * 60 * 60 * 24 * 365).toString(),
       }
-    }).subscribe(e => console.log);
+    }).subscribe(e => console.log(e));
   }
 }
 ```
@@ -553,8 +572,8 @@ export class AppComponent implements OnInit {
 If you have choose the `DISALLOW_ALL` cache strategy, you can mark specific request as cacheable by adding the header `X-NG-HTTP-CACHING-ALLOW-CACHE`, eg.:
 
 ```ts
-import { Component, OnInit } from '@angular/core';
-import { HttpClient } from "@angular/common/http";
+import { Component, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { NgHttpCachingHeaders } from 'ng-http-caching';
 
 @Component({
@@ -562,18 +581,17 @@ import { NgHttpCachingHeaders } from 'ng-http-caching';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements OnInit {
+export class AppComponent {
+  private readonly http = inject(HttpClient);
 
-  constructor(private http: HttpClient) {}
-
-  ngOnInit(): void {
+  constructor() {
     // This request is marked as cacheable (this is necessary only if cache strategy is DISALLOW_ALL)
     // Note: all the "special" headers in NgHttpCachingHeaders are removed before send the request to the backend.
     this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
       headers: {
         [NgHttpCachingHeaders.ALLOW_CACHE]: '1',
       }
-    }).subscribe(e => console.log);
+    }).subscribe(e => console.log(e));
   }
 }
 ```
@@ -583,7 +601,7 @@ export class AppComponent implements OnInit {
 If user switch the account (logout/login) or the application language, maybe ca be necessary clear all the cache, eg.:
 
 ```ts
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { NgHttpCachingService } from 'ng-http-caching';
 
 @Component({
@@ -592,8 +610,7 @@ import { NgHttpCachingService } from 'ng-http-caching';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
-
-  constructor(private ngHttpCachingService: NgHttpCachingService) {}
+  private readonly ngHttpCachingService = inject(NgHttpCachingService);
 
   clearCache(): void {
     // Clear all the cache
@@ -607,7 +624,7 @@ export class AppComponent {
 If you want delete some cache entry, eg.:
 
 ```ts
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { NgHttpCachingService } from 'ng-http-caching';
 
 @Component({
@@ -616,8 +633,7 @@ import { NgHttpCachingService } from 'ng-http-caching';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
-
-  constructor(private ngHttpCachingService: NgHttpCachingService) {}
+  private readonly ngHttpCachingService = inject(NgHttpCachingService);
 
   clearCache(key: string): boolean {
     // Clear the cache for the provided key
@@ -631,7 +647,7 @@ export class AppComponent {
 If you want delete some cache entry by RegEx, eg.:
 
 ```ts
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { NgHttpCachingService } from 'ng-http-caching';
 
 @Component({
@@ -640,8 +656,7 @@ import { NgHttpCachingService } from 'ng-http-caching';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
-
-  constructor(private ngHttpCachingService: NgHttpCachingService) {}
+  private readonly ngHttpCachingService = inject(NgHttpCachingService);
 
   clearCacheByRegex(regEx: RegExp): void {
     // Clear the cache for the key that match regex
@@ -653,13 +668,12 @@ export class AppComponent {
 ### Example: TAG request and clear/flush specific cache entry by TAG
 
 You can tag multiple request by adding special header `X-NG-HTTP-CACHING-TAG` with the same tag and 
-using `NgHttpCachingService.clearCacheByTag(tag: 
-)` for delete all the tagged request. Eg.:
+using `NgHttpCachingService.clearCacheByTag(tag: string)` for delete all the tagged request. Eg.:
 
 ```ts
-import { Component, OnInit } from '@angular/core';
-import { HttpClient } from "@angular/common/http";
-import { NgHttpCachingService } from 'ng-http-caching';
+import { Component, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { NgHttpCachingService, NgHttpCachingHeaders } from 'ng-http-caching';
 
 @Component({
   selector: 'app-root',
@@ -667,17 +681,17 @@ import { NgHttpCachingService } from 'ng-http-caching';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
+  private readonly ngHttpCachingService = inject(NgHttpCachingService);
+  private readonly http = inject(HttpClient);
 
-  constructor(private ngHttpCachingService: NgHttpCachingService) {}
-
-  ngOnInit(): void {
+  constructor() {
     // This request is tagged with "foo" keyword. You can tag multiple requests with the same tag and 
     // using NgHttpCachingService.clearCacheByTag("foo") for delete all the tagged request.
     this.http.get('https://my-json-server.typicode.com/typicode/demo/db?id=1', {
       headers: {
         [NgHttpCachingHeaders.TAG]: 'foo',
       }
-    }).subscribe(e => console.log);
+    }).subscribe(e => console.log(e));
 
     // This request is also tagged with "foo" keyword, and has another tag "baz".
     // You can add multiple tags comma separated.
@@ -685,7 +699,7 @@ export class AppComponent {
       headers: {
         [NgHttpCachingHeaders.TAG]: 'foo,baz',
       }
-    }).subscribe(e => console.log);
+    }).subscribe(e => console.log(e));
   }
 
   clearCacheForFoo(): void {

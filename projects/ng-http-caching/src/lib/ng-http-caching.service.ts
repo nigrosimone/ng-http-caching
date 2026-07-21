@@ -473,20 +473,21 @@ export class NgHttpCachingService implements OnDestroy {
     const context = req.context.get(NG_HTTP_CACHING_CONTEXT);
     const strategy = context.clearCacheOnMutation ?? this.config.clearCacheOnMutation;
 
+    if (strategy === false || strategy === NgHttpCachingMutationStrategy.NONE) {
+      return false;
+    }
+
+    // only a mutation can invalidate the cache, whatever the strategy is
+    if (!['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
+      return false;
+    }
+
     if (typeof strategy === 'function') {
       const result = strategy(req);
       if (result === true) {
         this.clearCache();
         return true;
       }
-      return false;
-    }
-
-    if (strategy === false || strategy === NgHttpCachingMutationStrategy.NONE) {
-      return false;
-    }
-
-    if (!['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
       return false;
     }
 

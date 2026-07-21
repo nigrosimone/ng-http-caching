@@ -1704,3 +1704,61 @@ describe('NgHttpCachingService: expires header drives the lifetime', () => {
     expect(service.isExpired(entry)).toBe(false);
   });
 });
+
+describe('NgHttpCachingService: function mutation strategy is limited to mutations', () => {
+  let service: NgHttpCachingService;
+  let calls: string[];
+
+  beforeEach(() => {
+    calls = [];
+    const config: NgHttpCachingConfig = {
+      allowedMethod: ['ALL'],
+      clearCacheOnMutation: (req) => {
+        calls.push(req.method);
+        return req.url.includes('/api/critical-data');
+      },
+    };
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching(config)],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+    service.clearCache();
+  });
+
+  const seed = (): void => {
+    service.addToCache(
+      new HttpRequest('GET', 'https://angular.io/api/critical-data'),
+      new HttpResponse({ status: 200 }),
+    );
+  };
+
+  it('should not be consulted for a GET', () => {
+    seed();
+    expect(
+      service.clearCacheByMutation(new HttpRequest('GET', 'https://angular.io/api/critical-data')),
+    ).toBe(false);
+    expect(calls).toEqual([]);
+    expect(service.getStore().size).toBe(1);
+  });
+
+  it('should be consulted for every mutation method', () => {
+    for (const method of ['POST', 'PUT', 'DELETE', 'PATCH']) {
+      seed();
+      expect(
+        service.clearCacheByMutation(
+          new HttpRequest(method, 'https://angular.io/api/critical-data', null),
+        ),
+      ).toBe(true);
+      expect(service.getStore().size).toBe(0);
+    }
+    expect(calls).toEqual(['POST', 'PUT', 'DELETE', 'PATCH']);
+  });
+
+  it('should not clear when the function returns false', () => {
+    seed();
+    expect(
+      service.clearCacheByMutation(new HttpRequest('POST', 'https://angular.io/api/other', null)),
+    ).toBe(false);
+    expect(service.getStore().size).toBe(1);
+  });
+});

@@ -6,11 +6,22 @@ on:
   pull_request:
     branches: [master]
 
+# a new push to a pull request supersedes the runs still in flight for it
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     strategy:
+      # keep checking the other runtimes when one of them fails
+      fail-fast: false
       matrix:
         node-version: [22.x, 24.x, 26.x]
 
@@ -22,7 +33,21 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: npm
       - run: npm ci
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run test:ci
-      - run: npm run build ng-http-caching
+      - name: Check formatting
+        run: npm run format:check
+      - name: Lint
+        run: npm run lint
+      - name: Test
+        run: npm run test:ci
+      - name: Build library
+        run: npm run build ng-http-caching
+      - name: Build demo app
+        run: npm run build ng-http-caching-demo
+      - name: Upload coverage
+        if: matrix.node-version == '24.x'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: warn
+          retention-days: 7

@@ -1608,3 +1608,99 @@ describe('NgHttpCachingService: default config store', () => {
     expect(configA.store).not.toBe(NgHttpCachingConfigDefault.store);
   });
 });
+
+describe('NgHttpCachingService: cached response is still usable', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching()],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should be able to read the lazily initialized headers of a cached response', () => {
+    const req = new HttpRequest('GET', 'https://angular.io/docs?lazy-headers');
+    // this is how a real backend builds them: lazily, from the raw header string
+    const res = new HttpResponse({
+      status: 200,
+      body: { a: 1 },
+      headers: new HttpHeaders('x-foo: bar'),
+    });
+    expect(service.addToCache(req, res)).toBe(true);
+
+    const cached = service.getFromCache(req);
+    expect(cached).toBeTruthy();
+    expect(cached?.headers.get('x-foo')).toBe('bar');
+  });
+
+  it('should still make the body immutable', () => {
+    const req = new HttpRequest('GET', 'https://angular.io/docs?immutable-body');
+    const res = new HttpResponse({ status: 200, body: { a: 1, nested: { b: 2 } } });
+    expect(service.addToCache(req, res)).toBe(true);
+
+    const cached = service.getFromCache<unknown, { a: number; nested: { b: number } }>(req);
+    expect(Object.isFrozen(cached?.body)).toBe(true);
+    expect(Object.isFrozen(cached?.body?.nested)).toBe(true);
+  });
+});
+
+describe('NgHttpCachingService: expires header drives the lifetime', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching({ checkResponseHeaders: true })],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  const entryWithExpires = (expiresOffset: number, addedOffset = 0): NgHttpCachingEntry => {
+    const url = 'https://angular.io/docs?expires';
+    return {
+      url,
+      addedTime: Date.now() + addedOffset,
+      response: new HttpResponse({
+        status: 200,
+        headers: new HttpHeaders({ expires: new Date(Date.now() + expiresOffset).toUTCString() }),
+      }),
+      request: new HttpRequest('GET', url),
+      version: VERSION.major,
+    };
+  };
+
+  it('should not be expired before the expires date', () => {
+    expect(service.isExpired(entryWithExpires(NG_HTTP_CACHING_MINUTE_IN_MS))).toBe(false);
+  });
+
+  it('should be expired after the expires date, ignoring the default lifetime', () => {
+    // stored 2s ago with an expires date 1s in the future of the storing time
+    expect(
+      service.isExpired(
+        entryWithExpires(-NG_HTTP_CACHING_SECOND_IN_MS, -2 * NG_HTTP_CACHING_SECOND_IN_MS),
+      ),
+    ).toBe(true);
+  });
+
+  it('should be expired when already stale at storing time', () => {
+    expect(service.isExpired(entryWithExpires(-NG_HTTP_CACHING_MINUTE_IN_MS))).toBe(true);
+  });
+
+  it('cache-control should take precedence over expires', () => {
+    const url = 'https://angular.io/docs?expires-and-cache-control';
+    const entry: NgHttpCachingEntry = {
+      url,
+      addedTime: Date.now(),
+      response: new HttpResponse({
+        status: 200,
+        headers: new HttpHeaders({
+          'cache-control': 'max-age=3600',
+          expires: new Date(Date.now() - NG_HTTP_CACHING_YEAR_IN_MS).toUTCString(),
+        }),
+      }),
+      request: new HttpRequest('GET', url),
+      version: VERSION.major,
+    };
+    expect(service.isExpired(entry)).toBe(false);
+  });
+});

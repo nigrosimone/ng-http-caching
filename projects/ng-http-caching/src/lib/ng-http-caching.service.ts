@@ -51,15 +51,42 @@ export const checkCacheHeaders = (headers: HttpHeaders): boolean | number => {
   }
 
   // check Expires header if response is without Cache-Control
-  const expiresHeader = headers.get('expires');
-  if (expiresHeader) {
-    const expires = Date.parse(expiresHeader);
-    if (!isNaN(expires)) {
-      return expires > Date.now();
-    }
+  const expires = getExpiresDeadline(headers);
+  if (expires !== undefined) {
+    return expires > Date.now();
   }
 
   return true;
+};
+
+/**
+ * Return the absolute timestamp of the `Expires` response header, or `undefined` when
+ * the header is missing/unparsable or when `Cache-Control` (which takes precedence) is set.
+ */
+export const getExpiresDeadline = (headers: HttpHeaders): number | undefined => {
+  if (headers.get('cache-control')) {
+    return undefined;
+  }
+  const expiresHeader = headers.get('expires');
+  if (!expiresHeader) {
+    return undefined;
+  }
+  const expires = Date.parse(expiresHeader);
+  return isNaN(expires) ? undefined : expires;
+};
+
+/**
+ * Return true for structures that are safe to recursively freeze.
+ */
+const isPlainObjectOrArray = (value: unknown): boolean => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  if (Array.isArray(value)) {
+    return true;
+  }
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
 };
 
 export interface NgHttpCachingEntry<K = any, T = any> {
@@ -536,6 +563,17 @@ export class NgHttpCachingService implements OnDestroy {
       const headerResult = checkCacheHeaders(entry.response.headers);
       if (typeof headerResult === 'number') {
         lifetime = headerResult;
+      } else {
+        // `Expires` is an absolute deadline: express it as a lifetime relative to
+        // the time the entry was stored, so that it drives the expiration too.
+        const expires = getExpiresDeadline(entry.response.headers);
+        if (expires !== undefined) {
+          if (expires <= entry.addedTime) {
+            // already stale on arrival; a `0` lifetime would mean "never expire"
+            return true;
+          }
+          lifetime = expires - entry.addedTime;
+        }
       }
     }
     // never expire if 0
@@ -714,10 +752,16 @@ export class NgHttpCachingService implements OnDestroy {
       return object;
     }
 
-    // At this point we know that we're dealing with either an array or plain object, so
-    // just freeze it and recurse on its values.
+    // Freeze this level, then recurse only on plain objects and arrays: class instances
+    // are not "simple structures" and may need to mutate themselves, eg. `HttpHeaders`
+    // initializes itself lazily on the first read and throws once frozen.
     Object.freeze(object);
-    Object.keys(object).forEach((key) => this.deepFreeze((object as any)[key]));
+    Object.keys(object).forEach((key) => {
+      const value = (object as Record<string, unknown>)[key];
+      if (isPlainObjectOrArray(value)) {
+        this.deepFreeze(value);
+      }
+    });
 
     return object;
   }

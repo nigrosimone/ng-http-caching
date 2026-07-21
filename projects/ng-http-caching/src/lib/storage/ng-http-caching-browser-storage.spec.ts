@@ -63,22 +63,22 @@ describe('NgHttpCachingBrowserStorage', () => {
 
     it('has with and without prefix', () => {
         mockStorage.setItem('NgHttpCaching::exists', '{}');
-        expect(store.has('exists')).toBeTrue();
-        expect(store.has('NgHttpCaching::exists')).toBeTrue();
-        expect(store.has('none')).toBeFalse();
-        expect(store.has('')).toBeFalse();
+        expect(store.has('exists')).toBe(true);
+        expect(store.has('NgHttpCaching::exists')).toBe(true);
+        expect(store.has('none')).toBe(false);
+        expect(store.has('')).toBe(false);
     });
 
     it('delete with and without prefix', () => {
         mockStorage.setItem('NgHttpCaching::del', '{}');
-        expect(store.delete('del')).toBeTrue();
+        expect(store.delete('del')).toBe(true);
         expect(mockStorage.getItem('NgHttpCaching::del')).toBeNull();
 
         mockStorage.setItem('NgHttpCaching::del2', '{}');
-        expect(store.delete('NgHttpCaching::del2')).toBeTrue();
+        expect(store.delete('NgHttpCaching::del2')).toBe(true);
         expect(mockStorage.getItem('NgHttpCaching::del2')).toBeNull();
 
-        expect(store.delete('')).toBeFalse();
+        expect(store.delete('')).toBe(false);
     });
 
     it('clear should only remove prefixed keys', () => {

@@ -1,0 +1,9 @@
+/* Not used by the build: `angular.json` points each target at its own tsconfig.
+   This file exists so editors resolve a configuration for every file of the
+   project, spec files included (the workspace root tsconfig excludes them). */
+{
+  "extends": "./tsconfig.spec.json",
+  "include": [
+    "src/**/*.ts"
+  ]
+}

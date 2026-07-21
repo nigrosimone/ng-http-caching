@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"const p=require\\('./node_modules/@angular/build/package.json'\\);console.log\\(JSON.stringify\\(p.peerDependencies,null,1\\)\\);console.log\\('OPT',JSON.stringify\\(p.peerDependenciesMeta,null,1\\)\\)\")"
+    ]
+  }
+}

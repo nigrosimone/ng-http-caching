@@ -46,7 +46,7 @@ describe('NgHttpCachingNgSimpleStateAdapter', () => {
 
         store.set('GET@http://example.com', entry);
 
-        expect(store.has('GET@http://example.com')).toBeTrue();
+        expect(store.has('GET@http://example.com')).toBe(true);
         expect(store.size).toBe(1);
 
         const cache = store.get('GET@http://example.com');
@@ -61,11 +61,11 @@ describe('NgHttpCachingNgSimpleStateAdapter', () => {
         });
         expect(count).toBe(1);
 
-        expect(store.delete('GET@http://example.com')).toBeTrue();
-        expect(store.has('GET@http://example.com')).toBeFalse();
+        expect(store.delete('GET@http://example.com')).toBe(true);
+        expect(store.has('GET@http://example.com')).toBe(false);
         expect(store.size).toBe(0);
 
-        expect(store.delete('missing')).toBeFalse();
+        expect(store.delete('missing')).toBe(false);
 
         store.set('GET@http://example.com', entry);
         expect(store.size).toBe(1);
@@ -137,6 +137,6 @@ describe('NgHttpCachingNgSimpleStateAdapter with custom config', () => {
             version: '1',
         });
         expect(store.size).toBe(1);
-        expect(store.has('key1')).toBeTrue();
+        expect(store.has('key1')).toBe(true);
     });
 });

@@ -43,7 +43,7 @@ describe('NgHttpCachingSessionStorage', () => {
         };
         store.set(entry.url, entry);
 
-        expect(store.has(entry.url)).toBeTrue();
+        expect(store.has(entry.url)).toBe(true);
         const cache = store.get(entry.url);
         expect(cache).toBeTruthy();
         expect(store.size).toBe(1);

@@ -25,6 +25,9 @@ import { provideNgHttpCaching } from './ng-http-caching-provider';
 import { NgHttpCachingNgSimpleStateSentinel } from './storage/ng-http-caching-ng-simple-state-sentinel';
 import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
 
+function sleep(time: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, time));
+}
 
 describe('NgHttpCachingService: no config', () => {
   let service: NgHttpCachingService;
@@ -141,9 +144,9 @@ describe('NgHttpCachingService: getStore()', () => {
       version: VERSION.major
     };
     store.set(keyUrl, cacheEntry);
-    expect(store.has(keyUrl)).toBeTrue();
-    expect(store.delete(keyUrl)).toBeTrue();
-    expect(store.has(keyUrl)).toBeFalse();
+    expect(store.has(keyUrl)).toBe(true);
+    expect(store.delete(keyUrl)).toBe(true);
+    expect(store.has(keyUrl)).toBe(false);
   });
 });
 
@@ -264,12 +267,12 @@ describe('NgHttpCachingService: default isCacheable', () => {
       'GET',
       'https://angular.io/docs?foo=bar'
     );
-    expect(service.isCacheable(httpRequest)).toBeTrue();
+    expect(service.isCacheable(httpRequest)).toBe(true);
   });
 
   it('DELETE isn\'t cacheable', () => {
     const httpRequest = new HttpRequest('DELETE', 'https://angular.io/docs');
-    expect(service.isCacheable(httpRequest)).toBeFalse();
+    expect(service.isCacheable(httpRequest)).toBe(false);
   });
 });
 
@@ -295,12 +298,12 @@ describe('NgHttpCachingService: default isCacheable allow ALL', () => {
       'GET',
       'https://angular.io/docs?foo=bar'
     );
-    expect(service.isCacheable(httpRequest)).toBeTrue();
+    expect(service.isCacheable(httpRequest)).toBe(true);
   });
 
   it('DELETE is cacheable', () => {
     const httpRequest = new HttpRequest('DELETE', 'https://angular.io/docs');
-    expect(service.isCacheable(httpRequest)).toBeTrue();
+    expect(service.isCacheable(httpRequest)).toBe(true);
   });
 });
 
@@ -326,12 +329,12 @@ describe('NgHttpCachingService: default isCacheable allow two', () => {
       'GET',
       'https://angular.io/docs?foo=bar'
     );
-    expect(service.isCacheable(httpRequest)).toBeTrue();
+    expect(service.isCacheable(httpRequest)).toBe(true);
   });
 
   it('DELETE is cacheable', () => {
     const httpRequest = new HttpRequest('DELETE', 'https://angular.io/docs');
-    expect(service.isCacheable(httpRequest)).toBeTrue();
+    expect(service.isCacheable(httpRequest)).toBe(true);
   });
 });
 
@@ -361,12 +364,12 @@ describe('NgHttpCachingService: override isCacheable', () => {
       'GET',
       'https://angular.io/docs?foo=bar'
     );
-    expect(service.isCacheable(httpRequest)).toBeFalse();
+    expect(service.isCacheable(httpRequest)).toBe(false);
   });
 
   it('GET without query parameters is cacheable', () => {
     const httpRequest = new HttpRequest('GET', 'https://angular.io/docs');
-    expect(service.isCacheable(httpRequest)).toBeTrue();
+    expect(service.isCacheable(httpRequest)).toBe(true);
   });
 });
 
@@ -396,12 +399,12 @@ describe('NgHttpCachingService: override isCacheable return undefined', () => {
       'GET',
       'https://angular.io/docs?foo=bar'
     );
-    expect(service.isCacheable(httpRequest)).toBeTrue();
+    expect(service.isCacheable(httpRequest)).toBe(true);
   });
 
   it('don\'t cacheable', () => {
     const httpRequest = new HttpRequest('DELETE', 'https://angular.io/docs');
-    expect(service.isCacheable(httpRequest)).toBeFalse();
+    expect(service.isCacheable(httpRequest)).toBe(false);
   });
 });
 
@@ -428,7 +431,7 @@ describe('NgHttpCachingService: isCacheable strategy DISALLOW_ALL', () => {
       'GET',
       'https://angular.io/docs?foo=bar'
     );
-    expect(service.isCacheable(httpRequest)).toBeFalse();
+    expect(service.isCacheable(httpRequest)).toBe(false);
   });
 
   it('GET with allow header is cacheable', () => {
@@ -441,7 +444,7 @@ describe('NgHttpCachingService: isCacheable strategy DISALLOW_ALL', () => {
       null,
       { headers }
     );
-    expect(service.isCacheable(httpRequest)).toBeTrue();
+    expect(service.isCacheable(httpRequest)).toBe(true);
   });
 });
 
@@ -468,7 +471,7 @@ describe('NgHttpCachingService: isCacheable strategy ALLOW_ALL', () => {
       'GET',
       'https://angular.io/docs?foo=bar'
     );
-    expect(service.isCacheable(httpRequest)).toBeTrue();
+    expect(service.isCacheable(httpRequest)).toBe(true);
   });
 
   it('GET with disallow header isn\'t cacheable', () => {
@@ -481,7 +484,7 @@ describe('NgHttpCachingService: isCacheable strategy ALLOW_ALL', () => {
       null,
       { headers }
     );
-    expect(service.isCacheable(httpRequest)).toBeFalse();
+    expect(service.isCacheable(httpRequest)).toBe(false);
   });
 });
 
@@ -507,7 +510,7 @@ describe('NgHttpCachingService: default isExpired', () => {
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
     };
-    expect(service.isExpired(cacheEntry)).toBeFalse();
+    expect(service.isExpired(cacheEntry)).toBe(false);
   });
 
   it('expired', () => {
@@ -518,7 +521,7 @@ describe('NgHttpCachingService: default isExpired', () => {
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
     };
-    expect(service.isExpired(cacheEntry)).toBeTrue();
+    expect(service.isExpired(cacheEntry)).toBe(true);
   });
 
 });
@@ -551,7 +554,7 @@ describe('NgHttpCachingService: override isExpired', () => {
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
     };
-    expect(service.isExpired(cacheEntry)).toBeTrue();
+    expect(service.isExpired(cacheEntry)).toBe(true);
   });
 
   it('expired 2', () => {
@@ -562,7 +565,7 @@ describe('NgHttpCachingService: override isExpired', () => {
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
     };
-    expect(service.isExpired(cacheEntry)).toBeTrue();
+    expect(service.isExpired(cacheEntry)).toBe(true);
   });
 });
 
@@ -594,7 +597,7 @@ describe('NgHttpCachingService: override isExpired return undefined', () => {
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
     };
-    expect(service.isExpired(cacheEntry)).toBeFalse();
+    expect(service.isExpired(cacheEntry)).toBe(false);
   });
 
   it('not expired', () => {
@@ -605,7 +608,7 @@ describe('NgHttpCachingService: override isExpired return undefined', () => {
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
     };
-    expect(service.isExpired(cacheEntry)).toBeTrue();
+    expect(service.isExpired(cacheEntry)).toBe(true);
   });
 });
 
@@ -634,7 +637,7 @@ describe('NgHttpCachingService: default isExpired with long lifetime', () => {
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
     };
-    expect(service.isExpired(cacheEntry)).toBeFalse();
+    expect(service.isExpired(cacheEntry)).toBe(false);
   });
 
   it('not expired 2', () => {
@@ -645,7 +648,7 @@ describe('NgHttpCachingService: default isExpired with long lifetime', () => {
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
     };
-    expect(service.isExpired(cacheEntry)).toBeFalse();
+    expect(service.isExpired(cacheEntry)).toBe(false);
   });
 });
 
@@ -674,7 +677,7 @@ describe('NgHttpCachingService: default isExpired with infinite lifetime', () =>
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
     };
-    expect(service.isExpired(cacheEntry)).toBeFalse();
+    expect(service.isExpired(cacheEntry)).toBe(false);
   });
 });
 
@@ -704,7 +707,7 @@ describe('NgHttpCachingService: default isExpired with request lifetime', () => 
       }),
       version: VERSION.major
     };
-    expect(service.isExpired(cacheEntry)).toBeTrue();
+    expect(service.isExpired(cacheEntry)).toBe(true);
   });
 
   it('not expired', () => {
@@ -719,7 +722,7 @@ describe('NgHttpCachingService: default isExpired with request lifetime', () => 
       }),
       version: VERSION.major
     };
-    expect(service.isExpired(cacheEntry)).toBeFalse();
+    expect(service.isExpired(cacheEntry)).toBe(false);
   });
 
   it('wrong negative expired', () => {
@@ -778,7 +781,7 @@ describe('NgHttpCachingService: change of version', () => {
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: (+VERSION.major + 1).toString()
     };
-    expect(service.isExpired(cacheEntry)).toBeTrue();
+    expect(service.isExpired(cacheEntry)).toBe(true);
   });
 
   it('isValid', () => {
@@ -789,7 +792,7 @@ describe('NgHttpCachingService: change of version', () => {
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: (+VERSION.major + 1).toString()
     };
-    expect(service.isValid(cacheEntry)).toBeFalse();
+    expect(service.isValid(cacheEntry)).toBe(false);
   });
 
   it('isValid not 200', () => {
@@ -800,7 +803,7 @@ describe('NgHttpCachingService: change of version', () => {
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
     };
-    expect(service.isValid(cacheEntry)).toBeFalse();
+    expect(service.isValid(cacheEntry)).toBe(false);
   });
 });
 
@@ -818,29 +821,27 @@ describe('NgHttpCachingService: ADD and GET and DELETE', () => {
     expect(service).toBeTruthy();
   });
 
-  it('ADD and GET expired', (done) => {
+  it('ADD and GET expired', async () => {
     const req = new HttpRequest('GET', 'https://angular.io/docs?foo=bar', null, {
       headers: new HttpHeaders({
         [NgHttpCachingHeaders.LIFETIME]: '10',
       }),
     });
     const res = new HttpResponse({ body: { foo: true } });
-    expect(service.addToCache(req, res)).toBeTrue();
+    expect(service.addToCache(req, res)).toBe(true);
     expect(service.getFromCache(req)).toEqual(res);
 
-    setTimeout(() => {
-      expect(service.getFromCache(req)).toBeUndefined();
-      done();
-    }, 50);
+    await sleep(50);
 
+    expect(service.getFromCache(req)).toBeUndefined();
   }, 1000);
 
   it('ADD and GET and DELETE', () => {
     const req = new HttpRequest('GET', 'https://angular.io/docs?foo=bar');
     const res = new HttpResponse({ body: { foo: true } });
-    expect(service.addToCache(req, res)).toBeTrue();
+    expect(service.addToCache(req, res)).toBe(true);
     expect(service.getFromCache(req)).toEqual(res);
-    expect(service.deleteFromCache(req)).toBeTrue();
+    expect(service.deleteFromCache(req)).toBe(true);
     expect(service.getFromCache(req)).toBeUndefined();
   });
 });
@@ -906,7 +907,7 @@ describe('NgHttpCachingService: clearCache', () => {
   it('after clearCache no cached entry', () => {
     const req = new HttpRequest('GET', 'https://angular.io/docs?foo=bar');
     const res = new HttpResponse({ body: { foo: true } });
-    expect(service.addToCache(req, res)).toBeTrue();
+    expect(service.addToCache(req, res)).toBe(true);
     expect(service.getFromCache(req)).toEqual(res);
     service.clearCache();
     expect(service.getFromCache(req)).toBeUndefined();
@@ -928,7 +929,7 @@ describe('NgHttpCachingService: runGc', () => {
     expect(service).toBeTruthy();
   });
 
-  it('after runGc no cached entry', (done) => {
+  it('after runGc no cached entry', async () => {
     const reqExp = new HttpRequest('GET', 'https://angular.io/docs?foo=expired', {
       headers: new HttpHeaders({
         [NgHttpCachingHeaders.LIFETIME]: '1',
@@ -937,26 +938,24 @@ describe('NgHttpCachingService: runGc', () => {
     const reqFresh = new HttpRequest('GET', 'https://angular.io/docs?foo=fresh');
     const res = new HttpResponse({ body: { foo: true } });
 
-    expect(service.addToCache(reqExp, res)).toBeTrue();
-    expect(service.addToCache(reqFresh, res)).toBeTrue();
+    expect(service.addToCache(reqExp, res)).toBe(true);
+    expect(service.addToCache(reqFresh, res)).toBe(true);
 
     expect(service.getFromCache(reqExp)).toEqual(res);
     expect(service.getFromCache(reqFresh)).toEqual(res);
 
-    setTimeout(() => {
-      service['gcLastRun'] = 0;
-      expect(service.runGc()).toBeTrue();
+    await sleep(50);
 
-      expect(service.getFromCache(reqExp)).toBeUndefined();
-      expect(service.getFromCache(reqFresh)).toEqual(res);
+    service['gcLastRun'] = 0;
+    expect(service.runGc()).toBe(true);
 
-      expect(service['gcLock']).toBeFalse();
-      service['gcLock'] = true;
-      expect(service.runGc()).toBeFalse();
-      service['gcLock'] = false;
+    expect(service.getFromCache(reqExp)).toBeUndefined();
+    expect(service.getFromCache(reqFresh)).toEqual(res);
 
-      done();
-    }, 50);
+    expect(service['gcLock']).toBe(false);
+    service['gcLock'] = true;
+    expect(service.runGc()).toBe(false);
+    service['gcLock'] = false;
   }, 1000);
 });
 
@@ -979,8 +978,8 @@ describe('NgHttpCachingService: clearCacheByRegex', () => {
     const req2 = new HttpRequest('GET', 'https://angular.io/docs?foo=regex2');
     const res = new HttpResponse({ body: { foo: true } });
 
-    expect(service.addToCache(req1, res)).toBeTrue();
-    expect(service.addToCache(req2, res)).toBeTrue();
+    expect(service.addToCache(req1, res)).toBe(true);
+    expect(service.addToCache(req2, res)).toBe(true);
 
     expect(service.getFromCache(req1)).toEqual(res);
     expect(service.getFromCache(req2)).toEqual(res);
@@ -997,8 +996,8 @@ describe('NgHttpCachingService: clearCacheByRegex', () => {
     const req2 = new HttpRequest('GET', 'https://angular.io/docs?foo=regex2');
     const res = new HttpResponse({ body: { foo: true } });
 
-    expect(service.addToCache(req1, res)).toBeTrue();
-    expect(service.addToCache(req2, res)).toBeTrue();
+    expect(service.addToCache(req1, res)).toBe(true);
+    expect(service.addToCache(req2, res)).toBe(true);
 
     expect(service.getFromCache(req1)).toEqual(res);
     expect(service.getFromCache(req2)).toEqual(res);
@@ -1030,13 +1029,13 @@ describe('NgHttpCachingService: clearCacheByKey', () => {
     const req2 = new HttpRequest('GET', 'https://angular.io/docs?foo=bykey2');
     const res = new HttpResponse({ body: { foo: true } });
 
-    expect(service.addToCache(req1, res)).toBeTrue();
-    expect(service.addToCache(req2, res)).toBeTrue();
+    expect(service.addToCache(req1, res)).toBe(true);
+    expect(service.addToCache(req2, res)).toBe(true);
 
     expect(service.getFromCache(req1)).toEqual(res);
     expect(service.getFromCache(req2)).toEqual(res);
 
-    expect(service.clearCacheByKey('GET@https://angular.io/docs?foo=bykey1')).toBeTrue();
+    expect(service.clearCacheByKey('GET@https://angular.io/docs?foo=bykey1')).toBe(true);
 
     expect(service.getFromCache(req1)).toBeUndefined();
     expect(service.getFromCache(req2)).toEqual(res);
@@ -1077,9 +1076,9 @@ describe('NgHttpCachingService: clearCacheByTag', () => {
     });
     const res = new HttpResponse({ body: { foo: true } });
 
-    expect(service.addToCache(req1, res)).toBeTrue();
-    expect(service.addToCache(req2, res)).toBeTrue();
-    expect(service.addToCache(req3, res)).toBeTrue();
+    expect(service.addToCache(req1, res)).toBe(true);
+    expect(service.addToCache(req2, res)).toBe(true);
+    expect(service.addToCache(req3, res)).toBe(true);
 
     expect(service.getFromCache(req1)).toEqual(res);
     expect(service.getFromCache(req2)).toEqual(res);
@@ -1101,7 +1100,7 @@ describe('NgHttpCachingService: clearCacheByTag', () => {
     });
     const res = new HttpResponse({ body: { foo: true } });
 
-    expect(service.addToCache(req, res)).toBeTrue();
+    expect(service.addToCache(req, res)).toBe(true);
     // "bar" has surrounding whitespace in the header and must still match
     expect(service.clearCacheByTag('bar')).toEqual(1);
     expect(service.getFromCache(req)).toBeUndefined();
@@ -1113,7 +1112,7 @@ describe('NgHttpCachingService: clearCacheByTag', () => {
         [NgHttpCachingHeaders.TAG]: 'foo',
       }),
     });
-    expect(service.addToCache(req, new HttpResponse({ body: {} }))).toBeTrue();
+    expect(service.addToCache(req, new HttpResponse({ body: {} }))).toBe(true);
     expect(service.clearCacheByTag('does-not-exist')).toEqual(0);
   });
 
@@ -1142,12 +1141,12 @@ describe('NgHttpCachingService: checkResponseHeaders lifetime', () => {
       request: req,
       version: VERSION.major,
     };
-    expect(service.isValid(entry)).toBeTrue();
-    expect(service.isExpired(entry)).toBeFalse();
+    expect(service.isValid(entry)).toBe(true);
+    expect(service.isExpired(entry)).toBe(false);
 
     // an entry cached more than max-age ago must be expired
     const oldEntry: NgHttpCachingEntry = { ...entry, addedTime: Date.now() - (NG_HTTP_CACHING_HOUR_IN_MS + NG_HTTP_CACHING_SECOND_IN_MS) };
-    expect(service.isExpired(oldEntry)).toBeTrue();
+    expect(service.isExpired(oldEntry)).toBe(true);
   });
 
   it('does not cache a response with max-age=0 (must not live forever)', () => {
@@ -1157,7 +1156,7 @@ describe('NgHttpCachingService: checkResponseHeaders lifetime', () => {
       headers: new HttpHeaders({ 'cache-control': 'max-age=0' }),
     });
     // regression: max-age=0 previously made the entry valid AND never-expiring
-    expect(service.addToCache(req, res)).toBeFalse();
+    expect(service.addToCache(req, res)).toBe(false);
     expect(service.getFromCache(req)).toBeUndefined();
   });
 
@@ -1167,7 +1166,7 @@ describe('NgHttpCachingService: checkResponseHeaders lifetime', () => {
       body: { foo: true },
       headers: new HttpHeaders({ 'cache-control': 'no-store' }),
     });
-    expect(service.addToCache(req, res)).toBeFalse();
+    expect(service.addToCache(req, res)).toBe(false);
   });
 });
 
@@ -1193,7 +1192,7 @@ describe('NgHttpCachingService: default isValid', () => {
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
     };
-    expect(service.isValid(cacheEntry)).toBeTrue();
+    expect(service.isValid(cacheEntry)).toBe(true);
   });
 });
 
@@ -1229,8 +1228,8 @@ describe('NgHttpCachingService: override isValid', () => {
       request: req,
       version: VERSION.major
     };
-    expect(service.isValid(cacheEntry)).toBeTrue();
-    expect(service.addToCache(req, res)).toBeTrue();
+    expect(service.isValid(cacheEntry)).toBe(true);
+    expect(service.addToCache(req, res)).toBe(true);
   });
 
   it('invalid', () => {
@@ -1243,8 +1242,8 @@ describe('NgHttpCachingService: override isValid', () => {
       request: req,
       version: VERSION.major
     };
-    expect(service.isValid(cacheEntry)).toBeFalse();
-    expect(service.addToCache(req, res)).toBeFalse();
+    expect(service.isValid(cacheEntry)).toBe(false);
+    expect(service.addToCache(req, res)).toBe(false);
   });
 });
 
@@ -1276,7 +1275,7 @@ describe('NgHttpCachingService: override isValid return undefined', () => {
       request: new HttpRequest('GET', 'https://angular.io/docs?foo=bar'),
       version: VERSION.major
     };
-    expect(service.isValid(cacheEntry)).toBeTrue();
+    expect(service.isValid(cacheEntry)).toBe(true);
   });
 
 });
@@ -1299,7 +1298,7 @@ describe('NgHttpCachingService: deep freeze', () => {
     try {
       const req = new HttpRequest('GET', 'https://angular.io/docs?foo=isValid');
       const res = new HttpResponse({ status: 200, body: { count: 1 } });
-      expect(service.addToCache(req, res)).toBeTrue();
+      expect(service.addToCache(req, res)).toBe(true);
       service['devMode'] = true;
       expect(service['devMode']).toEqual(true);
       const state = service.getFromCache(req);
@@ -1369,13 +1368,13 @@ describe('NgHttpCachingService: context and edge cases', () => {
       request: new HttpRequest('GET', 'https://angular.io', { context }),
       version: VERSION.major
     };
-    expect(service.isExpired(cacheEntry)).toBeTrue();
+    expect(service.isExpired(cacheEntry)).toBe(true);
   });
 
   it('isCacheable: HttpContext override', () => {
     const context = withNgHttpCachingContext({ isCacheable: () => false });
     const httpRequest = new HttpRequest('GET', 'https://angular.io', { context });
-    expect(service.isCacheable(httpRequest)).toBeFalse();
+    expect(service.isCacheable(httpRequest)).toBe(false);
   });
 
   it('isValid: HttpContext override', () => {
@@ -1387,7 +1386,7 @@ describe('NgHttpCachingService: context and edge cases', () => {
       request: new HttpRequest('GET', 'https://angular.io', { context }),
       version: VERSION.major
     };
-    expect(service.isValid(cacheEntry)).toBeFalse();
+    expect(service.isValid(cacheEntry)).toBe(false);
   });
 
   it('getKey: HttpContext override', () => {
@@ -1476,7 +1475,7 @@ describe('NgHttpCachingService: clearCacheByMutation', () => {
     service.clearCacheByMutation(new HttpRequest('POST' as any, 'https://angular.io/api/users'));
     // Should clear both /api/users and /api/users?id=1 but NOT /api/other
     expect(service.getStore().size).toBe(1);
-    expect(service.getStore().has('GET@https://angular.io/api/other')).toBeTrue();
+    expect(service.getStore().has('GET@https://angular.io/api/other')).toBe(true);
   });
 
   it('strategy COLLECTION', () => {
@@ -1496,7 +1495,7 @@ describe('NgHttpCachingService: clearCacheByMutation', () => {
     service.clearCacheByMutation(new HttpRequest('DELETE' as any, 'https://angular.io/api/users/24'));
     // Should clear /api/users/24 AND /api/users
     expect(service.getStore().size).toBe(1);
-    expect(service.getStore().has('GET@https://angular.io/api/other')).toBeTrue();
+    expect(service.getStore().has('GET@https://angular.io/api/other')).toBe(true);
   });
 
   it('custom function strategy', () => {

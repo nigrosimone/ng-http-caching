@@ -15,7 +15,7 @@ describe('provideNgHttpCaching', () => {
         const service = TestBed.inject(NgHttpCachingService);
         expect(service).toBeTruthy();
         const interceptors = TestBed.inject(HTTP_INTERCEPTORS);
-        expect(interceptors.some(i => i instanceof NgHttpCachingInterceptorService)).toBeTrue();
+        expect(interceptors.some(i => i instanceof NgHttpCachingInterceptorService)).toBe(true);
     });
 
     it('should provide custom config', () => {

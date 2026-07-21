@@ -231,7 +231,11 @@ export interface NgHttpCachingDefaultConfig extends NgHttpCachingConfig {
 }
 
 export const NgHttpCachingConfigDefault: Readonly<NgHttpCachingDefaultConfig> = {
-  store: new NgHttpCachingMemoryStorage(),
+  // a getter, so that reading (or spreading) the defaults never hands out a
+  // store instance shared between services
+  get store(): NgHttpCachingStorageInterface {
+    return new NgHttpCachingMemoryStorage();
+  },
   lifetime: NG_HTTP_CACHING_HOUR_IN_MS,
   version: VERSION.major,
   allowedMethod: ['GET', 'HEAD'],
@@ -245,7 +249,7 @@ export const NgHttpCachingConfigDefault: Readonly<NgHttpCachingDefaultConfig> = 
  * This avoids sharing a single Map across multiple service instances (important in tests).
  */
 function createDefaultConfig(): NgHttpCachingDefaultConfig {
-  return { ...NgHttpCachingConfigDefault, store: new NgHttpCachingMemoryStorage() };
+  return { ...NgHttpCachingConfigDefault };
 }
 
 @Injectable({ providedIn: 'root' })
@@ -624,11 +628,9 @@ export class NgHttpCachingService implements OnDestroy {
         return false;
       }
     }
-    // if allowed method is only ALL, allow all http methods
-    if (this.config.allowedMethod.length === 1) {
-      if (this.config.allowedMethod[0] === 'ALL') {
-        return true;
-      }
+    // if ALL is in the allowed method, allow all http methods
+    if (this.config.allowedMethod.includes('ALL')) {
+      return true;
     }
     // request is allowed if method is in allowedMethod
     return this.config.allowedMethod.includes(req.method);

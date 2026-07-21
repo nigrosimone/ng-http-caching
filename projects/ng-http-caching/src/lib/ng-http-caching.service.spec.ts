@@ -1580,3 +1580,31 @@ describe('NgHttpCachingService: entry with a corrupted lifetime', () => {
     expect(service.getStore().size).toBe(0);
   });
 });
+
+describe('NgHttpCachingService: ALL combined with other allowed methods', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching({ allowedMethod: ['ALL', 'GET'] })],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should allow every method when ALL is present', () => {
+    for (const method of ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'PATCH']) {
+      expect(service.isCacheable(new HttpRequest(method, 'https://angular.io/docs', null))).toBe(
+        true,
+      );
+    }
+  });
+});
+
+describe('NgHttpCachingService: default config store', () => {
+  it('should not share the store instance between spreads of the defaults', () => {
+    const configA = { ...NgHttpCachingConfigDefault };
+    const configB = { ...NgHttpCachingConfigDefault };
+    expect(configA.store).not.toBe(configB.store);
+    expect(configA.store).not.toBe(NgHttpCachingConfigDefault.store);
+  });
+});

@@ -1,0 +1,170 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Version bump ("auto" picks minor when there are feat commits, patch otherwise)'
+        type: choice
+        options: [auto, patch, minor, major]
+        default: auto
+      version:
+        description: 'Explicit version, e.g. 23.0.1 (overrides the bump: majors follow the Angular major)'
+        type: string
+        default: ''
+      dry_run:
+        description: 'Build and pack everything, but skip npm publish, git push and the GitHub release'
+        type: boolean
+        default: false
+
+# `contents: write` pushes the release commit, the tag and the GitHub release,
+# `id-token: write` signs the npm provenance attestation
+permissions:
+  contents: write
+  id-token: write
+
+# two releases in flight would race on the version bump
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  LIB: ng-http-caching
+  LIB_DIR: projects/ng-http-caching
+  DIST_DIR: dist/ng-http-caching
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Only release from the default branch
+        if: github.ref_name != github.event.repository.default_branch
+        run: |
+          echo "::error::releases must be cut from ${{ github.event.repository.default_branch }}, got ${{ github.ref_name }}"
+          exit 1
+
+      - uses: actions/checkout@v4
+        with:
+          # the changelog needs the whole history and the tags
+          fetch-depth: 0
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test:ci
+
+      - name: Decide the next version
+        id: bump
+        run: npm run release:bump -- --type "${{ inputs.release_type }}"
+
+      - name: Bump the version
+        id: version
+        env:
+          REQUESTED: ${{ inputs.version }}
+          BUMP: ${{ steps.bump.outputs.bump }}
+        run: |
+          CURRENT="$(node -p "require('./package.json').version")"
+          if [ -n "$REQUESTED" ]; then
+            # the major tracks the Angular major, so it is always typed in by hand
+            if ! printf '%s' "$REQUESTED" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+              echo "::error::\"$REQUESTED\" is not a valid version"
+              exit 1
+            fi
+            HIGHEST="$(printf '%s\n%s\n' "$CURRENT" "$REQUESTED" | sort -V | tail -1)"
+            if [ "$REQUESTED" = "$CURRENT" ] || [ "$HIGHEST" != "$REQUESTED" ]; then
+              echo "::error::$REQUESTED is not greater than the current $CURRENT"
+              exit 1
+            fi
+            npm version "$REQUESTED" --no-git-tag-version
+          else
+            npm version "$BUMP" --no-git-tag-version
+          fi
+          VERSION="$(node -p "require('./package.json').version")"
+          # the library manifest is the one that ends up published: keep it in sync
+          (cd "$LIB_DIR" && npm version "$VERSION" --no-git-tag-version --allow-same-version)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "Releasing $LIB v$VERSION"
+
+      - name: Fail if the version is already on npm
+        run: |
+          if npm view "$LIB@$VERSION" version >/dev/null 2>&1; then
+            echo "::error::$LIB@$VERSION is already published"
+            exit 1
+          fi
+
+      - name: Generate the changelog
+        run: |
+          npm run release:notes -- \
+            --version "$VERSION" \
+            --notes-out RELEASE_NOTES.md \
+            --changelog CHANGELOG.md
+          npx prettier --write CHANGELOG.md
+          cat RELEASE_NOTES.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build the library
+        run: npm run build "$LIB"
+
+      - name: Build the demo app
+        run: npm run build "$LIB-demo"
+
+      - name: Assemble the package
+        run: |
+          cp README.md LICENSE "$DIST_DIR/"
+          PACKED="$(node -p "require('./$DIST_DIR/package.json').version")"
+          if [ "$PACKED" != "$VERSION" ]; then
+            echo "::error::the built package is $PACKED but $VERSION was expected"
+            exit 1
+          fi
+
+      - name: Publish to npm
+        if: ${{ !inputs.dry_run }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: cd "$DIST_DIR" && npm publish --access public --provenance --ignore-scripts
+
+      - name: Commit, tag and push
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json "$LIB_DIR/package.json" CHANGELOG.md
+          git commit -m "chore(release): v$VERSION [skip ci]"
+          git tag -a "v$VERSION" -m "v$VERSION"
+          git push origin "HEAD:${{ github.ref_name }}" --follow-tags
+
+      - name: Create the GitHub release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "v$VERSION" --title "v$VERSION" --notes-file RELEASE_NOTES.md --verify-tag
+
+      - name: Pack the tarball
+        if: ${{ inputs.dry_run }}
+        run: cd "$DIST_DIR" && npm pack --pack-destination "$GITHUB_WORKSPACE"
+
+      - name: Upload the dry-run output
+        if: ${{ inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-dry-run-${{ steps.version.outputs.version }}
+          path: |
+            *.tgz
+            RELEASE_NOTES.md
+            CHANGELOG.md
+          retention-days: 7

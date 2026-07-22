@@ -33,7 +33,9 @@
     "lint": "ng lint",
     "test:ci": "ng test ng-http-caching --coverage --no-watch",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "release:bump": "node .github/scripts/release.mjs bump",
+    "release:notes": "node .github/scripts/release.mjs notes"
   },
   "dependencies": {
     "@angular/common": "^22.0.0",

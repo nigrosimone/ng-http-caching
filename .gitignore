@@ -46,3 +46,6 @@ testem.log
 .DS_Store
 Thumbs.db
 /projects/ng-http-caching/coverage
+
+# release artifacts
+RELEASE_NOTES.md

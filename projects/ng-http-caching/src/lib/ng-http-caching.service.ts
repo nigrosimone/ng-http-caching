@@ -38,14 +38,18 @@ export const checkCacheHeaders = (headers: HttpHeaders): boolean | number => {
     const maxAgeMatch = /max-age\s*=\s*(\d+)/.exec(cacheControl);
     if (maxAgeMatch) {
       const maxAgeSec = parseInt(maxAgeMatch[1], 10);
-      // `max-age=0` means the response is immediately stale, so it isn't cacheable.
-      // Returning a `0` lifetime here would collide with the "0 = never expire"
-      // sentinel used by `isExpired`, caching the response forever.
-      if (maxAgeSec === 0) {
+      // `max-age` is counted from the moment the response was generated, not from the
+      // moment we received it: an upstream shared cache (CDN, proxy) reports with `Age`
+      // how long it has been holding it already, and that much freshness is already gone.
+      const freshSec = maxAgeSec - getAgeSeconds(headers);
+      // `max-age=0`, or a response already older than its `max-age`, is immediately
+      // stale, so it isn't cacheable. Returning a `0` lifetime here would collide with
+      // the "0 = never expire" sentinel used by `isExpired`, caching it forever.
+      if (freshSec <= 0) {
         return false;
       }
-      // return the max-age in milliseconds so the caller can use it as lifetime
-      return maxAgeSec * 1000;
+      // return the remaining freshness in milliseconds so the caller can use it as lifetime
+      return freshSec * 1000;
     }
     return true;
   }
@@ -57,6 +61,20 @@ export const checkCacheHeaders = (headers: HttpHeaders): boolean | number => {
   }
 
   return true;
+};
+
+/**
+ * Return the value of the `Age` response header in seconds, or `0` when the header is
+ * missing or unusable. `Age` is the time the response has already spent in the upstream
+ * shared caches, and it has to be subtracted from `max-age`.
+ */
+export const getAgeSeconds = (headers: HttpHeaders): number => {
+  const ageHeader = headers.get('age');
+  if (!ageHeader) {
+    return 0;
+  }
+  const age = parseInt(ageHeader.trim(), 10);
+  return isNaN(age) || age < 0 ? 0 : age;
 };
 
 /**
@@ -317,7 +335,16 @@ export class NgHttpCachingService implements OnDestroy {
       optional: true,
     });
     if (userConfig) {
-      const config: NgHttpCachingConfig = { ...userConfig };
+      // drop the keys explicitly set to `undefined`: spreading them over the defaults
+      // would replace the default value with `undefined` (eg. a config built as
+      // `{ store: isBrowser ? withNgHttpCachingLocalStorage() : undefined }` would
+      // leave the service without any store at all)
+      const config: NgHttpCachingConfig = {};
+      for (const [key, value] of Object.entries(userConfig)) {
+        if (value !== undefined) {
+          (config as Record<string, unknown>)[key] = value;
+        }
+      }
       if (config.store instanceof NgHttpCachingNgSimpleStateSentinel) {
         config.store = inject(config.store.adapterClass);
       } else if (typeof config.store === 'function') {
@@ -459,7 +486,25 @@ export class NgHttpCachingService implements OnDestroy {
   clearCacheByRegex<K, T>(regex: RegExp): number {
     const keys: string[] = [];
     this.config.store.forEach<K, T>((_: NgHttpCachingEntry<K, T>, key: string) => {
+      // a global (`/g`) or sticky (`/y`) regex keeps its `lastIndex` between the calls
+      // to `test`, so it would match only some of the keys: restart from the beginning
+      // for every key, and leave the regex reusable by the caller
+      regex.lastIndex = 0;
       if (regex.test(key)) {
+        keys.push(key);
+      }
+    });
+    regex.lastIndex = 0;
+    return this.clearCacheByKeys(keys);
+  }
+
+  /**
+   * Clear the cache entries whose URL (without the query parameters) is one of `urls`
+   */
+  private clearCacheByUrls<K, T>(urls: string[]): number {
+    const keys: string[] = [];
+    this.config.store.forEach<K, T>((entry: NgHttpCachingEntry<K, T>, key: string) => {
+      if (urls.includes(entry.url?.split('?')[0])) {
         keys.push(key);
       }
     });
@@ -548,34 +593,27 @@ export class NgHttpCachingService implements OnDestroy {
 
     const url = req.urlWithParams.split('?')[0];
 
+    // the entry URL is matched, and not the cache key, so that these strategies keep
+    // working when `getKey` is customized (eg. to hash the body, as needed to cache
+    // POST/PUT requests) and the key isn't `method@urlWithParams` anymore
+
     if (strategy === NgHttpCachingMutationStrategy.IDENTICAL) {
-      const regex = new RegExp('^.*@' + this.escapeRegExp(url) + '(\\?|$)');
-      this.clearCacheByRegex(regex);
+      this.clearCacheByUrls([url]);
       return true;
     }
 
     if (strategy === NgHttpCachingMutationStrategy.COLLECTION) {
-      const regexStr = '^.*@' + this.escapeRegExp(url) + '(\\?|$)';
+      const urls = [url];
       const parts = url.split('/');
       if (parts.length > 1) {
         parts.pop();
-        const parentUrl = parts.join('/');
-        const parentRegexStr = '^.*@' + this.escapeRegExp(parentUrl) + '(\\?|$)';
-        this.clearCacheByRegex(new RegExp(`(${regexStr})|(${parentRegexStr})`));
-      } else {
-        this.clearCacheByRegex(new RegExp(regexStr));
+        urls.push(parts.join('/'));
       }
+      this.clearCacheByUrls(urls);
       return true;
     }
 
     return false;
-  }
-
-  /**
-   * Escape regex special characters
-   */
-  private escapeRegExp(str: string): string {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   /**

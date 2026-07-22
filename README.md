@@ -113,6 +113,11 @@ known access time, so they are evicted by the time they were added until they ar
 
 ### checkResponseHeaders (boolean - default false);
 If true response headers cache-control and expires are respected.
+`Cache-Control: no-store`/`no-cache`, and an `Expires` already in the past, keep the response
+out of the cache; `max-age` drives the entry lifetime. The `Age` header is subtracted from
+`max-age`, so a response a CDN or proxy has already been holding isn't kept for the full
+`max-age` again — when `Age` is greater than or equal to `max-age` the response is already
+stale and isn't cached at all.
 
 ### allowedMethod (string[] - default: ['GET', 'HEAD'])
 Array of allowed HTTP methods to cache. 
@@ -318,6 +323,10 @@ Possible strategies are:
 - `NgHttpCachingMutationStrategy.ALL` (or `true`): Clears the entire cache store on any successful mutation.
 - `NgHttpCachingMutationStrategy.IDENTICAL`: Clears entries with the same URL (ignoring method and query params).
 - `NgHttpCachingMutationStrategy.COLLECTION`: Clears entries with the same URL AND its parent collection URL (eg. `DELETE /api/users/24` invalidate also `GET /api/users`).
+
+  `IDENTICAL` and `COLLECTION` match the URL of the cached request, not the cache key, so
+  they keep working with a custom `getKey` (see the `getKey` section).
+
 - `Function`: Custom logic: `(req: HttpRequest<any>) => boolean`. It is called only for mutation requests; returning `true` clears the **entire** cache store, returning `false` (or `undefined`) skips the invalidation for that request.
 
 Example of customization:

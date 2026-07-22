@@ -896,7 +896,9 @@ describe('NgHttpCachingService: runGc', () => {
   it('after runGc no cached entry', async () => {
     const reqExp = new HttpRequest('GET', 'https://angular.io/docs?foo=expired', {
       headers: new HttpHeaders({
-        [NgHttpCachingHeaders.LIFETIME]: '1',
+        // long enough to still be fresh on the read below, short enough to be
+        // expired after the sleep
+        [NgHttpCachingHeaders.LIFETIME]: '20',
       }),
     });
     const reqFresh = new HttpRequest('GET', 'https://angular.io/docs?foo=fresh');
@@ -1879,5 +1881,215 @@ describe('NgHttpCachingService: maxSize', () => {
       service.addToCache(req(String(i)), new HttpResponse({ status: 200 }));
     }
     expect(service.getStore().size).toBe(20);
+  });
+});
+
+describe('NgHttpCachingService: clearCacheByRegex with a stateful regex', () => {
+  const inject2 = (): NgHttpCachingService => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideNgHttpCaching()] });
+    return TestBed.inject(NgHttpCachingService);
+  };
+
+  const fill = (service: NgHttpCachingService, ids: string[]): void => {
+    for (const id of ids) {
+      service.addToCache(
+        new HttpRequest('GET', `https://angular.io/docs?id=${id}`),
+        new HttpResponse({ body: { foo: true } }),
+      );
+    }
+  };
+
+  it('should clear every matching entry with a global regex', () => {
+    // `RegExp.prototype.test` advances `lastIndex` on a global regex, so testing the
+    // keys one after the other would match only every other key
+    const service = inject2();
+    fill(service, ['a', 'b', 'c', 'd']);
+    expect(service.getStore().size).toBe(4);
+
+    expect(service.clearCacheByRegex(/docs/g)).toBe(4);
+    expect(service.getStore().size).toBe(0);
+  });
+
+  it('should clear every matching entry with a sticky regex', () => {
+    const service = inject2();
+    fill(service, ['a', 'b', 'c']);
+
+    expect(service.clearCacheByRegex(/GET@https/y)).toBe(3);
+    expect(service.getStore().size).toBe(0);
+  });
+
+  it('should leave the regex reusable', () => {
+    const service = inject2();
+    fill(service, ['a', 'b']);
+    const regex = /docs/g;
+
+    expect(service.clearCacheByRegex(regex)).toBe(2);
+
+    fill(service, ['c', 'd']);
+    expect(service.clearCacheByRegex(regex)).toBe(2);
+  });
+});
+
+describe('NgHttpCachingService: config with explicitly undefined values', () => {
+  const inject2 = (config: NgHttpCachingConfig): NgHttpCachingService => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideNgHttpCaching(config)] });
+    return TestBed.inject(NgHttpCachingService);
+  };
+
+  const req = new HttpRequest('GET', 'https://angular.io/docs');
+
+  it('store: undefined should fall back to the default store', () => {
+    // eg. `store: isBrowser ? withNgHttpCachingLocalStorage() : undefined`
+    const service = inject2({ store: undefined });
+    expect(service.getStore()).toBeInstanceOf(NgHttpCachingMemoryStorage);
+    expect(service.addToCache(req, new HttpResponse({ body: 1 }))).toBe(true);
+    expect(service.getFromCache(req)).toBeTruthy();
+  });
+
+  it('lifetime: undefined should fall back to the default lifetime', () => {
+    const service = inject2({ lifetime: undefined });
+    expect(service.getConfig().lifetime).toBe(NG_HTTP_CACHING_HOUR_IN_MS);
+    expect(service.addToCache(req, new HttpResponse({ body: 1 }))).toBe(true);
+    expect(service.getFromCache(req)).toBeTruthy();
+  });
+
+  it('should fall back for every undefined value', () => {
+    const service = inject2({
+      version: undefined,
+      maxSize: undefined,
+      allowedMethod: undefined,
+      cacheStrategy: undefined,
+      checkResponseHeaders: undefined,
+      clearCacheOnMutation: undefined,
+      lifetime: 5000,
+    });
+    expect(service.getConfig()).toEqual({ ...NgHttpCachingConfigDefault, lifetime: 5000 });
+  });
+});
+
+describe('NgHttpCachingService: Age response header', () => {
+  const inject2 = (): NgHttpCachingService => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching({ checkResponseHeaders: true })],
+    });
+    return TestBed.inject(NgHttpCachingService);
+  };
+
+  const req = new HttpRequest('GET', 'https://angular.io/docs');
+
+  const response = (cacheControl: string, age?: string): HttpResponse<number> =>
+    new HttpResponse({
+      body: 1,
+      headers: new HttpHeaders(
+        age ? { 'cache-control': cacheControl, age } : { 'cache-control': cacheControl },
+      ),
+    });
+
+  it('should subtract the age from the max-age lifetime', () => {
+    // the response was already 3540s old when it reached us, so of the 3600s of
+    // `max-age` only 60s are left
+    expect(
+      checkCacheHeaders(new HttpHeaders({ 'cache-control': 'max-age=3600', age: '3540' })),
+    ).toBe(60 * 1000);
+  });
+
+  it('should not cache a response already older than its max-age', () => {
+    expect(checkCacheHeaders(new HttpHeaders({ 'cache-control': 'max-age=10', age: '3600' }))).toBe(
+      false,
+    );
+
+    const service = inject2();
+    expect(service.addToCache(req, response('max-age=10', '3600'))).toBe(false);
+    expect(service.getFromCache(req)).toBeUndefined();
+  });
+
+  it('should expire the entry when the remaining max-age is over', () => {
+    const service = inject2();
+    // 1s of max-age, 1s already elapsed somewhere upstream: only ~40ms left
+    expect(service.addToCache(req, response('max-age=1', '0'))).toBe(true);
+    expect(service.getFromCache(req)).toBeTruthy();
+
+    const entry = service.getStore().get(service.getKey(req)) as NgHttpCachingEntry;
+    expect(service.isExpired(entry)).toBe(false);
+    // an entry stored 1s ago with a 1s remaining lifetime is expired
+    expect(service.isExpired({ ...entry, addedTime: entry.addedTime - 1500 })).toBe(true);
+  });
+
+  it('should ignore an unparsable age', () => {
+    expect(checkCacheHeaders(new HttpHeaders({ 'cache-control': 'max-age=60', age: 'nope' }))).toBe(
+      60 * 1000,
+    );
+    expect(checkCacheHeaders(new HttpHeaders({ 'cache-control': 'max-age=60', age: '-5' }))).toBe(
+      60 * 1000,
+    );
+  });
+
+  it('should ignore the age without a max-age', () => {
+    expect(checkCacheHeaders(new HttpHeaders({ 'cache-control': 'public', age: '3600' }))).toBe(
+      true,
+    );
+  });
+});
+
+describe('NgHttpCachingService: clearCacheByMutation with a custom getKey', () => {
+  // the README recommends a custom `getKey` to support POST/PUT caching: the URL based
+  // strategies must keep working when the key isn't `method@urlWithParams` anymore
+  const inject2 = (strategy: NgHttpCachingMutationStrategy): NgHttpCachingService => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideNgHttpCaching({
+          allowedMethod: ['ALL'],
+          clearCacheOnMutation: strategy,
+          getKey: (req) => `${req.method}@${req.urlWithParams}@${JSON.stringify(req.body ?? null)}`,
+        }),
+      ],
+    });
+    return TestBed.inject(NgHttpCachingService);
+  };
+
+  const fill = (service: NgHttpCachingService, urls: string[]): void => {
+    for (const url of urls) {
+      service.addToCache(new HttpRequest('GET', url), new HttpResponse({ body: 1 }));
+    }
+  };
+
+  it('strategy IDENTICAL', () => {
+    const service = inject2(NgHttpCachingMutationStrategy.IDENTICAL);
+    fill(service, [
+      'https://angular.io/api/users',
+      'https://angular.io/api/users?id=1',
+      'https://angular.io/api/other',
+    ]);
+    expect(service.getStore().size).toBe(3);
+
+    service.clearCacheByMutation(new HttpRequest('POST', 'https://angular.io/api/users', {}));
+
+    expect(service.getStore().size).toBe(1);
+    expect(
+      service.getFromCache(new HttpRequest('GET', 'https://angular.io/api/other')),
+    ).toBeTruthy();
+  });
+
+  it('strategy COLLECTION', () => {
+    const service = inject2(NgHttpCachingMutationStrategy.COLLECTION);
+    fill(service, [
+      'https://angular.io/api/users',
+      'https://angular.io/api/users/24',
+      'https://angular.io/api/other',
+    ]);
+    expect(service.getStore().size).toBe(3);
+
+    service.clearCacheByMutation(
+      new HttpRequest('DELETE', 'https://angular.io/api/users/24', null),
+    );
+
+    expect(service.getStore().size).toBe(1);
+    expect(
+      service.getFromCache(new HttpRequest('GET', 'https://angular.io/api/other')),
+    ).toBeTruthy();
   });
 });

@@ -132,10 +132,18 @@ jobs:
             exit 1
           fi
 
+      - name: Ensure npm supports trusted publishing
+        if: ${{ !inputs.dry_run }}
+        # authenticating through OIDC, instead of an NPM_TOKEN, needs npm >= 11.5.1
+        run: |
+          if [ "$(printf '11.5.1\n%s\n' "$(npm -v)" | sort -V | head -1)" != "11.5.1" ]; then
+            npm install -g npm@latest
+          fi
+          npm -v
+
       - name: Publish to npm
         if: ${{ !inputs.dry_run }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # no token: npm trusts this workflow through the OIDC identity of the runner
         run: cd "$DIST_DIR" && npm publish --access public --provenance --ignore-scripts
 
       - name: Commit, tag and push

@@ -6,9 +6,12 @@ from the commits since the previous tag.
 
 ## One-time setup
 
-1. **`NPM_TOKEN` secret** — create an _Automation_ access token on npmjs.com (Access Tokens →
-   Generate New Token → Granular/Automation, with publish rights on the package) and add it under
-   _Settings → Secrets and variables → Actions → New repository secret_ with the name `NPM_TOKEN`.
+1. **npm trusted publisher** — on npmjs.com open the `ng-http-caching` package → _Settings_ →
+   _Trusted publisher_ → GitHub Actions, and fill in the organization or user (`nigrosimone`), the
+   repository (`ng-http-caching`) and the workflow filename (`release.yml`). No token is stored
+   anywhere: the job authenticates through the OIDC identity of the runner, which is also what
+   signs the provenance attestation. Until this is configured, the publish step fails with
+   `ENEEDAUTH`.
 2. **Workflow write permissions** — _Settings → Actions → General → Workflow permissions_ must be
    set to _Read and write permissions_, otherwise the workflow cannot push the release commit and
    the tag.

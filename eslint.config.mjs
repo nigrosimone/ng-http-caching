@@ -7,7 +7,9 @@ import prettier from 'eslint-config-prettier/flat';
 
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'coverage/**', '.angular/**', 'out-tsc/**'],
+    // `examples/` holds standalone apps with their own package.json and tsconfig:
+    // they are built on their own, not by this workspace.
+    ignores: ['dist/**', 'coverage/**', '.angular/**', 'out-tsc/**', 'examples/**'],
   },
   {
     files: ['**/*.ts'],

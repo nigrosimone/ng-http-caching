@@ -48,7 +48,7 @@
     "tslib": "^2.8.1"
   },
   "peerDependencies": {
-    "ng-simple-state": "^21.1.4"
+    "ng-simple-state": ">=21.1.4"
   },
   "peerDependenciesMeta": {
     "ng-simple-state": {
@@ -75,7 +75,7 @@
     "globals": "^17.6.0",
     "jsdom": "^29.1.1",
     "ng-packagr": "^22.0.0",
-    "ng-simple-state": "^21.1.5",
+    "ng-simple-state": "^22.1.0",
     "prettier": "^3.9.5",
     "typescript": "^6.0.3",
     "vitest": "^4.0.8"

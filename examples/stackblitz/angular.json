@@ -14,7 +14,8 @@
             "outputPath": { "base": "dist" },
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "tsConfig": "tsconfig.json"
+            "tsConfig": "tsconfig.json",
+            "styles": ["src/global_styles.css"]
           },
           "configurations": {
             "production": {

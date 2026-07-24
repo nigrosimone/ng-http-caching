@@ -2,7 +2,7 @@
   "name": "ng-http-caching-example",
   "version": "0.0.0",
   "private": true,
-  "description": "Minimal Angular app showing ng-http-caching. Runs as-is on StackBlitz.",
+  "description": "Cache for HTTP requests in Angular application. https://www.npmjs.com/package/ng-http-caching",
   "scripts": {
     "start": "ng serve",
     "build": "ng build"
@@ -11,6 +11,7 @@
     "@angular/common": "^22.0.0",
     "@angular/compiler": "^22.0.0",
     "@angular/core": "^22.0.0",
+    "@angular/forms": "^22.0.0",
     "@angular/platform-browser": "^22.0.0",
     "ng-http-caching": "^22.1.0",
     "rxjs": "^7.8.2",

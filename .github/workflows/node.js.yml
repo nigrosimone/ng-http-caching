@@ -2,9 +2,9 @@ name: Node.js CI
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master]
+    branches: [main]
 
 # a new push to a pull request supersedes the runs still in flight for it
 concurrency:

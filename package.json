@@ -76,7 +76,7 @@
     "globals": "^17.6.0",
     "husky": "^9.1.7",
     "jsdom": "^29.1.1",
-    "lint-staged": "^15.5.2",
+    "lint-staged": "^17.2.0",
     "ng-packagr": "^22.0.0",
     "ng-simple-state": "^22.1.0",
     "prettier": "^3.9.5",

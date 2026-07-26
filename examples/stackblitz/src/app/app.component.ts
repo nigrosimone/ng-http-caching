@@ -1,9 +1,4 @@
-import {
-  Component,
-  inject,
-  model,
-  signal
-} from '@angular/core';
+import { Component, inject, model, signal } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { lastValueFrom } from 'rxjs';
 import { JsonPipe } from '@angular/common';
@@ -13,7 +8,7 @@ import {
   NgHttpCachingHeaders,
   NgHttpCachingConfig,
   NgHttpCachingHeadersList,
-  withNgHttpCachingContext
+  withNgHttpCachingContext,
 } from 'ng-http-caching';
 
 interface CachedKey {
@@ -24,106 +19,97 @@ interface CachedKey {
 
 @Component({
   selector: 'app-root',
-  template: `
-  <main>
-  <ul class="form-style-1">
-    <li>
-      <label>URL <span class="required">*</span></label>
-      <input type="url" required [(ngModel)]="url" style="width: 400px;" />
-    </li>
-    <li>
-      <label>Add TAG to request</label>
-      <input type="text" [(ngModel)]="tag" />
-    </li>
-    <li>
-      <label>Add LIFETIME to request</label>
-      <input type="number" [(ngModel)]="lifetime" />
-    </li>
-    <li>
-      <label>Mark request as "NO CACHEABLE"</label>
-      <input
-        type="checkbox"
-        [(ngModel)]="nocache"
-        [ngModelOptions]="{ standalone: true }"
-      />
-    </li>
-    <li>
-      <select [(ngModel)]="typeOfRequest">
-        @for(t of typeOfRequests(); track t){
-        <option [ngValue]="t">{{ t }}</option>
-        }
-      </select>
-      <button (click)="getRequest()" [disabled]="!url() ? 'disabled' : null">
-        EXECUTE REQUEST
-      </button>
-      <br />
-      <em>
-        HTTP server respond in {{ timeSpan() }} ms (for {{ count() }} requests)
-      </em>
-    </li>
-    <li>
-      <hr />
-    </li>
-    <li>
-      <label>Clear cache for TAG</label>
-      <input type="text" [(ngModel)]="tag" />
-      <button (click)="clearCacheByTag()">Clear Cache</button>
-    </li>
-    <li>
-      <label>Clear cache for REGEX</label>
-      <input type="text" [(ngModel)]="regex" />
-      <button (click)="clearCacheByRegex()">Clear Cache</button>
-    </li>
-    <li>
-      <label>Clear cache for KEY</label>
-      <input type="text" [(ngModel)]="key" />
-      <button (click)="clearCacheByKey()">Clear Cache</button>
-    </li>
-    <li>
-      <label>Clear all cache</label>
-      <button (click)="clearCache()">Clear Cache</button>
-    </li>
-    <li>
-      <hr />
-    </li>
-  </ul>
+  template: ` <main>
+    <ul class="form-style-1">
+      <li>
+        <label>URL <span class="required">*</span></label>
+        <input type="url" required [(ngModel)]="url" style="width: 400px;" />
+      </li>
+      <li>
+        <label>Add TAG to request</label>
+        <input type="text" [(ngModel)]="tag" />
+      </li>
+      <li>
+        <label>Add LIFETIME to request</label>
+        <input type="number" [(ngModel)]="lifetime" />
+      </li>
+      <li>
+        <label>Mark request as "NO CACHEABLE"</label>
+        <input type="checkbox" [(ngModel)]="nocache" [ngModelOptions]="{ standalone: true }" />
+      </li>
+      <li>
+        <select [(ngModel)]="typeOfRequest">
+          @for (t of typeOfRequests(); track t) {
+            <option [ngValue]="t">{{ t }}</option>
+          }
+        </select>
+        <button (click)="getRequest()" [disabled]="!url() ? 'disabled' : null">
+          EXECUTE REQUEST
+        </button>
+        <br />
+        <em> HTTP server respond in {{ timeSpan() }} ms (for {{ count() }} requests) </em>
+      </li>
+      <li>
+        <hr />
+      </li>
+      <li>
+        <label>Clear cache for TAG</label>
+        <input type="text" [(ngModel)]="tag" />
+        <button (click)="clearCacheByTag()">Clear Cache</button>
+      </li>
+      <li>
+        <label>Clear cache for REGEX</label>
+        <input type="text" [(ngModel)]="regex" />
+        <button (click)="clearCacheByRegex()">Clear Cache</button>
+      </li>
+      <li>
+        <label>Clear cache for KEY</label>
+        <input type="text" [(ngModel)]="key" />
+        <button (click)="clearCacheByKey()">Clear Cache</button>
+      </li>
+      <li>
+        <label>Clear all cache</label>
+        <button (click)="clearCache()">Clear Cache</button>
+      </li>
+      <li>
+        <hr />
+      </li>
+    </ul>
 
-  <table>
-    <thead>
-      <th>Key</th>
-      <th>Headers</th>
-      <th>Status</th>
-    </thead>
-    <tbody>
-      @for(cachedKey of cachedKeys(); track trackByCachedKey(cachedKey)){
-      <tr [class.queue]="cachedKey.status === 'queue'">
-        <td style="width: 30%; text-align: left;">
-          {{ cachedKey.key }}
-        </td>
-        <td style="width: 60%; text-align: left;">
-          {{ cachedKey.headers | json }}
-        </td>
-        <td style="width: 10%; text-align: left;">
-          {{ cachedKey.status }}
-        </td>
-      </tr>
-      } @empty {
-      <tr>
-        <td style="text-align: center;" colspan="3">No cached keys</td>
-      </tr>
-      }
-    </tbody>
-  </table>
-</main>`,
-  imports: [JsonPipe, FormsModule]
+    <table>
+      <thead>
+        <th>Key</th>
+        <th>Headers</th>
+        <th>Status</th>
+      </thead>
+      <tbody>
+        @for (cachedKey of cachedKeys(); track trackByCachedKey(cachedKey)) {
+          <tr [class.queue]="cachedKey.status === 'queue'">
+            <td style="width: 30%; text-align: left;">
+              {{ cachedKey.key }}
+            </td>
+            <td style="width: 60%; text-align: left;">
+              {{ cachedKey.headers | json }}
+            </td>
+            <td style="width: 10%; text-align: left;">
+              {{ cachedKey.status }}
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td style="text-align: center;" colspan="3">No cached keys</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </main>`,
+  imports: [JsonPipe, FormsModule],
 })
 export class AppComponent {
   private readonly ngHttpCachingService = inject(NgHttpCachingService);
   private readonly http = inject(HttpClient);
 
-  public readonly url = model(
-    'https://my-json-server.typicode.com/typicode/demo/db'
-  );
+  public readonly url = model('https://my-json-server.typicode.com/typicode/demo/db');
   public readonly key = model('GET@' + this.url());
   public readonly tag = model('');
   public readonly regex = model('');
@@ -147,8 +133,7 @@ export class AppComponent {
   public readonly typeOfRequests = signal(['PARALLEL', 'SEQUENTIAL', 'NESTED']);
   public readonly typeOfRequest = model(this.typeOfRequests()[0]);
 
-  private readonly config: NgHttpCachingConfig =
-    this.ngHttpCachingService.getConfig();
+  private readonly config: NgHttpCachingConfig = this.ngHttpCachingService.getConfig();
   private timer!: ReturnType<typeof setTimeout>;
 
   constructor() {
@@ -198,14 +183,10 @@ export class AppComponent {
     switch (this.typeOfRequest()) {
       case 'SEQUENTIAL': {
         // test sequential requests
-        const result1 = await lastValueFrom(
-          this.http.get(this.url(), { headers, context })
-        );
+        const result1 = await lastValueFrom(this.http.get(this.url(), { headers, context }));
         console.log('Sequential response 1', result1);
         this.count.update((value) => value + 1);
-        const result2 = await lastValueFrom(
-          this.http.get(this.url(), { headers, context })
-        );
+        const result2 = await lastValueFrom(this.http.get(this.url(), { headers, context }));
         console.log('Sequential response 2', result2);
         this.count.update((value) => value + 1);
         this.timeSpan.set(Date.now() - timeStart);
@@ -230,14 +211,12 @@ export class AppComponent {
         this.http.get(this.url(), { headers, context }).subscribe((result1) => {
           console.log('Nested response 1', result1);
           this.count.update((value) => value + 1);
-          this.http
-            .get(this.url(), { headers, context })
-            .subscribe((result2) => {
-              console.log('Nested response 2', result2);
-              this.count.update((value) => value + 1);
-              this.timeSpan.set(Date.now() - timeStart);
-              this.updateCachedKeys();
-            });
+          this.http.get(this.url(), { headers, context }).subscribe((result2) => {
+            console.log('Nested response 2', result2);
+            this.count.update((value) => value + 1);
+            this.timeSpan.set(Date.now() - timeStart);
+            this.updateCachedKeys();
+          });
         });
         break;
       }
@@ -275,17 +254,13 @@ export class AppComponent {
 
     this.ngHttpCachingService.getStore().forEach((value, key) => {
       const headers: Array<Record<string, string>> = [];
-      NgHttpCachingHeadersList.forEach(
-        (ngHttpCachingHeaders: NgHttpCachingHeaders) => {
-          if (value.request.headers.has(ngHttpCachingHeaders)) {
-            headers.push({
-              [ngHttpCachingHeaders]: value.request.headers.get(
-                ngHttpCachingHeaders
-              ) as string,
-            });
-          }
+      NgHttpCachingHeadersList.forEach((ngHttpCachingHeaders: NgHttpCachingHeaders) => {
+        if (value.request.headers.has(ngHttpCachingHeaders)) {
+          headers.push({
+            [ngHttpCachingHeaders]: value.request.headers.get(ngHttpCachingHeaders) as string,
+          });
         }
-      );
+      });
       keys.push({ key, headers, status: 'cached' });
     });
     let hasQueue = false;
@@ -304,4 +279,3 @@ export class AppComponent {
     return cachedKey.key + '@' + cachedKey.status;
   }
 }
-

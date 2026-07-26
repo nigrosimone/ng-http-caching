@@ -45,13 +45,13 @@ jobs:
           echo "::error::releases must be cut from ${{ github.event.repository.default_branch }}, got ${{ github.ref_name }}"
           exit 1
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # the changelog needs the whole history and the tags
           fetch-depth: 0
 
       - name: Use Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24.x
           cache: npm
@@ -85,12 +85,15 @@ jobs:
               echo "::error::\"$REQUESTED\" is not a valid version"
               exit 1
             fi
+            # the manifest is often bumped by hand ahead of the release, so asking for
+            # exactly what it already holds is legal: "Fail if the version is already
+            # on npm" below is what rejects a genuine re-release
             HIGHEST="$(printf '%s\n%s\n' "$CURRENT" "$REQUESTED" | sort -V | tail -1)"
-            if [ "$REQUESTED" = "$CURRENT" ] || [ "$HIGHEST" != "$REQUESTED" ]; then
-              echo "::error::$REQUESTED is not greater than the current $CURRENT"
+            if [ "$HIGHEST" != "$REQUESTED" ]; then
+              echo "::error::$REQUESTED is older than the current $CURRENT"
               exit 1
             fi
-            npm version "$REQUESTED" --no-git-tag-version
+            npm version "$REQUESTED" --no-git-tag-version --allow-same-version
           else
             npm version "$BUMP" --no-git-tag-version
           fi
@@ -168,7 +171,7 @@ jobs:
 
       - name: Upload the dry-run output
         if: ${{ inputs.dry_run }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-dry-run-${{ steps.version.outputs.version }}
           path: |

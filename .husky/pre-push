@@ -1,0 +1,3 @@
+# mirrors the first two steps of the CI build job
+npm run format:check
+npm run lint

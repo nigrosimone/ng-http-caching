@@ -1646,6 +1646,60 @@ describe('NgHttpCachingService: cached response is still usable', () => {
     expect(Object.isFrozen(cached?.body)).toBe(true);
     expect(Object.isFrozen(cached?.body?.nested)).toBe(true);
   });
+
+  it('should make the body immutable as soon as it is stored', () => {
+    const req = new HttpRequest('GET', 'https://angular.io/docs?immutable-on-write');
+    const body = { a: 1, nested: { b: 2 } };
+    const res = new HttpResponse({ status: 200, body });
+    expect(service.addToCache(req, res)).toBe(true);
+
+    // the response handed to the subscriber of the request that filled the cache is the
+    // very same object the store keeps: it must not be mutable
+    expect(Object.isFrozen(body)).toBe(true);
+    expect(Object.isFrozen(body.nested)).toBe(true);
+  });
+});
+
+describe('NgHttpCachingService: blank lifetime header', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching()],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should fall back to the configured lifetime instead of never expiring', () => {
+    const request = new HttpRequest('GET', 'https://angular.io/docs?blank-lifetime', {
+      headers: new HttpHeaders({ [NgHttpCachingHeaders.LIFETIME]: '   ' }),
+    });
+    const entry = {
+      url: request.urlWithParams,
+      request,
+      response: new HttpResponse({ status: 200, body: {} }),
+      addedTime: Date.now() - NG_HTTP_CACHING_DAY_IN_MS,
+      version: service.getConfig().version!,
+    };
+
+    expect(service.isValid(entry)).toBe(true);
+    expect(service.isExpired(entry)).toBe(true);
+  });
+
+  it('should still honour an explicit 0 as never expire', () => {
+    const request = new HttpRequest('GET', 'https://angular.io/docs?zero-lifetime', {
+      headers: new HttpHeaders({ [NgHttpCachingHeaders.LIFETIME]: '0' }),
+    });
+    const entry = {
+      url: request.urlWithParams,
+      request,
+      response: new HttpResponse({ status: 200, body: {} }),
+      addedTime: Date.now() - NG_HTTP_CACHING_DAY_IN_MS,
+      version: service.getConfig().version!,
+    };
+
+    expect(service.isExpired(entry)).toBe(false);
+  });
 });
 
 describe('NgHttpCachingService: expires header drives the lifetime', () => {

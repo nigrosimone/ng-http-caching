@@ -22,6 +22,7 @@ import {
 } from './ng-http-caching.service';
 import { NgHttpCachingInterceptorService } from './ng-http-caching-interceptor.service';
 import { provideNgHttpCaching } from './ng-http-caching-provider';
+import { withNgHttpCachingLocalStorage } from './storage/ng-http-caching-local-storage';
 
 const DELAY = 50;
 
@@ -486,6 +487,70 @@ describe('NgHttpCachingInterceptorService: behaviour through the interceptor', (
 
     expect(service.getStore().size).toBe(1);
     expect(service.getStore().has('GET@https://angular.io/api/other')).toBe(true);
+  }, 1000);
+
+  it('a context override should be honoured with a persistent store too', async () => {
+    // an HttpContext holds live functions and can't be serialized with the entry: the
+    // override has to be read from the request being served, and not from the one the
+    // store gave back
+    localStorage.clear();
+    const { interceptor } = setup({ store: withNgHttpCachingLocalStorage() });
+    const handler = new CountingHandler();
+    const context = withNgHttpCachingContext({ isExpired: () => true });
+    const req = GET('https://angular.io/docs?ctx-persistent', { context });
+
+    await firstValueFrom(interceptor.intercept(req, handler));
+    await firstValueFrom(interceptor.intercept(req, handler));
+
+    // the entry is always expired, so the backend is reached again
+    expect(handler.calls).toBe(2);
+  }, 1000);
+
+  it('a response in flight when a mutation succeeds should not be cached', async () => {
+    const { interceptor, service } = setup({
+      clearCacheOnMutation: NgHttpCachingMutationStrategy.ALL,
+    });
+    const backend = new CountingHandler(60);
+    const get = GET('https://angular.io/api/items');
+
+    // the GET starts and is still travelling
+    const pendingGet = firstValueFrom(interceptor.intercept(get, backend));
+    await sleep(10);
+
+    // meanwhile a mutation on the same collection succeeds and clears the cache
+    await firstValueFrom(
+      interceptor.intercept(
+        new HttpRequest('POST', 'https://angular.io/api/items', {}),
+        new CountingHandler(),
+      ),
+    );
+
+    // the GET resolves with data that predates the mutation
+    await pendingGet;
+
+    // keeping it would make the invalidation pointless for a whole lifetime
+    expect(service.getFromCache(get)).toBeUndefined();
+
+    const after = (await firstValueFrom(
+      interceptor.intercept(GET('https://angular.io/api/items'), backend),
+    )) as HttpResponse<any>;
+    expect(backend.calls).toBe(2);
+    expect(after.body.call).toBe(2);
+  }, 2000);
+
+  it('the first consumer should not be able to poison the cached body', async () => {
+    const { interceptor } = setup();
+    const handler = new CountingHandler();
+    const req = GET('https://angular.io/api/poisoned');
+
+    const first = (await firstValueFrom(interceptor.intercept(req, handler))) as HttpResponse<any>;
+    // the immutability guarantee applies from the very first delivery, and not only to the
+    // responses read back from the cache
+    expect(Object.isFrozen(first.body)).toBe(true);
+
+    const second = (await firstValueFrom(interceptor.intercept(req, handler))) as HttpResponse<any>;
+    expect(handler.calls).toBe(1);
+    expect(second.body.call).toBe(1);
   }, 1000);
 
   it('maxSize should evict the least recently used entry', async () => {

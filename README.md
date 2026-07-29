@@ -329,6 +329,10 @@ Possible strategies are:
 
 - `Function`: Custom logic: `(req: HttpRequest<any>) => boolean`. It is called only for mutation requests; returning `true` clears the **entire** cache store, returning `false` (or `undefined`) skips the invalidation for that request.
 
+  A request already in flight when the mutation succeeds describes the state the mutation
+  has just changed, so its response is delivered to its subscriber but is **not** stored in
+  the cache: otherwise it would silently outlive the invalidation for a whole lifetime.
+
 Example of customization:
 
 ```ts
@@ -385,6 +389,8 @@ this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
 
 You can set specific lifetime for request by add the header `X-NG-HTTP-CACHING-LIFETIME` with a string value as the number of millisecond, eg.:
 
+`0` means "never expire", while a blank value is ignored and the configured `lifetime` is used.
+
 ```ts
 this.http.get('https://my-json-server.typicode.com/typicode/demo/db', {
   headers: {
@@ -438,6 +444,10 @@ const context = withNgHttpCachingContext({
 });
 this.http.get('https://my-json-server.typicode.com/typicode/demo/db?id=1', { context }).subscribe(e => console.log(e));
 ```
+
+The context is read from the request being served, so the overrides keep working with a
+persistent store (`localStorage`, `sessionStorage`) even though an `HttpContext`, holding
+live functions, can't be serialized with the cache entry.
 
 ## Cache service
 
@@ -515,7 +525,7 @@ export class NgHttpCachingService {
   /**
    * Return true if cache entry is expired
    */
-  isExpired<K, T>(entry: NgHttpCachingEntry<K, T>): boolean;
+  isExpired<K, T>(entry: NgHttpCachingEntry<K, T>, req?: HttpRequest<K>): boolean;
 
   /**
    * Return true if cache entry is valid for store in the cache

@@ -94,6 +94,19 @@ export const getExpiresDeadline = (headers: HttpHeaders): number | undefined => 
 };
 
 /**
+ * Return the lifetime carried by the `X-NG-HTTP-CACHING-LIFETIME` header, or `undefined`
+ * when the header is missing or blank. A blank value must not be read as `0`, because `0`
+ * is the "never expire" sentinel: it has to fall back to the configured lifetime instead.
+ */
+const getHeaderLifetime = (headers: HttpHeaders): number | undefined => {
+  const headerLifetime = headers.get(NgHttpCachingHeaders.LIFETIME)?.trim();
+  if (!headerLifetime) {
+    return undefined;
+  }
+  return +headerLifetime;
+};
+
+/**
  * Return true for structures that are safe to recursively freeze.
  */
 const isPlainObjectOrArray = (value: unknown): boolean => {
@@ -325,6 +338,14 @@ export class NgHttpCachingService implements OnDestroy {
    */
   private readonly lastAccess = new Map<string, number>();
 
+  /**
+   * Number of invalidations performed by `clearCacheByMutation` so far, and the value it
+   * had when each pending request was queued. A response requested before an invalidation
+   * already describes the state the mutation has changed, so it must not be cached.
+   */
+  private mutationEpoch = 0;
+  private readonly queueEpoch = new Map<string, number>();
+
   private gcLock = false;
   private gcLastRun = 0;
 
@@ -392,7 +413,10 @@ export class NgHttpCachingService implements OnDestroy {
       return undefined;
     }
 
-    if (this.isExpired(cached)) {
+    // the live request is handed over so that its `HttpContext` overrides are honoured:
+    // a persistent store can't serialize an `HttpContext`, so the request of the entry
+    // may have come back without one
+    if (this.isExpired(cached, req)) {
       this.clearCacheByKey(key);
       return undefined;
     }
@@ -406,6 +430,13 @@ export class NgHttpCachingService implements OnDestroy {
    * Add response to cache
    */
   addToCache<K, T>(req: HttpRequest<K>, res: HttpResponse<T>): boolean {
+    const key: string = this.getKey(req);
+    // this response was requested before a mutation invalidated the cache: it describes
+    // the state the mutation has changed, so storing it would defeat `clearCacheOnMutation`
+    const epoch = this.queueEpoch.get(key);
+    if (epoch !== undefined && epoch < this.mutationEpoch) {
+      return false;
+    }
     const entry: NgHttpCachingEntry<K, T> = {
       url: req.urlWithParams,
       response: res,
@@ -414,7 +445,10 @@ export class NgHttpCachingService implements OnDestroy {
       version: this.config.version,
     };
     if (this.isValid(entry)) {
-      const key: string = this.getKey(req);
+      // freeze before storing, and not only when reading back: the very same response is
+      // handed to the subscriber of the request that filled the cache, and mutating it
+      // would silently change what every later cache hit serves
+      this.deepFreeze(res);
       this.config.store.set(key, entry);
       this.lastAccess.set(key, entry.addedTime);
       this.enforceMaxSize();
@@ -580,6 +614,7 @@ export class NgHttpCachingService implements OnDestroy {
     if (typeof strategy === 'function') {
       const result = strategy(req);
       if (result === true) {
+        this.openMutationEpoch(req);
         this.clearCache();
         return true;
       }
@@ -587,6 +622,7 @@ export class NgHttpCachingService implements OnDestroy {
     }
 
     if (strategy === true || strategy === NgHttpCachingMutationStrategy.ALL) {
+      this.openMutationEpoch(req);
       this.clearCache();
       return true;
     }
@@ -598,6 +634,7 @@ export class NgHttpCachingService implements OnDestroy {
     // POST/PUT requests) and the key isn't `method@urlWithParams` anymore
 
     if (strategy === NgHttpCachingMutationStrategy.IDENTICAL) {
+      this.openMutationEpoch(req);
       this.clearCacheByUrls([url]);
       return true;
     }
@@ -609,6 +646,7 @@ export class NgHttpCachingService implements OnDestroy {
         parts.pop();
         urls.push(parts.join('/'));
       }
+      this.openMutationEpoch(req);
       this.clearCacheByUrls(urls);
       return true;
     }
@@ -617,11 +655,27 @@ export class NgHttpCachingService implements OnDestroy {
   }
 
   /**
-   * Return true if cache entry is expired
+   * Open a new invalidation epoch: every request queued before this point carries an older
+   * epoch and won't be cached anymore by `addToCache`. The mutation itself is moved into
+   * the new epoch, because its own response is the result of the mutation, not stale data.
    */
-  isExpired<K, T>(entry: NgHttpCachingEntry<K, T>): boolean {
+  private openMutationEpoch<K>(req: HttpRequest<K>): void {
+    this.mutationEpoch++;
+    const key: string = this.getKey(req);
+    if (this.queueEpoch.has(key)) {
+      this.queueEpoch.set(key, this.mutationEpoch);
+    }
+  }
+
+  /**
+   * Return true if cache entry is expired.
+   * `req` is the request currently being served, when there is one: its `HttpContext` is
+   * the authoritative one, because a persistent store rebuilds `entry.request` from its
+   * serialized form and an `HttpContext` (it holds live functions) can't survive that.
+   */
+  isExpired<K, T>(entry: NgHttpCachingEntry<K, T>, req?: HttpRequest<K>): boolean {
     // if user provide custom method, use it
-    const context = entry.request.context.get(NG_HTTP_CACHING_CONTEXT);
+    const context = (req ?? entry.request).context.get(NG_HTTP_CACHING_CONTEXT);
     if (typeof context?.isExpired === 'function') {
       const result = context.isExpired(entry);
       // if result is undefined, normal behaviour is provided
@@ -644,9 +698,9 @@ export class NgHttpCachingService implements OnDestroy {
     // config/default lifetime
     let lifetime: number = this.config.lifetime;
     // request has own lifetime header (takes highest priority)
-    const headerLifetime = entry.request.headers.get(NgHttpCachingHeaders.LIFETIME);
-    if (headerLifetime) {
-      lifetime = +headerLifetime;
+    const headerLifetime = getHeaderLifetime(entry.request.headers);
+    if (headerLifetime !== undefined) {
+      lifetime = headerLifetime;
     } else if (this.config.checkResponseHeaders) {
       // check response headers for max-age
       const headerResult = checkCacheHeaders(entry.response.headers);
@@ -705,12 +759,9 @@ export class NgHttpCachingService implements OnDestroy {
 
     // an entry with an unusable lifetime would make `isExpired` throw on every read
     // and on every garbage collection, so it must not enter the cache at all.
-    const headerLifetime = entry.request.headers.get(NgHttpCachingHeaders.LIFETIME);
-    if (headerLifetime) {
-      const lifetime = +headerLifetime;
-      if (isNaN(lifetime) || lifetime < 0) {
-        return false;
-      }
+    const headerLifetime = getHeaderLifetime(entry.request.headers);
+    if (headerLifetime !== undefined && (isNaN(headerLifetime) || headerLifetime < 0)) {
+      return false;
     }
 
     if (this.config.checkResponseHeaders) {
@@ -810,6 +861,7 @@ export class NgHttpCachingService implements OnDestroy {
   addToQueue<K, T>(req: HttpRequest<K>, obs: Observable<HttpEvent<T>>): void {
     const key: string = this.getKey(req);
     this.queue.set(key, obs);
+    this.queueEpoch.set(key, this.mutationEpoch);
   }
 
   /**
@@ -817,6 +869,7 @@ export class NgHttpCachingService implements OnDestroy {
    */
   deleteFromQueue<K>(req: HttpRequest<K>): boolean {
     const key: string = this.getKey(req);
+    this.queueEpoch.delete(key);
     return this.queue.delete(key);
   }
 
@@ -857,6 +910,7 @@ export class NgHttpCachingService implements OnDestroy {
 
   ngOnDestroy(): void {
     this.queue.clear();
+    this.queueEpoch.clear();
     this.lastAccess.clear();
   }
 }

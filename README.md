@@ -8,6 +8,8 @@ Sometime there is a need to cache the HTTP requests so that browser doesn’t ha
 
 See the [stackblitz demo](https://stackblitz.com/github/nigrosimone/ng-http-caching/tree/main/examples/stackblitz).
 
+Rendering on the server too? [`NgSsrCaching`](https://www.npmjs.com/package/ng-ssr-caching) is the server-side sibling of this library: this one keeps the responses your application asks for, that one keeps the page your server rendered from them.
+
 ## Features
 
 ✅ HTTP caching<br>
@@ -832,3 +834,4 @@ I have published some other Angular libraries, take a look:
  - [NgGenericPipe: Generic pipe for Angular application for use a component method into component template.](https://www.npmjs.com/package/ng-generic-pipe)
  - [NgLet: Structural directive for sharing data as local variable into html component template](https://www.npmjs.com/package/ng-let)
  - [NgForTrackByProperty: Angular global trackBy property directive with strict type checking](https://www.npmjs.com/package/ng-for-track-by-property)
+ - [NgSsrCaching: Cache for server-side rendered pages in Angular SSR](https://www.npmjs.com/package/ng-ssr-caching)

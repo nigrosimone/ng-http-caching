@@ -1,5 +1,38 @@
 # Changelog
 
+## [22.2.0](https://github.com/nigrosimone/ng-http-caching/compare/v22.1.0...v22.2.0) (2026-09-01)
+
+### 🚀 Features
+
+- add responseSerializer and stop freezing the HttpResponse itself ([9e0163e](https://github.com/nigrosimone/ng-http-caching/commit/9e0163e8030c875161dc4982dffe3dc04a839aa3))
+- enhance caching behavior with mutation handling and lifetime management ([8f05482](https://github.com/nigrosimone/ng-http-caching/commit/8f05482c4764a28f6263452a5389e21f491ba154))
+
+### 🐛 Bug Fixes
+
+- allow ng-simple-state 22 in the optional peer range ([e6d36bc](https://github.com/nigrosimone/ng-http-caching/commit/e6d36bcf36b08542766205f7f8b8fa1bf90fb087))
+
+### 📝 Documentation
+
+- link NgSsrCaching, the server-side sibling ([cb0032a](https://github.com/nigrosimone/ng-http-caching/commit/cb0032a8bbaea3e31db92180015b0133c00aebb0))
+- replace the StackBlitz demo with a runnable example in-repo ([842ff9b](https://github.com/nigrosimone/ng-http-caching/commit/842ff9be22e1495f0d59e64eccb289f98453114a))
+
+### 🤖 CI
+
+- let an explicit release version match the manifest, and bump the actions to v7 ([a5de6ce](https://github.com/nigrosimone/ng-http-caching/commit/a5de6ce0eaba510fe58b9608fb69372a3e908df9))
+
+### 💄 Style
+
+- run prettier over the stackblitz example ([fb56882](https://github.com/nigrosimone/ng-http-caching/commit/fb56882a006633debc31e20b0fd2c6c55640c001))
+
+### 🧹 Chores
+
+- take lint-staged 17 ([2a14c4e](https://github.com/nigrosimone/ng-http-caching/commit/2a14c4e2bec6ff53485ac928d762f81989cfde64))
+- format and lint on commit and push, with husky ([93d8e2e](https://github.com/nigrosimone/ng-http-caching/commit/93d8e2ed5d490aa511d40c3d2c9a3c4c564abe48))
+- follow the default branch rename to main ([3e6c047](https://github.com/nigrosimone/ng-http-caching/commit/3e6c04748f43c8ba7303b9565d69de09b097013f))
+- better example ([4d44257](https://github.com/nigrosimone/ng-http-caching/commit/4d442575a066e65d2942878010c118d5d1cf092c))
+
+**Full Changelog**: https://github.com/nigrosimone/ng-http-caching/compare/v22.1.0...v22.2.0
+
 ## 22.1.0 (2026-07-22)
 
 ### 🚀 Features

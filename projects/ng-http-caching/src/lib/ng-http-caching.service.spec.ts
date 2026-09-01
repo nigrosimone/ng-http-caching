@@ -1275,6 +1275,28 @@ describe('NgHttpCachingService: deep freeze', () => {
   });
 });
 
+describe('NgHttpCachingService: responseSerializer', () => {
+  it('the per request one should win over the global config', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching({ responseSerializer: () => ({ from: 'config' }) as any })],
+    });
+    const service = TestBed.inject(NgHttpCachingService);
+
+    const global = new HttpRequest('GET', 'https://angular.io/docs?serializer-global');
+    expect(service.addToCache(global, new HttpResponse({ status: 200, body: { a: 1 } }))).toBe(
+      true,
+    );
+    expect(service.getFromCache(global)?.body).toEqual({ from: 'config' });
+
+    const own = new HttpRequest('GET', 'https://angular.io/docs?serializer-own', null, {
+      context: withNgHttpCachingContext({ responseSerializer: () => ({ from: 'context' }) as any }),
+    });
+    expect(service.addToCache(own, new HttpResponse({ status: 200, body: { a: 1 } }))).toBe(true);
+    expect(service.getFromCache(own)?.body).toEqual({ from: 'context' });
+  });
+});
+
 describe('NgHttpCachingService: context and edge cases', () => {
   let service: NgHttpCachingService;
 
@@ -1645,6 +1667,17 @@ describe('NgHttpCachingService: cached response is still usable', () => {
     const cached = service.getFromCache<unknown, { a: number; nested: { b: number } }>(req);
     expect(Object.isFrozen(cached?.body)).toBe(true);
     expect(Object.isFrozen(cached?.body?.nested)).toBe(true);
+  });
+
+  it('should not freeze the response itself', () => {
+    const req = new HttpRequest('GET', 'https://angular.io/docs?mutable-response');
+    const res = new HttpResponse({ status: 200, body: { a: 1 } });
+    expect(service.addToCache(req, res)).toBe(true);
+
+    // `status`, `ok`, `url`, ... are written by whoever builds a response from this one,
+    // eg. an interceptor that adapts the body: freezing them throws "status is read-only"
+    expect(Object.isFrozen(res)).toBe(false);
+    expect(service.getFromCache(req)?.clone({ status: 204 }).status).toBe(204);
   });
 
   it('should make the body immutable as soon as it is stored', () => {

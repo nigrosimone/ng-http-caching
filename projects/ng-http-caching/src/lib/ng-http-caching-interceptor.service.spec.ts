@@ -553,6 +553,45 @@ describe('NgHttpCachingInterceptorService: behaviour through the interceptor', (
     expect(second.body.call).toBe(1);
   }, 1000);
 
+  it('the response of the request that fills the cache should stay adaptable', async () => {
+    const { interceptor } = setup();
+    const req = GET('https://angular.io/api/adapt');
+
+    const first = (await firstValueFrom(
+      interceptor.intercept(req, new CountingHandler()),
+    )) as HttpResponse<any>;
+
+    // only the body is made immutable: the response itself is rebuilt by whoever adapts it
+    // downstream, and freezing it makes `status`, `ok`, `url`, ... read only
+    expect(Object.isFrozen(first)).toBe(false);
+    expect(() => first.clone({ status: 204 })).not.toThrow();
+  }, 1000);
+
+  it('responseSerializer should hand a mutable copy of the body to every cache hit', async () => {
+    const { interceptor, service } = setup({
+      responseSerializer: (body) => structuredClone(body),
+    });
+    const handler = new CountingHandler();
+    const req = GET('https://angular.io/api/serialized');
+
+    const first = (await firstValueFrom(interceptor.intercept(req, handler))) as HttpResponse<any>;
+    const second = (await firstValueFrom(interceptor.intercept(req, handler))) as HttpResponse<any>;
+
+    expect(handler.calls).toBe(1);
+    // the request that fills the cache gets a mutable body too
+    expect(Object.isFrozen(first.body)).toBe(false);
+    expect(Object.isFrozen(second.body)).toBe(false);
+    second.body.call = 99;
+
+    // the copy handed to the consumer is its own: the store is untouched
+    const third = (await firstValueFrom(interceptor.intercept(req, handler))) as HttpResponse<any>;
+    expect(third.body.call).toBe(1);
+    expect(
+      service.getStore().get<unknown, any>('GET@https://angular.io/api/serialized')?.response.body
+        .call,
+    ).toBe(1);
+  }, 1000);
+
   it('maxSize should evict the least recently used entry', async () => {
     const { interceptor, service } = setup({ maxSize: 2 });
     const handler = new CountingHandler();

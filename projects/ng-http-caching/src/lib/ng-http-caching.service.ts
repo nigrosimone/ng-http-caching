@@ -14,8 +14,13 @@ import { NgHttpCachingNgSimpleStateSentinel } from './storage/ng-http-caching-ng
 
 export type NgHttpCachingContext = Pick<
   NgHttpCachingConfig,
-  'getKey' | 'isCacheable' | 'isExpired' | 'isValid' | 'clearCacheOnMutation'
+  'getKey' | 'isCacheable' | 'isExpired' | 'isValid' | 'clearCacheOnMutation' | 'responseSerializer'
 >;
+
+/**
+ * Return the body to serve for a cache hit, starting from the body kept into the store.
+ */
+export type NgHttpCachingResponseSerializer = <T>(body: T) => T;
 
 export const NG_HTTP_CACHING_CONTEXT = new HttpContextToken<NgHttpCachingContext>(() => ({}));
 
@@ -290,6 +295,19 @@ export interface NgHttpCachingConfig {
     | NgHttpCachingMutationStrategy
     | boolean
     | (<K>(req: HttpRequest<K>) => boolean | undefined | void);
+  /**
+   * By default a cache hit serves the very same body instance kept into the store, and the
+   * body is made immutable in dev mode so that a consumer can't silently change what every
+   * later cache hit serves. When your code needs to mutate the response (eg. it adapts it
+   * into a model in place), set this function to return a copy of the body instead, eg.:
+   *
+   * ```ts
+   * responseSerializer: (body) => structuredClone(body)
+   * ```
+   *
+   * The copy is not frozen, and what the store keeps is left untouched.
+   */
+  responseSerializer?: NgHttpCachingResponseSerializer;
 }
 
 export interface NgHttpCachingDefaultConfig extends NgHttpCachingConfig {
@@ -423,7 +441,31 @@ export class NgHttpCachingService implements OnDestroy {
 
     this.lastAccess.set(key, Date.now());
 
-    return this.deepFreeze(cached.response);
+    // when a `responseSerializer` is configured, every reader gets its own copy of the
+    // body and is free to mutate it: what the store keeps is left untouched
+    const responseSerializer = this.getResponseSerializer(req);
+    if (responseSerializer) {
+      return cached.response.clone({ body: responseSerializer(cached.response.body) });
+    }
+
+    return this.freezeResponse(cached.response);
+  }
+
+  /**
+   * Return the `responseSerializer` in charge for this request, if any.
+   * The per request one (`HttpContext`) takes precedence over the global config.
+   */
+  private getResponseSerializer<K>(
+    req: HttpRequest<K>,
+  ): NgHttpCachingResponseSerializer | undefined {
+    const context = req.context.get(NG_HTTP_CACHING_CONTEXT);
+    if (typeof context?.responseSerializer === 'function') {
+      return context.responseSerializer;
+    }
+    if (typeof this.config.responseSerializer === 'function') {
+      return this.config.responseSerializer;
+    }
+    return undefined;
   }
 
   /**
@@ -437,9 +479,13 @@ export class NgHttpCachingService implements OnDestroy {
     if (epoch !== undefined && epoch < this.mutationEpoch) {
       return false;
     }
+    // with a `responseSerializer` the store keeps a private copy of the body, so the
+    // response handed to the subscriber of this request is as mutable as the one served
+    // to every later cache hit
+    const responseSerializer = this.getResponseSerializer(req);
     const entry: NgHttpCachingEntry<K, T> = {
       url: req.urlWithParams,
-      response: res,
+      response: responseSerializer ? res.clone({ body: responseSerializer(res.body) }) : res,
       request: req,
       addedTime: Date.now(),
       version: this.config.version,
@@ -448,7 +494,9 @@ export class NgHttpCachingService implements OnDestroy {
       // freeze before storing, and not only when reading back: the very same response is
       // handed to the subscriber of the request that filled the cache, and mutating it
       // would silently change what every later cache hit serves
-      this.deepFreeze(res);
+      if (!responseSerializer) {
+        this.freezeResponse(res);
+      }
       this.config.store.set(key, entry);
       this.lastAccess.set(key, entry.addedTime);
       this.enforceMaxSize();
@@ -874,35 +922,41 @@ export class NgHttpCachingService implements OnDestroy {
   }
 
   /**
+   * Make the body of the response immutable, but leave the `HttpResponse` alone: its own
+   * properties (`status`, `ok`, `url`, ...) are written by whoever builds a response from
+   * it downstream, and the instance stored into the cache is the very same one handed to
+   * the subscriber of the request that filled it.
+   * @returns the same response, with an immutable body
+   */
+  private freezeResponse<T>(res: HttpResponse<T>): Readonly<HttpResponse<T>> {
+    this.deepFreeze(res.body);
+    return res;
+  }
+
+  /**
    * Recursively Object.freeze simple Javascript structures consisting of plain objects, arrays, and primitives.
    * Make the data immutable.
    * @returns immutable object
    */
   private deepFreeze<S>(object: S): Readonly<S> {
     // No freezing in production (for better performance).
-    if (!this.devMode || !object || typeof object !== 'object') {
+    //
+    // Only plain objects and arrays are frozen: class instances are not "simple
+    // structures" and may need to mutate themselves, eg. `HttpHeaders` initializes itself
+    // lazily on the first read and throws once frozen.
+    if (!this.devMode || !isPlainObjectOrArray(object)) {
       return object;
     }
 
     // When already frozen, we assume its children are frozen (for better performance).
     // This should be true if you always use `deepFreeze` to freeze objects.
-    //
-    // Note that Object.isFrozen will also return `true` for primitives (numbers,
-    // strings, booleans, undefined, null), so there is no need to check for
-    // those explicitly.
     if (Object.isFrozen(object)) {
       return object;
     }
 
-    // Freeze this level, then recurse only on plain objects and arrays: class instances
-    // are not "simple structures" and may need to mutate themselves, eg. `HttpHeaders`
-    // initializes itself lazily on the first read and throws once frozen.
     Object.freeze(object);
-    Object.keys(object).forEach((key) => {
-      const value = (object as Record<string, unknown>)[key];
-      if (isPlainObjectOrArray(value)) {
-        this.deepFreeze(value);
-      }
+    Object.keys(object as object).forEach((key) => {
+      this.deepFreeze((object as Record<string, unknown>)[key]);
     });
 
     return object;

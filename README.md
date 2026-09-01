@@ -88,6 +88,7 @@ export interface NgHttpCachingConfig {
   isCacheable?: (req: HttpRequest<any>) => boolean | undefined | void;
   getKey?: (req: HttpRequest<any>) => string | undefined | void;
   clearCacheOnMutation?: NgHttpCachingMutationStrategy | boolean | ((req: HttpRequest<any>) => boolean | undefined | void);
+  responseSerializer?: <T>(body: T) => T;
 }
 ```
 
@@ -347,6 +348,29 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
 };
 ```
 
+### responseSerializer (function - default: undefined)
+
+By default a cache hit serves the very same body instance kept into the store, and in dev mode
+that body is made immutable, so that a consumer can't silently change what every later cache hit
+serves. If your code needs to mutate the response (eg. an interceptor or a decorator that adapts
+the body into a model in place), you get a `TypeError` like `Cannot assign to read only property
+'status'`.
+
+Set `responseSerializer` to return a copy of the body: the store keeps its own private copy, and
+every reader, the request that filled the cache included, gets a fresh mutable one.
+
+```ts
+import { NgHttpCachingConfig } from 'ng-http-caching';
+
+const ngHttpCachingConfig: NgHttpCachingConfig = {
+  responseSerializer: (body) => structuredClone(body)
+};
+```
+
+`structuredClone` doesn't support functions and class instances: if your body contains them, use
+your own copy function. The serializer can also be set for a single request with the
+`HttpContext` (see the `HttpContext` section), and the per request one wins over this config.
+
 ## Headers
 
 `NgHttpCaching` use some custom headers for customize the caching behaviour.
@@ -424,6 +448,7 @@ You can override `NgHttpCachingConfig` methods:
   isCacheable?: (req: HttpRequest<any>) => boolean | undefined | void;
   getKey?: (req: HttpRequest<any>) => string | undefined | void;
   clearCacheOnMutation?: NgHttpCachingMutationStrategy | boolean | ((req: HttpRequest<any>) => boolean | undefined | void);
+  responseSerializer?: <T>(body: T) => T;
 }
 ```
 with `HttpContextToken`, eg.:

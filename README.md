@@ -66,6 +66,29 @@ bootstrapApplication(AppComponent, {
 });
 ```
 
+### Functional interceptor
+
+If you already use functional interceptors, you can register `ngHttpCachingInterceptor`
+into `withInterceptors()` instead of `withInterceptorsFromDi()`, and choose its position
+in the chain:
+
+```ts
+import { bootstrapApplication } from '@angular/platform-browser';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideNgHttpCaching, ngHttpCachingInterceptor } from 'ng-http-caching';
+import { AppComponent } from './app.component';
+
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideNgHttpCaching(),
+    provideHttpClient(withInterceptors([ngHttpCachingInterceptor]))
+  ]
+});
+```
+
+Use one way or the other, not both: registered twice, the caching would run twice on every
+request.
+
 ## Config
 
 This is all the configuration interface, see below for the detail of each config.
@@ -79,11 +102,12 @@ export interface NgHttpCachingConfig {
   allowedMethod?: string[];
   cacheStrategy?: NgHttpCachingStrategy;
   checkResponseHeaders?: boolean;
+  slidingExpiration?: boolean;
   store?:
     | NgHttpCachingStorageInterface
     | NgHttpCachingNgSimpleStateSentinel
     | (() => NgHttpCachingStorageInterface);
-  isExpired?: (entry: NgHttpCachingEntry) => boolean | undefined | void;
+  isExpired?: (entry: NgHttpCachingEntry, req?: HttpRequest<any>) => boolean | undefined | void;
   isValid?: (entry: NgHttpCachingEntry) => boolean | undefined | void;
   isCacheable?: (req: HttpRequest<any>) => boolean | undefined | void;
   getKey?: (req: HttpRequest<any>) => string | undefined | void;
@@ -121,6 +145,24 @@ out of the cache; `max-age` drives the entry lifetime. The `Age` header is subtr
 `max-age`, so a response a CDN or proxy has already been holding isn't kept for the full
 `max-age` again — when `Age` is greater than or equal to `max-age` the response is already
 stale and isn't cached at all.
+
+### slidingExpiration (boolean - default: false)
+If `true` the lifetime restarts at every cache hit: an entry that keeps being read never
+expires, and only an entry left unused for a whole `lifetime` does.
+
+```ts
+const ngHttpCachingConfig: NgHttpCachingConfig = {
+  lifetime: 1000 * 60 * 5, // 5 minutes without a read, then the entry is dropped
+  slidingExpiration: true,
+};
+```
+
+A deadline coming from the response headers (`max-age`, `Expires`, with
+`checkResponseHeaders`) belongs to the server, so it isn't moved: those entries expire when
+the server said, however often you read them.
+
+Note that every cache hit writes back to the store: with a persistent store
+(`localStorage`, `sessionStorage`) that means a serialization on every read.
 
 ### allowedMethod (string[] - default: ['GET', 'HEAD'])
 Array of allowed HTTP methods to cache. 
@@ -234,6 +276,10 @@ bootstrapApplication(AppComponent, {
 ### isExpired (function - default see NgHttpCachingService.isExpired());
 If this function return `true` the request is expired and a new request is send to backend, if return `false` isn't expired. 
 If the result is `undefined`, the normal behaviour is provided.
+The second argument is the request currently being served, so you can compare it with the one
+that filled the cache (`entry.request`), eg. to expire the entry when the body of the request
+has changed. It is `undefined` when the check comes from the garbage collector, where there is
+no request in flight.
 Example of customization:
 
 ```ts
@@ -443,7 +489,7 @@ this.http.get('https://my-json-server.typicode.com/typicode/demo/db?id=1', {
 You can override `NgHttpCachingConfig` methods:
 ```ts
 {
-  isExpired?: (entry: NgHttpCachingEntry) => boolean | undefined | void;
+  isExpired?: (entry: NgHttpCachingEntry, req?: HttpRequest<any>) => boolean | undefined | void;
   isValid?: (entry: NgHttpCachingEntry) => boolean | undefined | void;
   isCacheable?: (req: HttpRequest<any>) => boolean | undefined | void;
   getKey?: (req: HttpRequest<any>) => string | undefined | void;
@@ -842,9 +888,10 @@ expired, and refetched in full. Likewise `no-cache` is treated as "don't store" 
 
 Aren't you satisfied? there are some valid alternatives:
 
- - [@ngneat/cashew](https://www.npmjs.com/package/@ngneat/cashew)
- - [p3x-angular-http-cache-interceptor](https://www.npmjs.com/package/p3x-angular-http-cache-interceptor)
- - [@d4h/angular-http-cache](https://www.npmjs.com/package/@d4h/angular-http-cache)
+ - [@ngneat/cashew](https://www.npmjs.com/package/@ngneat/cashew): the closest one, an interceptor with per request options, buckets and a persistent store.
+ - [ts-cacheable](https://www.npmjs.com/package/ts-cacheable) (ex `ngx-cacheable`): not an interceptor, `@Cacheable`/`@CacheBuster` decorators on your service methods.
+ - [@tanstack/angular-query](https://www.npmjs.com/package/@tanstack/angular-query-experimental): not a cache for `HttpClient` but a full query library, with background refetch and stale-while-revalidate.
+ - [p3x-angular-http-cache-interceptor](https://www.npmjs.com/package/p3x-angular-http-cache-interceptor): minimal, no lifetime and no API to clear the cache.
 
 
 ## Support

@@ -9,8 +9,8 @@ import {
   HttpRequest,
 } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { asyncScheduler, Observable, of, scheduled } from 'rxjs';
-import { tap, shareReplay, finalize } from 'rxjs/operators';
+import { asyncScheduler, Observable, of, scheduled, throwError } from 'rxjs';
+import { tap, shareReplay, finalize, catchError } from 'rxjs/operators';
 import { NgHttpCachingService, NgHttpCachingHeadersList } from './ng-http-caching.service';
 
 /**
@@ -125,11 +125,24 @@ const revalidate = (
   if (cacheService.getFromQueue(req)) {
     return;
   }
-  const shared = sendRequest(req, next).pipe(
+  // the same request, plus `If-None-Match`/`If-Modified-Since` when the cached response
+  // carries a validator: the backend can then answer `304 Not Modified` with no body
+  const shared = sendRequest(cacheService.getConditionalRequest(req), next).pipe(
     tap((event) => {
       if (event.type === HttpEventType.Response) {
         cacheService.addToCache(req, event);
       }
+    }),
+    catchError((error) => {
+      // Angular reports a 304 as an error, because it isn't a 2xx. It is the good case:
+      // what we hold is still current.
+      if (error?.status === 304) {
+        const confirmed = cacheService.confirmFromCache(req);
+        if (confirmed) {
+          return of(confirmed);
+        }
+      }
+      return throwError(() => error);
     }),
     finalize(() => {
       cacheService.deleteFromQueue(req);

@@ -339,6 +339,14 @@ export interface NgHttpCachingConfig {
    */
   staleTime?: number;
   /**
+   * When a stale entry is refreshed and the cached response carries an `ETag` or a
+   * `Last-Modified`, send the refresh as a conditional request (`If-None-Match`,
+   * `If-Modified-Since`). A `304 Not Modified` then confirms the entry we already have,
+   * with no body to download.
+   * Default `true`. It does nothing when the response carries no validator.
+   */
+  conditionalRevalidation?: boolean;
+  /**
    * What `clearCacheOnMutation` does to the entries it invalidates:
    * - `NgHttpCachingInvalidation.DELETE` (the default): they are removed, so the next
    *   request waits for the backend;
@@ -425,6 +433,7 @@ export interface NgHttpCachingDefaultConfig extends NgHttpCachingConfig {
   version: string;
   checkResponseHeaders: boolean;
   slidingExpiration: boolean;
+  conditionalRevalidation: boolean;
   mutationInvalidation: NgHttpCachingInvalidation;
 }
 
@@ -441,6 +450,7 @@ export const NgHttpCachingConfigDefault: Readonly<NgHttpCachingDefaultConfig> = 
   cacheStrategy: NgHttpCachingStrategy.ALLOW_ALL,
   checkResponseHeaders: false,
   slidingExpiration: false,
+  conditionalRevalidation: true,
   clearCacheOnMutation: NgHttpCachingMutationStrategy.NONE,
   mutationInvalidation: NgHttpCachingInvalidation.DELETE,
 };
@@ -958,6 +968,61 @@ export class NgHttpCachingService implements OnDestroy {
     if (this.queueEpoch.has(key)) {
       this.queueEpoch.set(key, this.mutationEpoch);
     }
+  }
+
+  /**
+   * Return the request to send to refresh a stale entry: the same one, plus the
+   * conditional headers when the cached response carries a validator, so the backend can
+   * answer `304 Not Modified` instead of sending the body again.
+   * See the `conditionalRevalidation` config.
+   */
+  getConditionalRequest<K, T>(req: HttpRequest<K>): HttpRequest<K> {
+    if (!this.config.conditionalRevalidation) {
+      return req;
+    }
+    const cached: NgHttpCachingEntry<K, T> | undefined = this.config.store.get<K, T>(
+      this.getKey(req),
+    );
+    if (!cached) {
+      return req;
+    }
+    const etag = cached.response.headers.get('etag');
+    const lastModified = cached.response.headers.get('last-modified');
+    if (!etag && !lastModified) {
+      return req;
+    }
+    let headers = req.headers;
+    if (etag) {
+      headers = headers.set('If-None-Match', etag);
+    }
+    if (lastModified) {
+      headers = headers.set('If-Modified-Since', lastModified);
+    }
+    return req.clone({ headers });
+  }
+
+  /**
+   * Confirm the cached entry after a `304 Not Modified`: the body we hold is still the
+   * current one, so both clocks restart and the entry isn't invalidated anymore.
+   * Return the confirmed response, or `undefined` when there is nothing to confirm.
+   */
+  confirmFromCache<K, T>(req: HttpRequest<K>): Readonly<HttpResponse<T>> | undefined {
+    const key: string = this.getKey(req);
+    const cached: NgHttpCachingEntry<K, T> | undefined = this.config.store.get<K, T>(key);
+    if (!cached) {
+      return undefined;
+    }
+    const now = Date.now();
+    // the entry has just been confirmed by the backend, so it is as good as one fetched
+    // now: the retention clock restarts too, not only the freshness one
+    this.config.store.set<K, T>(key, {
+      ...cached,
+      addedTime: now,
+      freshTime: now,
+      invalidated: false,
+    });
+    this.lastAccess.set(key, now);
+    return cached.response;
   }
 
   /**

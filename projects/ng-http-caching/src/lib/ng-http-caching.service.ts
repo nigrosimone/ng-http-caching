@@ -1284,6 +1284,7 @@ export class NgHttpCachingService implements OnDestroy {
       subscription.unsubscribe();
     }
     this.keptAlive.clear();
+    this.config.store.destroy?.();
     this.queue.clear();
     this.queueEpoch.clear();
     this.lastAccess.clear();

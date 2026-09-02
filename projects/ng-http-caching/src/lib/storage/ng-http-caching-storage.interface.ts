@@ -37,4 +37,10 @@ export interface NgHttpCachingStorageInterface {
    * Set the cache entry for the provided key.
    */
   set<K = any, T = any>(key: string, value: NgHttpCachingEntry<K, T>): void;
+
+  /**
+   * Release whatever the store holds open (a channel, a timer, a connection).
+   * Optional, called by `NgHttpCachingService.ngOnDestroy()`.
+   */
+  destroy?(): void;
 }

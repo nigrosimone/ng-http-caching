@@ -79,8 +79,58 @@ export const deserializeResponse = <T = unknown>(res: string): HttpResponse<T> =
   });
 };
 
+/**
+ * What to do when the browser refuses a write because the storage quota is full.
+ * - `evict-oldest`: drop the oldest entries of this cache, one at a time, and retry.
+ * - `clear`: drop the whole cache and retry once.
+ * - `ignore`: give up on this entry and leave the cache as it is.
+ */
+export type NgHttpCachingQuotaStrategy = 'evict-oldest' | 'clear' | 'ignore';
+
+export interface NgHttpCachingBrowserStorageOptions {
+  /**
+   * Recovery strategy when the storage quota is exceeded. Default `evict-oldest`.
+   */
+  onQuotaExceeded?: NgHttpCachingQuotaStrategy;
+  /**
+   * Maximum number of entries evicted before giving up on a write, with the
+   * `evict-oldest` strategy. Default `10`.
+   */
+  maxQuotaRetry?: number;
+}
+
+/**
+ * Return true when the write was refused because the storage is full.
+ *
+ * Every browser reports it differently: `QuotaExceededError` on Chrome and Safari,
+ * `NS_ERROR_DOM_QUOTA_REACHED` (code 1014) on Firefox, and some only set the legacy
+ * numeric code. Checking the name alone would miss the error, and the write would be
+ * silently lost while the storage stays full.
+ */
+export const isQuotaExceededError = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const { name, code } = error as { name?: string; code?: number };
+  return (
+    name === 'QuotaExceededError' ||
+    name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+    code === 22 ||
+    code === 1014
+  );
+};
+
 export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterface {
-  constructor(private storage: Storage) {}
+  private readonly onQuotaExceeded: NgHttpCachingQuotaStrategy;
+  private readonly maxQuotaRetry: number;
+
+  constructor(
+    protected readonly storage: Storage,
+    options: NgHttpCachingBrowserStorageOptions = {},
+  ) {
+    this.onQuotaExceeded = options.onQuotaExceeded ?? 'evict-oldest';
+    this.maxQuotaRetry = options.maxQuotaRetry ?? 10;
+  }
 
   get size(): number {
     let count = 0;
@@ -173,16 +223,76 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
     if (!key.startsWith(KEY_PREFIX)) {
       key = KEY_PREFIX + key;
     }
+    let serialized: string;
     try {
       const unParsedItem: NgHttpCachingStorageEntry = this.serialize(value);
-      this.storage.setItem(key, JSON.stringify(unParsedItem));
+      serialized = JSON.stringify(unParsedItem);
     } catch (error) {
-      if ((error as Error).name === 'QuotaExceededError') {
-        // Handle storage quota exceeded
-        this.clear(); // Clear all cache entries
-      }
       console.error('Failed to serialize cache entry:', key, error);
+      return;
     }
+
+    // `ignore` never retries, `clear` retries once, `evict-oldest` once per victim
+    const maxAttempt =
+      this.onQuotaExceeded === 'evict-oldest'
+        ? this.maxQuotaRetry
+        : this.onQuotaExceeded === 'clear'
+          ? 1
+          : 0;
+    // computed once, and only if the quota is actually hit
+    let victims: string[] | undefined;
+
+    for (let attempt = 0; attempt <= maxAttempt; attempt++) {
+      try {
+        this.storage.setItem(key, serialized);
+        return;
+      } catch (error) {
+        if (!isQuotaExceededError(error)) {
+          console.error('Failed to store cache entry:', key, error);
+          return;
+        }
+        if (attempt === maxAttempt) {
+          break;
+        }
+        if (this.onQuotaExceeded === 'clear') {
+          this.clear();
+          continue;
+        }
+        // make room one entry at a time, oldest first: a single response too big for
+        // the quota must not cost the whole cache
+        victims ??= this.keysByAge(key);
+        const victim = victims.shift();
+        if (!victim) {
+          break;
+        }
+        this.storage.removeItem(victim);
+      }
+    }
+    console.error('Failed to store cache entry, the storage quota is full:', key);
+  }
+
+  /**
+   * Keys of the cache, oldest first, excluding `keep`.
+   * Only `addedTime` is read out of the stored JSON: rebuilding every request and
+   * response here would make an eviction cost as much as reading the whole cache.
+   */
+  private keysByAge(keep: string): string[] {
+    const entries: { key: string; addedTime: number }[] = [];
+    for (let i = 0, e = this.storage.length; i < e; i++) {
+      const keyWithPrefix = this.storage.key(i);
+      if (!keyWithPrefix?.startsWith(KEY_PREFIX) || keyWithPrefix === keep) {
+        continue;
+      }
+      let addedTime: number;
+      try {
+        // an entry we can't read is worth nothing: evict it first
+        addedTime = JSON.parse(this.storage.getItem(keyWithPrefix) ?? '{}').addedTime ?? 0;
+      } catch {
+        addedTime = 0;
+      }
+      entries.push({ key: keyWithPrefix, addedTime });
+    }
+    return entries.sort((a, b) => a.addedTime - b.addedTime).map((entry) => entry.key);
   }
 
   protected serialize(value: NgHttpCachingEntry): NgHttpCachingStorageEntry {

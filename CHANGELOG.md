@@ -1,5 +1,14 @@
 # Changelog
 
+## [22.5.0](https://github.com/nigrosimone/ng-http-caching/compare/v22.4.0...v22.5.0) (2026-09-02)
+
+### 🚀 Features
+
+- revalidate a stale entry with ETag and Last-Modified, and confirm it on 304 ([eb0ac7b](https://github.com/nigrosimone/ng-http-caching/commit/eb0ac7b26f4a1e255a483065d8431784c892f2f3))
+- add withNgHttpCachingBroadcastStorage, an in-memory store that invalidates the other tabs ([b480da6](https://github.com/nigrosimone/ng-http-caching/commit/b480da688b65dd49f74e3f6f741d7cfc3a3df0d9))
+
+**Full Changelog**: https://github.com/nigrosimone/ng-http-caching/compare/v22.4.0...v22.5.0
+
 ## [22.4.0](https://github.com/nigrosimone/ng-http-caching/compare/v22.3.1...v22.4.0) (2026-09-02)
 
 ### 🚀 Features

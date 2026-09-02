@@ -19,6 +19,7 @@ import {
   checkCacheHeaders,
   NG_HTTP_CACHING_CONTEXT,
   NgHttpCachingMutationStrategy,
+  NgHttpCachingInvalidation,
 } from './ng-http-caching.service';
 import { PLATFORM_ID, VERSION } from '@angular/core';
 import { provideNgHttpCaching } from './ng-http-caching-provider';
@@ -2380,5 +2381,115 @@ describe('NgHttpCachingService: isStale on the server', () => {
       version: VERSION.major,
     };
     expect(service.isStale(entry)).toBe(false);
+  });
+});
+
+describe('NgHttpCachingService: invalidate instead of delete', () => {
+  let service: NgHttpCachingService;
+
+  const add = (url: string, tag?: string) => {
+    const req = new HttpRequest(
+      'GET',
+      url,
+      tag ? { headers: new HttpHeaders({ [NgHttpCachingHeaders.TAG]: tag }) } : {},
+    );
+    service.addToCache(req, new HttpResponse({ status: 200, body: { url } }));
+    return req;
+  };
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching()],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should keep the entry and make it stale', () => {
+    const req = add('https://angular.io/api/users');
+
+    expect(service.isStale(service.getStore().get(service.getKey(req))!)).toBe(false);
+    expect(service.invalidateCacheByKey(service.getKey(req))).toBe(true);
+
+    // still there, and served
+    expect(service.getFromCache(req)).toBeTruthy();
+    expect(service.getStore().size).toBe(1);
+    // but stale, so the interceptor refreshes it in background
+    expect(service.getFromCacheWithState(req)?.stale).toBe(true);
+  });
+
+  it('should be stale even without staleTime', () => {
+    expect(service.getConfig().staleTime).toBeUndefined();
+    const req = add('https://angular.io/api/users');
+    service.invalidateCache();
+    expect(service.getFromCacheWithState(req)?.stale).toBe(true);
+  });
+
+  it('should count only the entries it marks', () => {
+    add('https://angular.io/api/users');
+    add('https://angular.io/api/roles');
+
+    expect(service.invalidateCache()).toBe(2);
+    // already invalidated: nothing to write again
+    expect(service.invalidateCache()).toBe(0);
+    expect(service.invalidateCacheByKey('GET@https://angular.io/api/nope')).toBe(false);
+  });
+
+  it('should invalidate by regex and by tag', () => {
+    const users = add('https://angular.io/api/users', 'people');
+    const roles = add('https://angular.io/api/roles', 'people');
+    const other = add('https://angular.io/other/thing');
+
+    expect(service.invalidateCacheByRegex(/\/api\//)).toBe(2);
+    expect(service.getFromCacheWithState(users)?.stale).toBe(true);
+    expect(service.getFromCacheWithState(roles)?.stale).toBe(true);
+    expect(service.getFromCacheWithState(other)?.stale).toBe(false);
+
+    expect(service.invalidateCacheByTag('people')).toBe(0); // already invalidated
+    expect(service.invalidateCacheByTag('nobody')).toBe(0);
+  });
+
+  it('should become fresh again once refreshed', () => {
+    const req = add('https://angular.io/api/users');
+    service.invalidateCache();
+    expect(service.getFromCacheWithState(req)?.stale).toBe(true);
+
+    service.addToCache(req, new HttpResponse({ status: 200, body: { fresh: true } }));
+    expect(service.getFromCacheWithState(req)?.stale).toBe(false);
+  });
+});
+
+describe('NgHttpCachingService: mutationInvalidation STALE', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideNgHttpCaching({
+          clearCacheOnMutation: NgHttpCachingMutationStrategy.COLLECTION,
+          mutationInvalidation: NgHttpCachingInvalidation.STALE,
+        }),
+      ],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should mark the matching entries instead of removing them', () => {
+    const list = new HttpRequest('GET', 'https://angular.io/api/users');
+    const item = new HttpRequest('GET', 'https://angular.io/api/users/24');
+    const other = new HttpRequest('GET', 'https://angular.io/api/other');
+    for (const req of [list, item, other]) {
+      service.addToCache(req, new HttpResponse({ status: 200, body: {} }));
+    }
+
+    service.clearCacheByMutation(
+      new HttpRequest('DELETE', 'https://angular.io/api/users/24', null),
+    );
+
+    // nothing was thrown away
+    expect(service.getStore().size).toBe(3);
+    // the collection and the item are stale, the unrelated entry is untouched
+    expect(service.getFromCacheWithState(list)?.stale).toBe(true);
+    expect(service.getFromCacheWithState(item)?.stale).toBe(true);
+    expect(service.getFromCacheWithState(other)?.stale).toBe(false);
   });
 });

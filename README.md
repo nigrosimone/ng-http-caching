@@ -116,6 +116,7 @@ export interface NgHttpCachingConfig {
   isCacheable?: (req: HttpRequest<any>) => boolean | undefined | void;
   getKey?: (req: HttpRequest<any>) => string | undefined | void;
   clearCacheOnMutation?: NgHttpCachingMutationStrategy | boolean | ((req: HttpRequest<any>) => boolean | undefined | void);
+  mutationInvalidation?: NgHttpCachingInvalidation;
   responseSerializer?: <T>(body: T) => T;
 }
 ```
@@ -496,6 +497,29 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
 };
 ```
 
+### mutationInvalidation (enum NgHttpCachingInvalidation - default: DELETE)
+
+What `clearCacheOnMutation` does to the entries it invalidates:
+
+- `NgHttpCachingInvalidation.DELETE` (the default): they are removed, so the next request
+  waits for the backend;
+- `NgHttpCachingInvalidation.STALE`: they are kept and marked stale, so the next request is
+  served with the old response right away, while the entry is refreshed in background.
+
+```ts
+import { NgHttpCachingConfig, NgHttpCachingMutationStrategy, NgHttpCachingInvalidation } from 'ng-http-caching';
+
+const ngHttpCachingConfig: NgHttpCachingConfig = {
+  clearCacheOnMutation: NgHttpCachingMutationStrategy.COLLECTION,
+  // after a mutation the user still sees the list, and it refreshes by itself
+  mutationInvalidation: NgHttpCachingInvalidation.STALE,
+};
+```
+
+An invalidated entry is stale even without `staleTime`. It becomes fresh again as soon as
+the refresh lands; if the refresh fails, the entry stays invalidated, so the next read
+tries again. This can also be set for a single request with the `HttpContext`.
+
 ### responseSerializer (function - default: undefined)
 
 By default a cache hit serves the very same body instance kept into the store, and in dev mode
@@ -598,6 +622,7 @@ You can override `NgHttpCachingConfig` methods:
   isCacheable?: (req: HttpRequest<any>) => boolean | undefined | void;
   getKey?: (req: HttpRequest<any>) => string | undefined | void;
   clearCacheOnMutation?: NgHttpCachingMutationStrategy | boolean | ((req: HttpRequest<any>) => boolean | undefined | void);
+  mutationInvalidation?: NgHttpCachingInvalidation;
   responseSerializer?: <T>(body: T) => T;
 }
 ```
@@ -692,6 +717,32 @@ export class NgHttpCachingService {
    * Clear the cache by TAG
    */
   clearCacheByTag<K, T>(tag: string): number;
+
+  /**
+   * Mark every cache entry as invalidated: they are still served, but stale, so the
+   * first read of each refreshes it in background
+   */
+  invalidateCache(): number;
+
+  /**
+   * Mark the cache entry for the provided key as invalidated
+   */
+  invalidateCacheByKey(key: string): boolean;
+
+  /**
+   * Mark the cache entries for the provided keys as invalidated
+   */
+  invalidateCacheByKeys(keys: string[]): number;
+
+  /**
+   * Mark the cache entries whose key match the regex as invalidated
+   */
+  invalidateCacheByRegex(regex: RegExp): number;
+
+  /**
+   * Mark the cache entries having the provided TAG as invalidated
+   */
+  invalidateCacheByTag(tag: string): number;
 
   /**
    * Clear the cache according to the `clearCacheOnMutation` strategy.

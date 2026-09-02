@@ -29,6 +29,7 @@ export type NgHttpCachingContext = Pick<
   | 'isStale'
   | 'isValid'
   | 'clearCacheOnMutation'
+  | 'mutationInvalidation'
   | 'responseSerializer'
   | 'keepInFlight'
 >;
@@ -167,6 +168,12 @@ export interface NgHttpCachingEntry<K = any, T = any> {
    */
   freshTime?: number;
   /**
+   * True when the entry has been invalidated: it is still served, but it is stale, so
+   * it is refreshed in background at the first read. See `invalidateCache()` and the
+   * `mutationInvalidation` config.
+   */
+  invalidated?: boolean;
+  /**
    * Cache version
    */
   version: string;
@@ -221,6 +228,20 @@ export const NgHttpCachingMutationStrategy = {
 };
 export type NgHttpCachingMutationStrategy =
   (typeof NgHttpCachingMutationStrategy)[keyof typeof NgHttpCachingMutationStrategy];
+
+export const NgHttpCachingInvalidation = {
+  /**
+   * Invalidated entries are removed from the cache: the next request waits for the backend
+   */
+  DELETE: 'DELETE',
+  /**
+   * Invalidated entries are kept and marked stale: the next request is served with the old
+   * response and the entry is refreshed in background
+   */
+  STALE: 'STALE',
+};
+export type NgHttpCachingInvalidation =
+  (typeof NgHttpCachingInvalidation)[keyof typeof NgHttpCachingInvalidation];
 
 export const NgHttpCachingHeaders = {
   /**
@@ -318,6 +339,14 @@ export interface NgHttpCachingConfig {
    */
   staleTime?: number;
   /**
+   * What `clearCacheOnMutation` does to the entries it invalidates:
+   * - `NgHttpCachingInvalidation.DELETE` (the default): they are removed, so the next
+   *   request waits for the backend;
+   * - `NgHttpCachingInvalidation.STALE`: they are kept and marked stale, so the next
+   *   request is served with the old response while the entry is refreshed in background.
+   */
+  mutationInvalidation?: NgHttpCachingInvalidation;
+  /**
    * By default a request is cancelled when its last subscriber goes away (a destroyed
    * component, a `takeUntilDestroyed`, a route change), so the response never reaches the
    * cache. Set this to `true` to let a cacheable request run to the end anyway: nothing is
@@ -396,6 +425,7 @@ export interface NgHttpCachingDefaultConfig extends NgHttpCachingConfig {
   version: string;
   checkResponseHeaders: boolean;
   slidingExpiration: boolean;
+  mutationInvalidation: NgHttpCachingInvalidation;
 }
 
 export const NgHttpCachingConfigDefault: Readonly<NgHttpCachingDefaultConfig> = {
@@ -412,6 +442,7 @@ export const NgHttpCachingConfigDefault: Readonly<NgHttpCachingDefaultConfig> = 
   checkResponseHeaders: false,
   slidingExpiration: false,
   clearCacheOnMutation: NgHttpCachingMutationStrategy.NONE,
+  mutationInvalidation: NgHttpCachingInvalidation.DELETE,
 };
 
 /**
@@ -695,50 +726,135 @@ export class NgHttpCachingService implements OnDestroy {
    * Clear the cache by regex
    */
   clearCacheByRegex<K, T>(regex: RegExp): number {
-    const keys: string[] = [];
-    this.config.store.forEach<K, T>((_: NgHttpCachingEntry<K, T>, key: string) => {
-      // a global (`/g`) or sticky (`/y`) regex keeps its `lastIndex` between the calls
-      // to `test`, so it would match only some of the keys: restart from the beginning
-      // for every key, and leave the regex reusable by the caller
-      regex.lastIndex = 0;
-      if (regex.test(key)) {
-        keys.push(key);
-      }
-    });
-    regex.lastIndex = 0;
-    return this.clearCacheByKeys(keys);
-  }
-
-  /**
-   * Clear the cache entries whose URL (without the query parameters) is one of `urls`
-   */
-  private clearCacheByUrls<K, T>(urls: string[]): number {
-    const keys: string[] = [];
-    this.config.store.forEach<K, T>((entry: NgHttpCachingEntry<K, T>, key: string) => {
-      if (urls.includes(entry.url?.split('?')[0])) {
-        keys.push(key);
-      }
-    });
-    return this.clearCacheByKeys(keys);
+    return this.clearCacheByKeys(this.keysByRegex<K, T>(regex));
   }
 
   /**
    * Clear the cache by TAG
    */
   clearCacheByTag<K, T>(tag: string): number {
+    return this.clearCacheByKeys(this.keysByTag<K, T>(tag));
+  }
+
+  /**
+   * Mark every cache entry as invalidated: they are still served, but they are stale,
+   * so the first read of each refreshes it in background.
+   */
+  invalidateCache<K, T>(): number {
+    return this.invalidateCacheByKeys(this.keysByFilter<K, T>(() => true));
+  }
+
+  /**
+   * Mark the cache entry for the provided key as invalidated
+   */
+  invalidateCacheByKey(key: string): boolean {
+    return this.invalidateCacheByKeys([key]) > 0;
+  }
+
+  /**
+   * Mark the cache entries for the provided keys as invalidated.
+   * Return the number of entries actually marked.
+   */
+  invalidateCacheByKeys<K, T>(keys: string[]): number {
+    let count = 0;
+    for (const key of keys) {
+      const entry: NgHttpCachingEntry<K, T> | undefined = this.config.store.get<K, T>(key);
+      // an entry already invalidated isn't written again: with a persistent store that
+      // would be a serialization for nothing
+      if (!entry || entry.invalidated) {
+        continue;
+      }
+      this.config.store.set<K, T>(key, { ...entry, invalidated: true });
+      count++;
+    }
+    return count;
+  }
+
+  /**
+   * Mark the cache entries whose key match the regex as invalidated
+   */
+  invalidateCacheByRegex<K, T>(regex: RegExp): number {
+    return this.invalidateCacheByKeys(this.keysByRegex<K, T>(regex));
+  }
+
+  /**
+   * Mark the cache entries having the provided TAG as invalidated
+   */
+  invalidateCacheByTag<K, T>(tag: string): number {
+    return this.invalidateCacheByKeys(this.keysByTag<K, T>(tag));
+  }
+
+  /**
+   * Keys of the entries matching `predicate`
+   */
+  private keysByFilter<K, T>(
+    predicate: (entry: NgHttpCachingEntry<K, T>, key: string) => boolean,
+  ): string[] {
     const keys: string[] = [];
     this.config.store.forEach<K, T>((entry: NgHttpCachingEntry<K, T>, key: string) => {
-      const tagHeader = entry.request.headers.get(NgHttpCachingHeaders.TAG);
-      if (
-        tagHeader
-          ?.split(',')
-          .map((t) => t.trim())
-          .includes(tag)
-      ) {
+      if (predicate(entry, key)) {
         keys.push(key);
       }
     });
-    return this.clearCacheByKeys(keys);
+    return keys;
+  }
+
+  /**
+   * Keys matching the regex
+   */
+  private keysByRegex<K, T>(regex: RegExp): string[] {
+    const keys = this.keysByFilter<K, T>((_, key) => {
+      // a global (`/g`) or sticky (`/y`) regex keeps its `lastIndex` between the calls
+      // to `test`, so it would match only some of the keys: restart from the beginning
+      // for every key, and leave the regex reusable by the caller
+      regex.lastIndex = 0;
+      return regex.test(key);
+    });
+    regex.lastIndex = 0;
+    return keys;
+  }
+
+  /**
+   * Keys of the entries carrying the TAG
+   */
+  private keysByTag<K, T>(tag: string): string[] {
+    return this.keysByFilter<K, T>((entry) => {
+      const tagHeader = entry.request.headers.get(NgHttpCachingHeaders.TAG);
+      return !!tagHeader
+        ?.split(',')
+        .map((t) => t.trim())
+        .includes(tag);
+    });
+  }
+
+  /**
+   * Keys of the entries whose URL (without the query parameters) is one of `urls`
+   */
+  private keysByUrls<K, T>(urls: string[]): string[] {
+    return this.keysByFilter<K, T>((entry) => urls.includes(entry.url?.split('?')[0]));
+  }
+
+  /**
+   * Apply the mutation invalidation, deleting the entries or marking them stale
+   * according to the `mutationInvalidation` config. Without `urls` the whole cache
+   * is invalidated.
+   */
+  private applyMutation<K>(req: HttpRequest<K>, urls?: string[]): void {
+    const context = req.context.get(NG_HTTP_CACHING_CONTEXT);
+    const invalidation = context.mutationInvalidation ?? this.config.mutationInvalidation;
+    if (invalidation === NgHttpCachingInvalidation.STALE) {
+      if (urls) {
+        this.invalidateCacheByKeys(this.keysByUrls<K, any>(urls));
+      } else {
+        this.invalidateCache();
+      }
+      return;
+    }
+    if (urls) {
+      this.clearCacheByKeys(this.keysByUrls<K, any>(urls));
+    } else {
+      this.clearCache();
+    }
   }
 
   /**
@@ -792,7 +908,7 @@ export class NgHttpCachingService implements OnDestroy {
       const result = strategy(req);
       if (result === true) {
         this.openMutationEpoch(req);
-        this.clearCache();
+        this.applyMutation(req);
         return true;
       }
       return false;
@@ -800,7 +916,7 @@ export class NgHttpCachingService implements OnDestroy {
 
     if (strategy === true || strategy === NgHttpCachingMutationStrategy.ALL) {
       this.openMutationEpoch(req);
-      this.clearCache();
+      this.applyMutation(req);
       return true;
     }
 
@@ -812,7 +928,7 @@ export class NgHttpCachingService implements OnDestroy {
 
     if (strategy === NgHttpCachingMutationStrategy.IDENTICAL) {
       this.openMutationEpoch(req);
-      this.clearCacheByUrls([url]);
+      this.applyMutation(req, [url]);
       return true;
     }
 
@@ -824,7 +940,7 @@ export class NgHttpCachingService implements OnDestroy {
         urls.push(parts.join('/'));
       }
       this.openMutationEpoch(req);
-      this.clearCacheByUrls(urls);
+      this.applyMutation(req, urls);
       return true;
     }
 
@@ -898,6 +1014,10 @@ export class NgHttpCachingService implements OnDestroy {
       if (result !== undefined) {
         return result;
       }
+    }
+    // an invalidated entry is stale whatever `staleTime` says
+    if (entry.invalidated) {
+      return true;
     }
     const staleTime = this.config.staleTime;
     if (staleTime === undefined) {

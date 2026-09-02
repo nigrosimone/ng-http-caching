@@ -359,3 +359,37 @@ describe('NgHttpCachingBrowserStorage: keyPrefix', () => {
     expect(second.get('shared-key')).toBeTruthy();
   });
 });
+
+describe('NgHttpCachingBrowserStorage: entry round trip', () => {
+  it('should keep freshTime and invalidated through the serialization', () => {
+    const entries: Record<string, string> = {};
+    const storage: Storage = {
+      getItem: (key: string) => entries[key] ?? null,
+      setItem: (key: string, value: string) => {
+        entries[key] = value;
+      },
+      removeItem: (key: string) => delete entries[key],
+      clear: () => Object.keys(entries).forEach((k) => delete entries[k]),
+      key: (index: number) => Object.keys(entries)[index] ?? null,
+      get length() {
+        return Object.keys(entries).length;
+      },
+    };
+    const store = new NgHttpCachingBrowserStorage(storage);
+
+    store.set('mykey', {
+      url: 'http://test.com',
+      response: new HttpResponse({ body: 'test' }),
+      request: new HttpRequest('GET', 'http://test.com'),
+      addedTime: 2000,
+      freshTime: 1000,
+      invalidated: true,
+      version: '1',
+    });
+
+    const read = store.get('mykey');
+    expect(read?.addedTime).toBe(2000);
+    expect(read?.freshTime).toBe(1000);
+    expect(read?.invalidated).toBe(true);
+  });
+});

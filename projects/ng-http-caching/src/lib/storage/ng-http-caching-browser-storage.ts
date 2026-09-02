@@ -9,6 +9,8 @@ export interface NgHttpCachingStorageEntry {
   response: string;
   request: string;
   addedTime: number;
+  freshTime?: number;
+  invalidated?: boolean;
   version: string;
 }
 
@@ -309,6 +311,8 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
       response: serializeResponse(value.response),
       request: serializeRequest(value.request),
       addedTime: value.addedTime,
+      freshTime: value.freshTime,
+      invalidated: value.invalidated,
       version: value.version,
     };
   }
@@ -319,6 +323,8 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
       response: deserializeResponse(value.response),
       request: deserializeRequest(value.request),
       addedTime: value.addedTime,
+      freshTime: value.freshTime,
+      invalidated: value.invalidated,
       version: value.version,
     };
   }

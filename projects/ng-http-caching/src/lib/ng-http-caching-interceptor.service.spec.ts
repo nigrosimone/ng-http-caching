@@ -7,6 +7,7 @@ import {
   HttpHeaders,
   HttpContext,
   HttpClient,
+  HttpErrorResponse,
   provideHttpClient,
   withInterceptors,
   withInterceptorsFromDi,
@@ -893,4 +894,118 @@ describe('NgHttpCachingInterceptorService: mutationInvalidation STALE', () => {
 
     expect(service.getStore().size).toBe(0);
   }, 1000);
+});
+
+/** answers 304 to a conditional request, 200 otherwise */
+class NotModifiedHandler extends HttpHandler {
+  public calls = 0;
+  public lastRequest: HttpRequest<any> | undefined;
+  handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
+    this.calls++;
+    this.lastRequest = req;
+    if (req.headers.has('If-None-Match') || req.headers.has('If-Modified-Since')) {
+      return throwError(() => new HttpErrorResponse({ status: 304, url: req.url })).pipe(delay(1));
+    }
+    return of(
+      new HttpResponse({
+        status: 200,
+        body: { call: this.calls },
+        headers: new HttpHeaders({
+          etag: 'W/"v1"',
+          'last-modified': 'Wed, 02 Sep 2026 00:00:00 GMT',
+        }),
+      }),
+    ).pipe(delay(1));
+  }
+}
+
+describe('NgHttpCachingInterceptorService: conditional revalidation', () => {
+  const bodyOf = (event: HttpEvent<any>) => (event as HttpResponse<any>).body;
+
+  it('should revalidate with If-None-Match and keep the cached body on 304', async () => {
+    // a wide staleTime: the assertion below is that the entry is fresh again after the
+    // 304, and a tight window would race with the test clock
+    const { interceptor, service } = setup({ staleTime: 200 });
+    const handler = new NotModifiedHandler();
+    const req = GET('https://angular.io/docs?etag');
+
+    await firstValueFrom(interceptor.intercept(req, handler));
+    await sleep(250);
+
+    // stale: served from the cache, and refreshed with a conditional request
+    expect(bodyOf(await firstValueFrom(interceptor.intercept(req, handler)))).toEqual({ call: 1 });
+    await sleep(20);
+
+    expect(handler.calls).toBe(2);
+    expect(handler.lastRequest?.headers.get('If-None-Match')).toBe('W/"v1"');
+    expect(handler.lastRequest?.headers.get('If-Modified-Since')).toBe(
+      'Wed, 02 Sep 2026 00:00:00 GMT',
+    );
+
+    // the 304 confirmed the entry: it is fresh again, and the body is the one we had
+    const entry = service.getStore().get(service.getKey(req));
+    expect(entry?.response.body).toEqual({ call: 1 });
+    expect(service.getFromCacheWithState(req)?.stale).toBe(false);
+
+    // and no request is sent anymore
+    expect(bodyOf(await firstValueFrom(interceptor.intercept(req, handler)))).toEqual({ call: 1 });
+    expect(handler.calls).toBe(2);
+  }, 2000);
+
+  it('should not send the conditional headers with conditionalRevalidation off', async () => {
+    const { interceptor } = setup({ staleTime: 30, conditionalRevalidation: false });
+    const handler = new NotModifiedHandler();
+    const req = GET('https://angular.io/docs?no-etag');
+
+    await firstValueFrom(interceptor.intercept(req, handler));
+    await sleep(60);
+    await firstValueFrom(interceptor.intercept(req, handler));
+    await sleep(20);
+
+    expect(handler.calls).toBe(2);
+    expect(handler.lastRequest?.headers.has('If-None-Match')).toBe(false);
+  }, 2000);
+
+  it('should not store the conditional headers into the cached request', async () => {
+    const { interceptor, service } = setup({ staleTime: 30 });
+    const handler = new NotModifiedHandler();
+    const req = GET('https://angular.io/docs?etag-clean');
+
+    await firstValueFrom(interceptor.intercept(req, handler));
+    await sleep(60);
+    await firstValueFrom(interceptor.intercept(req, handler));
+    await sleep(20);
+
+    const entry = service.getStore().get(service.getKey(req));
+    expect(entry?.request.headers.has('If-None-Match')).toBe(false);
+  }, 2000);
+
+  it('should clear the invalidated flag when the backend confirms the entry', async () => {
+    const { interceptor, service } = setup();
+    const handler = new NotModifiedHandler();
+    const req = GET('https://angular.io/docs?etag-invalidated');
+
+    await firstValueFrom(interceptor.intercept(req, handler));
+    service.invalidateCache();
+    expect(service.getFromCacheWithState(req)?.stale).toBe(true);
+
+    await firstValueFrom(interceptor.intercept(req, handler));
+    await sleep(20);
+
+    expect(service.getFromCacheWithState(req)?.stale).toBe(false);
+    expect(handler.calls).toBe(2);
+  }, 2000);
+
+  it('should leave the entry alone when there is no validator', async () => {
+    const { interceptor } = setup({ staleTime: 30 });
+    const handler = new CountingHandler();
+    const req = GET('https://angular.io/docs?no-validator');
+
+    await firstValueFrom(interceptor.intercept(req, handler));
+    await sleep(60);
+    await firstValueFrom(interceptor.intercept(req, handler));
+    await sleep(20);
+
+    expect(handler.calls).toBe(2);
+  }, 2000);
 });

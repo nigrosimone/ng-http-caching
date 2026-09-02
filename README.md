@@ -21,6 +21,7 @@ Rendering on the server too? [`NgSsrCaching`](https://www.npmjs.com/package/ng-s
 ✅ Automatic cache invalidation on mutations (POST, PUT, DELETE, PATCH)<br>
 ✅ Stale-while-revalidate<br>
 ✅ Cross-tab invalidation<br>
+✅ ETag and Last-Modified conditional revalidation<br>
 ✅ Server side rendering (SSR) safe<br>
 
 ## Get Started
@@ -101,6 +102,7 @@ export interface NgHttpCachingConfig {
   version?: string;
   lifetime?: number;
   staleTime?: number;
+  conditionalRevalidation?: boolean;
   maxSize?: number;
   allowedMethod?: string[];
   cacheStrategy?: NgHttpCachingStrategy;
@@ -172,6 +174,37 @@ Some details worth knowing:
 - an expired entry is never stale: it is refetched, and the caller waits for it;
 - during server side rendering nothing is ever stale, revalidating would only slow the
   render down.
+
+A long `lifetime` with a short `staleTime` also gives you a form of stale-if-error: past
+`staleTime` every read is served from the cache and refreshed in background, so while the
+backend is down the last good response keeps being served until `lifetime` expires it.
+
+```ts
+const ngHttpCachingConfig: NgHttpCachingConfig = {
+  staleTime: 1000 * 30, // refresh in background after 30 seconds
+  lifetime: 1000 * 60 * 60, // but keep serving the last good response for an hour
+};
+```
+
+### conditionalRevalidation (boolean - default: true)
+When a stale entry is refreshed and the cached response carries an `ETag` or a
+`Last-Modified`, the refresh is sent as a conditional request (`If-None-Match`,
+`If-Modified-Since`). If the backend answers `304 Not Modified` there is no body to
+download: the entry we already have is confirmed, and both its clocks restart.
+
+It does nothing when the response carries no validator, so on most APIs it costs nothing.
+Set it to `false` to always refetch the full body.
+
+```ts
+const ngHttpCachingConfig: NgHttpCachingConfig = {
+  staleTime: 1000 * 30,
+  conditionalRevalidation: false, // always download the body again
+};
+```
+
+Two notes. Angular reports a `304` as an error, because it isn't a `2xx`: it is handled
+inside the library, the subscriber never sees it. And the headers of the `304` are not
+merged into the stored response, only the freshness is.
 
 ### keepInFlight (boolean | function - default: false)
 By default a request is cancelled when its last subscriber goes away: a destroyed
@@ -794,6 +827,17 @@ export class NgHttpCachingService {
   isExpired<K, T>(entry: NgHttpCachingEntry<K, T>, req?: HttpRequest<K>): boolean;
 
   /**
+   * Return the request to send to refresh a stale entry, with the conditional headers
+   * when the cached response carries a validator
+   */
+  getConditionalRequest<K, T>(req: HttpRequest<K>): HttpRequest<K>;
+
+  /**
+   * Confirm the cached entry after a 304 Not Modified: both clocks restart
+   */
+  confirmFromCache<K, T>(req: HttpRequest<K>): Readonly<HttpResponse<T>> | undefined;
+
+  /**
    * Return true if the cache entry is stale, so it is served as it is and refreshed
    * in background
    */
@@ -1076,12 +1120,13 @@ The `Vary` response header is ignored. A response negotiated on `Accept-Language
 `Accept-Encoding` or any other header is served to every request matching the cache key,
 whatever the negotiation was. Use `getKey` to include the relevant headers yourself.
 
-### No conditional revalidation
+### Conditional revalidation only on a stale entry
 
-There is no `ETag`/`Last-Modified` handling and no conditional request (`If-None-Match`,
-`If-Modified-Since`, `304 Not Modified`): a refresh, `staleTime` included, always refetches
-the response in full. Likewise `no-cache` is treated as "don't store" rather than "store,
-but revalidate before use".
+`ETag` and `Last-Modified` are used when a **stale** entry is refreshed (see
+`conditionalRevalidation`). An entry past its `lifetime` is dropped and refetched in full
+instead, because it isn't in the cache anymore when the request goes out. Likewise
+`no-cache` is treated as "don't store" rather than "store, but revalidate before use", and
+the headers of a `304` are not merged into the stored response.
 
 ## Alternatives
 

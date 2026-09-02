@@ -265,10 +265,25 @@ export interface NgHttpCachingConfig {
    */
   checkResponseHeaders?: boolean;
   /**
+   * If true the lifetime restarts at every cache hit, so an entry that keeps being read
+   * never expires, and only an entry left unused for a whole `lifetime` does.
+   * A deadline coming from the response headers (`max-age`, `Expires`, with
+   * `checkResponseHeaders`) belongs to the server and isn't moved.
+   * Note that every cache hit writes back to the store: with a persistent store
+   * (`localStorage`, `sessionStorage`) that is a serialization on every read.
+   */
+  slidingExpiration?: boolean;
+  /**
    * If this function return `true` the request is expired and a new request is send to backend, if return `false` isn't expired.
    * If the result is `undefined`, the normal behaviour is provided.
+   * `req` is the request currently being served, so it can be compared with the one that
+   * filled the cache (`entry.request`). It is `undefined` when the check comes from the
+   * garbage collector, where there is no request in flight.
    */
-  isExpired?: <K, T>(entry: NgHttpCachingEntry<K, T>) => boolean | undefined | void;
+  isExpired?: <K, T>(
+    entry: NgHttpCachingEntry<K, T>,
+    req?: HttpRequest<K>,
+  ) => boolean | undefined | void;
   /**
    * If this function return `true` the request is cacheable, if return `false` isn't cacheable.
    * If the result is `undefined`, the normal behaviour is provided.
@@ -318,6 +333,7 @@ export interface NgHttpCachingDefaultConfig extends NgHttpCachingConfig {
   cacheStrategy: NgHttpCachingStrategy;
   version: string;
   checkResponseHeaders: boolean;
+  slidingExpiration: boolean;
 }
 
 export const NgHttpCachingConfigDefault: Readonly<NgHttpCachingDefaultConfig> = {
@@ -332,6 +348,7 @@ export const NgHttpCachingConfigDefault: Readonly<NgHttpCachingDefaultConfig> = 
   allowedMethod: ['GET', 'HEAD'],
   cacheStrategy: NgHttpCachingStrategy.ALLOW_ALL,
   checkResponseHeaders: false,
+  slidingExpiration: false,
   clearCacheOnMutation: NgHttpCachingMutationStrategy.NONE,
 };
 
@@ -439,7 +456,13 @@ export class NgHttpCachingService implements OnDestroy {
       return undefined;
     }
 
-    this.lastAccess.set(key, Date.now());
+    const now = Date.now();
+    this.lastAccess.set(key, now);
+
+    if (this.config.slidingExpiration && !this.hasResponseDeadline(cached)) {
+      // the lifetime restarts from this read, so an entry in use never expires
+      this.config.store.set<K, T>(key, { ...cached, addedTime: now });
+    }
 
     // when a `responseSerializer` is configured, every reader gets its own copy of the
     // body and is free to mutate it: what the store keeps is left untouched
@@ -466,6 +489,25 @@ export class NgHttpCachingService implements OnDestroy {
       return this.config.responseSerializer;
     }
     return undefined;
+  }
+
+  /**
+   * Return true when the expiration of this entry is driven by the response headers
+   * (`max-age`, `Expires`). That deadline is the server's, so `slidingExpiration`
+   * must not move it. The request lifetime header wins over the response headers,
+   * so when it's there the deadline is ours again.
+   */
+  private hasResponseDeadline<K, T>(entry: NgHttpCachingEntry<K, T>): boolean {
+    if (!this.config.checkResponseHeaders) {
+      return false;
+    }
+    if (getHeaderLifetime(entry.request.headers) !== undefined) {
+      return false;
+    }
+    return (
+      typeof checkCacheHeaders(entry.response.headers) === 'number' ||
+      getExpiresDeadline(entry.response.headers) !== undefined
+    );
   }
 
   /**
@@ -725,7 +767,7 @@ export class NgHttpCachingService implements OnDestroy {
     // if user provide custom method, use it
     const context = (req ?? entry.request).context.get(NG_HTTP_CACHING_CONTEXT);
     if (typeof context?.isExpired === 'function') {
-      const result = context.isExpired(entry);
+      const result = context.isExpired(entry, req);
       // if result is undefined, normal behaviour is provided
       if (result !== undefined) {
         return result;
@@ -733,7 +775,7 @@ export class NgHttpCachingService implements OnDestroy {
     }
     // if user provide custom method, use it
     if (typeof this.config.isExpired === 'function') {
-      const result = this.config.isExpired(entry);
+      const result = this.config.isExpired(entry, req);
       // if result is undefined, normal behaviour is provided
       if (result !== undefined) {
         return result;

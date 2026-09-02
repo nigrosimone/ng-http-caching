@@ -2180,3 +2180,112 @@ describe('NgHttpCachingService: clearCacheByMutation with a custom getKey', () =
     ).toBeTruthy();
   });
 });
+
+describe('NgHttpCachingService: isExpired receives the request being served', () => {
+  let service: NgHttpCachingService;
+  let seen: { entry: NgHttpCachingEntry; req?: HttpRequest<any> } | undefined;
+  const config: NgHttpCachingConfig = {
+    isExpired: (entry, req) => {
+      seen = { entry, req };
+      return undefined;
+    },
+  };
+
+  beforeEach(() => {
+    seen = undefined;
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching(config)],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should pass the current request, not only the cached one', () => {
+    const cached = new HttpRequest('GET', 'https://angular.io/docs');
+    service.addToCache(cached, new HttpResponse({ status: 200, body: { a: 1 } }));
+
+    const current = new HttpRequest('GET', 'https://angular.io/docs', {
+      headers: new HttpHeaders({ 'X-Foo': 'bar' }),
+    });
+    expect(service.getFromCache(current)).toBeTruthy();
+
+    expect(seen?.req).toBe(current);
+    expect(seen?.entry.request).toBe(cached);
+  });
+
+  it('should pass undefined when there is no request in flight', () => {
+    const entry: NgHttpCachingEntry = {
+      url: 'https://angular.io/docs',
+      addedTime: Date.now(),
+      response: new HttpResponse({}),
+      request: new HttpRequest('GET', 'https://angular.io/docs'),
+      version: VERSION.major,
+    };
+    service.isExpired(entry);
+    expect(seen?.req).toBeUndefined();
+  });
+});
+
+describe('NgHttpCachingService: slidingExpiration', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching({ lifetime: 100, slidingExpiration: true })],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should not expire an entry that keeps being read', async () => {
+    const req = new HttpRequest('GET', 'https://angular.io/docs?sliding');
+    service.addToCache(req, new HttpResponse({ status: 200, body: { a: 1 } }));
+
+    for (let i = 0; i < 4; i++) {
+      await sleep(60);
+      expect(service.getFromCache(req)).toBeTruthy();
+    }
+  });
+
+  it('should expire an entry left unused for a whole lifetime', async () => {
+    const req = new HttpRequest('GET', 'https://angular.io/docs?sliding-idle');
+    service.addToCache(req, new HttpResponse({ status: 200, body: { a: 1 } }));
+
+    await sleep(150);
+    expect(service.getFromCache(req)).toBeUndefined();
+  });
+});
+
+describe('NgHttpCachingService: slidingExpiration with checkResponseHeaders', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideNgHttpCaching({
+          lifetime: NG_HTTP_CACHING_HOUR_IN_MS,
+          slidingExpiration: true,
+          checkResponseHeaders: true,
+        }),
+      ],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should not move a deadline coming from the response headers', async () => {
+    const req = new HttpRequest('GET', 'https://angular.io/docs?sliding-max-age');
+    service.addToCache(
+      req,
+      new HttpResponse({
+        status: 200,
+        body: { a: 1 },
+        headers: new HttpHeaders({ 'cache-control': 'max-age=1' }),
+      }),
+    );
+
+    // a read before the deadline must not push it forward
+    await sleep(600);
+    expect(service.getFromCache(req)).toBeTruthy();
+
+    await sleep(600);
+    expect(service.getFromCache(req)).toBeUndefined();
+  });
+});

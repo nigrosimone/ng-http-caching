@@ -2,7 +2,7 @@ import { NgHttpCachingStorageInterface } from './ng-http-caching-storage.interfa
 import { NgHttpCachingEntry } from '../ng-http-caching.service';
 import { HttpHeaders, HttpParams, HttpRequest, HttpResponse } from '@angular/common/http';
 
-const KEY_PREFIX = 'NgHttpCaching::';
+export const NG_HTTP_CACHING_KEY_PREFIX = 'NgHttpCaching::';
 
 export interface NgHttpCachingStorageEntry {
   url: string;
@@ -97,6 +97,12 @@ export interface NgHttpCachingBrowserStorageOptions {
    * `evict-oldest` strategy. Default `10`.
    */
   maxQuotaRetry?: number;
+  /**
+   * Prefix of the keys written into the storage. Default `NgHttpCaching::`.
+   * Give a different one to each application sharing the same origin, otherwise they
+   * read, evict and clear each other entries.
+   */
+  keyPrefix?: string;
 }
 
 /**
@@ -123,6 +129,7 @@ export const isQuotaExceededError = (error: unknown): boolean => {
 export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterface {
   private readonly onQuotaExceeded: NgHttpCachingQuotaStrategy;
   private readonly maxQuotaRetry: number;
+  protected readonly keyPrefix: string;
 
   constructor(
     protected readonly storage: Storage,
@@ -130,13 +137,14 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
   ) {
     this.onQuotaExceeded = options.onQuotaExceeded ?? 'evict-oldest';
     this.maxQuotaRetry = options.maxQuotaRetry ?? 10;
+    this.keyPrefix = options.keyPrefix ?? NG_HTTP_CACHING_KEY_PREFIX;
   }
 
   get size(): number {
     let count = 0;
     for (let i = 0, e = this.storage.length; i < e; i++) {
       const key = this.storage.key(i);
-      if (key?.startsWith(KEY_PREFIX)) {
+      if (key?.startsWith(this.keyPrefix)) {
         count++;
       }
     }
@@ -146,7 +154,7 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
   clear(): void {
     for (let i = this.storage.length - 1; i >= 0; i--) {
       const key = this.storage.key(i);
-      if (key?.startsWith(KEY_PREFIX)) {
+      if (key?.startsWith(this.keyPrefix)) {
         this.storage.removeItem(key);
       }
     }
@@ -156,8 +164,8 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
     if (!key) {
       return false;
     }
-    if (!key.startsWith(KEY_PREFIX)) {
-      key = KEY_PREFIX + key;
+    if (!key.startsWith(this.keyPrefix)) {
+      key = this.keyPrefix + key;
     }
     // report the real outcome, like `Map.delete` does
     if (this.storage.getItem(key) === null) {
@@ -173,14 +181,14 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
     const keysWithPrefix: string[] = [];
     for (let i = 0, e = this.storage.length; i < e; i++) {
       const keyWithPrefix = this.storage.key(i);
-      if (keyWithPrefix?.startsWith(KEY_PREFIX)) {
+      if (keyWithPrefix?.startsWith(this.keyPrefix)) {
         keysWithPrefix.push(keyWithPrefix);
       }
     }
     for (const keyWithPrefix of keysWithPrefix) {
       const value = this.get(keyWithPrefix);
       if (value) {
-        callbackfn(value, keyWithPrefix.substring(KEY_PREFIX.length));
+        callbackfn(value, keyWithPrefix.substring(this.keyPrefix.length));
       }
     }
   }
@@ -189,8 +197,8 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
     if (!key) {
       return undefined;
     }
-    if (!key.startsWith(KEY_PREFIX)) {
-      key = KEY_PREFIX + key;
+    if (!key.startsWith(this.keyPrefix)) {
+      key = this.keyPrefix + key;
     }
     const item = this.storage.getItem(key);
     if (item) {
@@ -210,8 +218,8 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
     if (!key) {
       return false;
     }
-    if (!key.startsWith(KEY_PREFIX)) {
-      key = KEY_PREFIX + key;
+    if (!key.startsWith(this.keyPrefix)) {
+      key = this.keyPrefix + key;
     }
     return !!this.storage.getItem(key);
   }
@@ -220,8 +228,8 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
     if (!key) {
       return;
     }
-    if (!key.startsWith(KEY_PREFIX)) {
-      key = KEY_PREFIX + key;
+    if (!key.startsWith(this.keyPrefix)) {
+      key = this.keyPrefix + key;
     }
     let serialized: string;
     try {
@@ -280,7 +288,7 @@ export class NgHttpCachingBrowserStorage implements NgHttpCachingStorageInterfac
     const entries: { key: string; addedTime: number }[] = [];
     for (let i = 0, e = this.storage.length; i < e; i++) {
       const keyWithPrefix = this.storage.key(i);
-      if (!keyWithPrefix?.startsWith(KEY_PREFIX) || keyWithPrefix === keep) {
+      if (!keyWithPrefix?.startsWith(this.keyPrefix) || keyWithPrefix === keep) {
         continue;
       }
       let addedTime: number;

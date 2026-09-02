@@ -111,6 +111,7 @@ export interface NgHttpCachingConfig {
     | (() => NgHttpCachingStorageInterface);
   isExpired?: (entry: NgHttpCachingEntry, req?: HttpRequest<any>) => boolean | undefined | void;
   isStale?: (entry: NgHttpCachingEntry, req?: HttpRequest<any>) => boolean | undefined | void;
+  keepInFlight?: boolean | ((req: HttpRequest<any>) => boolean | undefined | void);
   isValid?: (entry: NgHttpCachingEntry) => boolean | undefined | void;
   isCacheable?: (req: HttpRequest<any>) => boolean | undefined | void;
   getKey?: (req: HttpRequest<any>) => string | undefined | void;
@@ -169,6 +170,28 @@ Some details worth knowing:
 - an expired entry is never stale: it is refetched, and the caller waits for it;
 - during server side rendering nothing is ever stale, revalidating would only slow the
   render down.
+
+### keepInFlight (boolean | function - default: false)
+By default a request is cancelled when its last subscriber goes away: a destroyed
+component, a `takeUntilDestroyed`, a route change while the list is still loading. The
+response never arrives, so it never reaches the cache, and going back pays the whole round
+trip again.
+
+With `keepInFlight: true` a cacheable request runs to the end anyway. Nothing is emitted to
+the subscriber that left, the response only fills the cache for the next one.
+
+```ts
+const ngHttpCachingConfig: NgHttpCachingConfig = {
+  keepInFlight: true,
+  // or per request:
+  // keepInFlight: (req) => req.urlWithParams.includes('/api/slow-report'),
+};
+```
+
+It applies only to the cacheable requests, and the kept requests are cancelled when the
+`NgHttpCachingService` is destroyed, so nothing is left running at the end of a server side
+rendered request. Careful with `allowedMethod: ['ALL']`: an abandoned mutation would still
+reach the backend and still invalidate the cache.
 
 ### checkResponseHeaders (boolean - default false);
 If true response headers cache-control and expires are respected.
@@ -274,6 +297,10 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
       onQuotaExceeded: 'evict-oldest',
       // how many entries to evict before giving up on the write, default 10
       maxQuotaRetry: 10,
+      // prefix of the keys written into the storage, default 'NgHttpCaching::'.
+      // Give a different one to each application sharing the same origin, otherwise
+      // they read, evict and clear each other entries.
+      keyPrefix: 'my-app::',
     }),
 };
 ```
@@ -566,6 +593,7 @@ You can override `NgHttpCachingConfig` methods:
 {
   isExpired?: (entry: NgHttpCachingEntry, req?: HttpRequest<any>) => boolean | undefined | void;
   isStale?: (entry: NgHttpCachingEntry, req?: HttpRequest<any>) => boolean | undefined | void;
+  keepInFlight?: boolean | ((req: HttpRequest<any>) => boolean | undefined | void);
   isValid?: (entry: NgHttpCachingEntry) => boolean | undefined | void;
   isCacheable?: (req: HttpRequest<any>) => boolean | undefined | void;
   getKey?: (req: HttpRequest<any>) => string | undefined | void;

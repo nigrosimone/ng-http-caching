@@ -771,3 +771,85 @@ describe('NgHttpCachingInterceptorService: staleTime and stale-while-revalidate'
     expect(handler.calls).toBe(2);
   }, 1000);
 });
+
+describe('NgHttpCachingInterceptorService: keepInFlight', () => {
+  it('should not cache a request abandoned before the response, by default', async () => {
+    const { interceptor, service } = setup();
+    const handler = new CountingHandler(DELAY);
+    const req = GET('https://angular.io/docs?abandoned');
+
+    // subscribe and leave right away, like a destroyed component does
+    interceptor.intercept(req, handler).subscribe().unsubscribe();
+    await sleep(DELAY * 2);
+
+    expect(service.getStore().size).toBe(0);
+    expect(service.getQueue().size).toBe(0);
+  }, 1000);
+
+  it('should cache a request abandoned before the response, with keepInFlight', async () => {
+    const { interceptor, service } = setup({ keepInFlight: true });
+    const handler = new CountingHandler(DELAY);
+    const req = GET('https://angular.io/docs?kept');
+
+    interceptor.intercept(req, handler).subscribe().unsubscribe();
+    await sleep(DELAY * 2);
+
+    expect(service.getStore().size).toBe(1);
+    expect(service.getQueue().size).toBe(0);
+
+    // the next request is served by the cache the abandoned one filled
+    await firstValueFrom(interceptor.intercept(req, handler));
+    expect(handler.calls).toBe(1);
+  }, 1000);
+
+  it('should keep deduplicating the parallel requests', async () => {
+    const { interceptor } = setup({ keepInFlight: true });
+    const handler = new CountingHandler(DELAY);
+    const req = GET('https://angular.io/docs?kept-parallel');
+
+    const [first, second] = await Promise.all([
+      firstValueFrom(interceptor.intercept(req, handler)),
+      firstValueFrom(interceptor.intercept(req, handler)),
+    ]);
+
+    expect(handler.calls).toBe(1);
+    expect((first as HttpResponse<any>).body).toEqual((second as HttpResponse<any>).body);
+  }, 1000);
+
+  it('should take the decision per request', async () => {
+    const { interceptor, service } = setup({
+      keepInFlight: (req) => req.urlWithParams.includes('keep-me'),
+    });
+    const handler = new CountingHandler(DELAY);
+
+    interceptor.intercept(GET('https://angular.io/keep-me'), handler).subscribe().unsubscribe();
+    interceptor.intercept(GET('https://angular.io/drop-me'), handler).subscribe().unsubscribe();
+    await sleep(DELAY * 2);
+
+    expect(service.getStore().has('GET@https://angular.io/keep-me')).toBe(true);
+    expect(service.getStore().has('GET@https://angular.io/drop-me')).toBe(false);
+  }, 1000);
+
+  it('should swallow the error of an abandoned request', async () => {
+    const { interceptor, service } = setup({ keepInFlight: true });
+    const req = GET('https://angular.io/docs?kept-error');
+
+    interceptor.intercept(req, new ErrorMockHandler()).subscribe({ error: () => undefined });
+    await sleep(DELAY * 2);
+
+    expect(service.getStore().size).toBe(0);
+    expect(service.getQueue().size).toBe(0);
+  }, 1000);
+
+  it('should cancel the kept requests when the service is destroyed', async () => {
+    const { interceptor, service } = setup({ keepInFlight: true });
+    const handler = new CountingHandler(DELAY);
+    const req = GET('https://angular.io/docs?kept-destroy');
+
+    interceptor.intercept(req, handler).subscribe().unsubscribe();
+    service.ngOnDestroy();
+    await sleep(DELAY * 2);
+
+    expect(service.getStore().size).toBe(0);
+  }, 1000);
+});

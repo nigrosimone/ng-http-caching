@@ -18,6 +18,7 @@ import {
   NgHttpCachingService,
   NgHttpCachingHeaders,
   NgHttpCachingMutationStrategy,
+  NgHttpCachingInvalidation,
   NgHttpCachingStrategy,
   NgHttpCachingConfig,
   withNgHttpCachingContext,
@@ -849,6 +850,46 @@ describe('NgHttpCachingInterceptorService: keepInFlight', () => {
     interceptor.intercept(req, handler).subscribe().unsubscribe();
     service.ngOnDestroy();
     await sleep(DELAY * 2);
+
+    expect(service.getStore().size).toBe(0);
+  }, 1000);
+});
+
+describe('NgHttpCachingInterceptorService: mutationInvalidation STALE', () => {
+  it('should serve the invalidated entry and refresh it in background', async () => {
+    const { interceptor } = setup({
+      clearCacheOnMutation: NgHttpCachingMutationStrategy.IDENTICAL,
+      mutationInvalidation: NgHttpCachingInvalidation.STALE,
+    });
+    const handler = new CountingHandler();
+    const url = 'https://angular.io/api/users';
+    const req = GET(url);
+
+    await firstValueFrom(interceptor.intercept(req, handler));
+    await firstValueFrom(interceptor.intercept(new HttpRequest('POST', url, {}), handler));
+    expect(handler.calls).toBe(2);
+
+    // the mutation invalidated the entry, but it is still served right away...
+    const served = await firstValueFrom(interceptor.intercept(req, handler));
+    expect((served as HttpResponse<any>).body).toEqual({ call: 1, url });
+    // ...and refreshed in background
+    expect(handler.calls).toBe(3);
+
+    await sleep(10);
+    const refreshed = await firstValueFrom(interceptor.intercept(req, handler));
+    expect((refreshed as HttpResponse<any>).body).toEqual({ call: 3, url });
+    expect(handler.calls).toBe(3);
+  }, 1000);
+
+  it('should still remove the entries by default', async () => {
+    const { interceptor, service } = setup({
+      clearCacheOnMutation: NgHttpCachingMutationStrategy.IDENTICAL,
+    });
+    const handler = new CountingHandler();
+    const url = 'https://angular.io/api/users';
+
+    await firstValueFrom(interceptor.intercept(GET(url), handler));
+    await firstValueFrom(interceptor.intercept(new HttpRequest('POST', url, {}), handler));
 
     expect(service.getStore().size).toBe(0);
   }, 1000);

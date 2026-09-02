@@ -1,5 +1,13 @@
 # Changelog
 
+## [22.3.1](https://github.com/nigrosimone/ng-http-caching/compare/v22.3.0...v22.3.1) (2026-09-02)
+
+### 🐛 Bug Fixes
+
+- evict the oldest entries instead of the whole cache when the web storage quota is full ([97bfc8f](https://github.com/nigrosimone/ng-http-caching/commit/97bfc8fd7ddeb8361989905a2dafc1603b2f0d3e))
+
+**Full Changelog**: https://github.com/nigrosimone/ng-http-caching/compare/v22.3.0...v22.3.1
+
 ## [22.3.0](https://github.com/nigrosimone/ng-http-caching/compare/v22.2.0...v22.3.0) (2026-09-02)
 
 ### 🚀 Features

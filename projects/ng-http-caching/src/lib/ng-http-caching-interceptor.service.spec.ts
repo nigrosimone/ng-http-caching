@@ -658,3 +658,116 @@ describe('ngHttpCachingInterceptor: functional interceptor', () => {
     await done;
   }, 1000);
 });
+
+describe('NgHttpCachingInterceptorService: staleTime and stale-while-revalidate', () => {
+  const bodyOf = (event: HttpEvent<any>) => (event as HttpResponse<any>).body;
+
+  it('should serve the stale response and refresh it in background', async () => {
+    const { interceptor } = setup({ staleTime: 100 });
+    const handler = new CountingHandler();
+    const req = GET('https://angular.io/docs?swr');
+
+    expect(bodyOf(await firstValueFrom(interceptor.intercept(req, handler)))).toEqual({
+      call: 1,
+      url: req.urlWithParams,
+    });
+    await sleep(150);
+
+    // the entry is stale: the old body is served right away...
+    expect(bodyOf(await firstValueFrom(interceptor.intercept(req, handler)))).toEqual({
+      call: 1,
+      url: req.urlWithParams,
+    });
+    // ...and the backend has been asked for a fresh one
+    expect(handler.calls).toBe(2);
+
+    await sleep(10);
+    // the refresh has landed into the cache, without any new request
+    expect(bodyOf(await firstValueFrom(interceptor.intercept(req, handler)))).toEqual({
+      call: 2,
+      url: req.urlWithParams,
+    });
+    expect(handler.calls).toBe(2);
+  }, 1000);
+
+  it('should not revalidate anything without staleTime', async () => {
+    const { interceptor } = setup();
+    const handler = new CountingHandler();
+    const req = GET('https://angular.io/docs?no-swr');
+
+    await firstValueFrom(interceptor.intercept(req, handler));
+    await sleep(40);
+    await firstValueFrom(interceptor.intercept(req, handler));
+
+    expect(handler.calls).toBe(1);
+  }, 1000);
+
+  it('should refetch, not revalidate, an entry past its lifetime', async () => {
+    const { interceptor } = setup({ staleTime: 10, lifetime: 30 });
+    const handler = new CountingHandler();
+    const req = GET('https://angular.io/docs?swr-expired');
+
+    await firstValueFrom(interceptor.intercept(req, handler));
+    await sleep(50);
+
+    // expired, so the caller waits for the fresh response instead of getting the old one
+    expect(bodyOf(await firstValueFrom(interceptor.intercept(req, handler)))).toEqual({
+      call: 2,
+      url: req.urlWithParams,
+    });
+    expect(handler.calls).toBe(2);
+  }, 1000);
+
+  it('should refresh only once for parallel stale hits', async () => {
+    const { interceptor } = setup({ staleTime: 20 });
+    const handler = new CountingHandler(30);
+    const req = GET('https://angular.io/docs?swr-parallel');
+
+    await firstValueFrom(interceptor.intercept(req, handler));
+    await sleep(40);
+
+    const bodies = await Promise.all([
+      firstValueFrom(interceptor.intercept(req, handler)),
+      firstValueFrom(interceptor.intercept(req, handler)),
+      firstValueFrom(interceptor.intercept(req, handler)),
+    ]);
+
+    // all of them got the cached body, and a single refresh was sent
+    for (const body of bodies) {
+      expect(bodyOf(body)).toEqual({ call: 1, url: req.urlWithParams });
+    }
+    expect(handler.calls).toBe(2);
+  }, 1000);
+
+  it('should keep the stale entry when the refresh fails', async () => {
+    const { interceptor, service } = setup({ staleTime: 20 });
+    const req = GET('https://angular.io/docs?swr-error');
+
+    await firstValueFrom(interceptor.intercept(req, new CountingHandler()));
+    await sleep(40);
+
+    await firstValueFrom(interceptor.intercept(req, new ErrorMockHandler()));
+    await sleep(DELAY * 2);
+
+    // the failed refresh left the cache as it was, and emptied the queue
+    expect(service.getStore().size).toBe(1);
+    expect(service.getQueue().size).toBe(0);
+    expect(bodyOf(await firstValueFrom(interceptor.intercept(req, new CountingHandler())))).toEqual(
+      { call: 1, url: req.urlWithParams },
+    );
+  }, 1000);
+
+  it('should let the isStale hook decide', async () => {
+    const { interceptor } = setup({
+      staleTime: 60_000,
+      isStale: (entry) => entry.request.urlWithParams.includes('always-stale'),
+    });
+    const handler = new CountingHandler();
+    const req = GET('https://angular.io/docs?always-stale');
+
+    await firstValueFrom(interceptor.intercept(req, handler));
+    await firstValueFrom(interceptor.intercept(req, handler));
+
+    expect(handler.calls).toBe(2);
+  }, 1000);
+});

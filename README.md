@@ -19,6 +19,7 @@ Rendering on the server too? [`NgSsrCaching`](https://www.npmjs.com/package/ng-s
 ✅ LocalStorage, SessionStorage, MemoryStorage and custom cache storage<br>
 ✅ Check response headers cache-control and expires<br>
 ✅ Automatic cache invalidation on mutations (POST, PUT, DELETE, PATCH)<br>
+✅ Stale-while-revalidate<br>
 ✅ Server side rendering (SSR) safe<br>
 
 ## Get Started
@@ -98,6 +99,7 @@ This is all the configuration interface, see below for the detail of each config
 export interface NgHttpCachingConfig {
   version?: string;
   lifetime?: number;
+  staleTime?: number;
   maxSize?: number;
   allowedMethod?: string[];
   cacheStrategy?: NgHttpCachingStrategy;
@@ -108,6 +110,7 @@ export interface NgHttpCachingConfig {
     | NgHttpCachingNgSimpleStateSentinel
     | (() => NgHttpCachingStorageInterface);
   isExpired?: (entry: NgHttpCachingEntry, req?: HttpRequest<any>) => boolean | undefined | void;
+  isStale?: (entry: NgHttpCachingEntry, req?: HttpRequest<any>) => boolean | undefined | void;
   isValid?: (entry: NgHttpCachingEntry) => boolean | undefined | void;
   isCacheable?: (req: HttpRequest<any>) => boolean | undefined | void;
   getKey?: (req: HttpRequest<any>) => string | undefined | void;
@@ -137,6 +140,35 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
 The access time is tracked in memory by the service. For a persistent store
 (`localStorage`, `sessionStorage`) the entries restored by a previous page load have no
 known access time, so they are evicted by the time they were added until they are read again.
+
+### staleTime (number - default: undefined)
+Number of millisecond a response stays fresh. Once it is older than `staleTime`, and until
+`lifetime` expires it, the cached response is still served **right away**, and a request is
+sent to the backend in background to refresh the entry for the next reader. This is the
+stale-while-revalidate behaviour.
+
+```ts
+const ngHttpCachingConfig: NgHttpCachingConfig = {
+  staleTime: 1000 * 30, // after 30 seconds a hit also refreshes the entry in background
+  lifetime: 1000 * 60 * 5, // after 5 minutes the entry is dropped and refetched
+};
+```
+
+`undefined` (the default) disables it, so a response is fresh until it expires. `0` makes
+every cached response stale, so every hit serves the cache and refreshes it.
+
+Some details worth knowing:
+
+- the subscriber always gets **one** response, the cached one. The refreshed one is not
+  emitted to it, it only lands into the cache;
+- if the refresh fails, the cached response is kept and nothing is thrown: the caller has
+  already been served;
+- parallel hits on the same stale entry send a single refresh;
+- the freshness is measured from the moment the body came from the backend, so
+  `slidingExpiration` keeps an entry into the cache but doesn't make it fresh again;
+- an expired entry is never stale: it is refetched, and the caller waits for it;
+- during server side rendering nothing is ever stale, revalidating would only slow the
+  render down.
 
 ### checkResponseHeaders (boolean - default false);
 If true response headers cache-control and expires are respected.
@@ -322,6 +354,25 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
       // by returning "undefined" normal "ng-http-caching" workflow is applied
       return undefined;
     },
+};
+```
+
+### isStale (function - default see NgHttpCachingService.isStale());
+If this function return `true` the cache entry is stale, so it is served as it is and
+refreshed in background, if return `false` it isn't stale.
+If the result is `undefined`, the normal behaviour (`staleTime`) is provided.
+
+```ts
+import { NgHttpCachingConfig, NgHttpCachingEntry } from 'ng-http-caching';
+
+const ngHttpCachingConfig: NgHttpCachingConfig = {
+  isStale: (entry: NgHttpCachingEntry): boolean | undefined => {
+    // only this endpoint is refreshed in background, the others follow `staleTime`
+    if (entry.request.urlWithParams.indexOf('/my-endpoint') !== -1) {
+      return true;
+    }
+    return undefined;
+  },
 };
 ```
 
@@ -514,6 +565,7 @@ You can override `NgHttpCachingConfig` methods:
 ```ts
 {
   isExpired?: (entry: NgHttpCachingEntry, req?: HttpRequest<any>) => boolean | undefined | void;
+  isStale?: (entry: NgHttpCachingEntry, req?: HttpRequest<any>) => boolean | undefined | void;
   isValid?: (entry: NgHttpCachingEntry) => boolean | undefined | void;
   isCacheable?: (req: HttpRequest<any>) => boolean | undefined | void;
   getKey?: (req: HttpRequest<any>) => string | undefined | void;
@@ -574,6 +626,11 @@ export class NgHttpCachingService {
   getFromCache<K, T>(req: HttpRequest<K>): Readonly<HttpResponse<T>> | undefined;
 
   /**
+   * Return the response from cache, together with whether it is stale
+   */
+  getFromCacheWithState<K, T>(req: HttpRequest<K>): { response: Readonly<HttpResponse<T>>; stale: boolean } | undefined;
+
+  /**
    * Add response to cache
    */
   addToCache<K, T>(req: HttpRequest<K>, res: HttpResponse<T>): boolean;
@@ -623,6 +680,12 @@ export class NgHttpCachingService {
    * Return true if cache entry is expired
    */
   isExpired<K, T>(entry: NgHttpCachingEntry<K, T>, req?: HttpRequest<K>): boolean;
+
+  /**
+   * Return true if the cache entry is stale, so it is served as it is and refreshed
+   * in background
+   */
+  isStale<K, T>(entry: NgHttpCachingEntry<K, T>, req?: HttpRequest<K>): boolean;
 
   /**
    * Return true if cache entry is valid for store in the cache
@@ -904,9 +967,9 @@ whatever the negotiation was. Use `getKey` to include the relevant headers yours
 ### No conditional revalidation
 
 There is no `ETag`/`Last-Modified` handling and no conditional request (`If-None-Match`,
-`If-Modified-Since`, `304 Not Modified`). An entry is either fresh, and used as is, or
-expired, and refetched in full. Likewise `no-cache` is treated as "don't store" rather than
-"store, but revalidate before use".
+`If-Modified-Since`, `304 Not Modified`): a refresh, `staleTime` included, always refetches
+the response in full. Likewise `no-cache` is treated as "don't store" rather than "store,
+but revalidate before use".
 
 ## Alternatives
 

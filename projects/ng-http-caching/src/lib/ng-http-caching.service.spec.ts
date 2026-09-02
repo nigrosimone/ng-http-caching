@@ -20,7 +20,7 @@ import {
   NG_HTTP_CACHING_CONTEXT,
   NgHttpCachingMutationStrategy,
 } from './ng-http-caching.service';
-import { VERSION } from '@angular/core';
+import { PLATFORM_ID, VERSION } from '@angular/core';
 import { provideNgHttpCaching } from './ng-http-caching-provider';
 import { NgHttpCachingNgSimpleStateSentinel } from './storage/ng-http-caching-ng-simple-state-sentinel';
 import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
@@ -2287,5 +2287,98 @@ describe('NgHttpCachingService: slidingExpiration with checkResponseHeaders', ()
 
     await sleep(600);
     expect(service.getFromCache(req)).toBeUndefined();
+  });
+});
+
+describe('NgHttpCachingService: isStale', () => {
+  let service: NgHttpCachingService;
+
+  const entryOf = (times: { addedTime: number; freshTime?: number }): NgHttpCachingEntry => ({
+    url: 'https://angular.io/docs',
+    response: new HttpResponse({ status: 200, body: {} }),
+    request: new HttpRequest('GET', 'https://angular.io/docs'),
+    version: VERSION.major,
+    ...times,
+  });
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching({ staleTime: 100 })],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should be stale once the response is older than staleTime', () => {
+    const now = Date.now();
+    expect(service.isStale(entryOf({ addedTime: now, freshTime: now }))).toBe(false);
+    expect(service.isStale(entryOf({ addedTime: now, freshTime: now - 500 }))).toBe(true);
+  });
+
+  it('should measure from freshTime, not from the time of the last read', () => {
+    // what `slidingExpiration` does: the entry has just been rewritten, but the body
+    // it holds came from the backend half a second ago
+    const now = Date.now();
+    expect(service.isStale(entryOf({ addedTime: now, freshTime: now - 500 }))).toBe(true);
+  });
+
+  it('should fall back to addedTime for an entry stored before freshTime existed', () => {
+    expect(service.isStale(entryOf({ addedTime: Date.now() - 500 }))).toBe(true);
+    expect(service.isStale(entryOf({ addedTime: Date.now() }))).toBe(false);
+  });
+
+  it('should refuse a negative staleTime', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching({ staleTime: -1 })],
+    });
+    const negative = TestBed.inject(NgHttpCachingService);
+    expect(() => negative.isStale(entryOf({ addedTime: Date.now() }))).toThrow();
+  });
+});
+
+describe('NgHttpCachingService: isStale without staleTime', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideNgHttpCaching()],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should never be stale', () => {
+    const entry: NgHttpCachingEntry = {
+      url: 'https://angular.io/docs',
+      response: new HttpResponse({ status: 200, body: {} }),
+      request: new HttpRequest('GET', 'https://angular.io/docs'),
+      addedTime: Date.now() - NG_HTTP_CACHING_YEAR_IN_MS,
+      version: VERSION.major,
+    };
+    expect(service.isStale(entry)).toBe(false);
+  });
+});
+
+describe('NgHttpCachingService: isStale on the server', () => {
+  let service: NgHttpCachingService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideNgHttpCaching({ staleTime: 0 }),
+        { provide: PLATFORM_ID, useValue: 'server' },
+      ],
+    });
+    service = TestBed.inject(NgHttpCachingService);
+  });
+
+  it('should never revalidate while rendering on the server', () => {
+    const entry: NgHttpCachingEntry = {
+      url: 'https://angular.io/docs',
+      response: new HttpResponse({ status: 200, body: {} }),
+      request: new HttpRequest('GET', 'https://angular.io/docs'),
+      addedTime: Date.now() - NG_HTTP_CACHING_YEAR_IN_MS,
+      version: VERSION.major,
+    };
+    expect(service.isStale(entry)).toBe(false);
   });
 });

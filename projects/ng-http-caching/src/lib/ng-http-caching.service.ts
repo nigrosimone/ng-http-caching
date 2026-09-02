@@ -1,4 +1,13 @@
-import { Injectable, InjectionToken, VERSION, isDevMode, inject, OnDestroy } from '@angular/core';
+import {
+  Injectable,
+  InjectionToken,
+  PLATFORM_ID,
+  VERSION,
+  isDevMode,
+  inject,
+  OnDestroy,
+} from '@angular/core';
+import { isPlatformServer } from '@angular/common';
 import {
   HttpRequest,
   HttpResponse,
@@ -14,7 +23,13 @@ import { NgHttpCachingNgSimpleStateSentinel } from './storage/ng-http-caching-ng
 
 export type NgHttpCachingContext = Pick<
   NgHttpCachingConfig,
-  'getKey' | 'isCacheable' | 'isExpired' | 'isValid' | 'clearCacheOnMutation' | 'responseSerializer'
+  | 'getKey'
+  | 'isCacheable'
+  | 'isExpired'
+  | 'isStale'
+  | 'isValid'
+  | 'clearCacheOnMutation'
+  | 'responseSerializer'
 >;
 
 /**
@@ -143,9 +158,29 @@ export interface NgHttpCachingEntry<K = any, T = any> {
    */
   addedTime: number;
   /**
+   * Timestamp of the moment the body was received from the backend.
+   * It drives `staleTime`, and unlike `addedTime` it isn't moved by `slidingExpiration`:
+   * reading an entry keeps it into the cache, it doesn't make it fresh again.
+   * Missing on the entries stored by a version before `staleTime` existed, `addedTime`
+   * is then used instead.
+   */
+  freshTime?: number;
+  /**
    * Cache version
    */
   version: string;
+}
+
+export interface NgHttpCachingCacheHit<T = any> {
+  /**
+   * The response kept into the cache.
+   */
+  response: Readonly<HttpResponse<T>>;
+  /**
+   * True when the response is older than `staleTime`: it is served as it is, but the
+   * interceptor refreshes it in background.
+   */
+  stale: boolean;
 }
 
 export const NG_HTTP_CACHING_CONFIG = new InjectionToken<NgHttpCachingConfig>(
@@ -274,6 +309,24 @@ export interface NgHttpCachingConfig {
    */
   slidingExpiration?: boolean;
   /**
+   * Number of millisecond a response stays fresh. Once it is older than `staleTime`, and
+   * until `lifetime` expires it, the cached response is still served, but a request is
+   * sent to the backend in background to refresh it (stale-while-revalidate).
+   * `undefined` (the default) disables it: a response is fresh until it expires.
+   * `0` makes every cached response stale, so every hit revalidates.
+   */
+  staleTime?: number;
+  /**
+   * If this function return `true` the cache entry is stale and is refreshed in background,
+   * if return `false` it isn't stale. If the result is `undefined`, the normal behaviour
+   * (`staleTime`) is provided.
+   * An expired entry is never stale: it is refetched, not revalidated.
+   */
+  isStale?: <K, T>(
+    entry: NgHttpCachingEntry<K, T>,
+    req?: HttpRequest<K>,
+  ) => boolean | undefined | void;
+  /**
    * If this function return `true` the request is expired and a new request is send to backend, if return `false` isn't expired.
    * If the result is `undefined`, the normal behaviour is provided.
    * `req` is the request currently being served, so it can be compared with the one that
@@ -384,6 +437,8 @@ export class NgHttpCachingService implements OnDestroy {
   private gcLock = false;
   private gcLastRun = 0;
 
+  private readonly isServer: boolean = isPlatformServer(inject(PLATFORM_ID));
+
   private devMode: boolean = isDevMode();
 
   constructor() {
@@ -441,6 +496,15 @@ export class NgHttpCachingService implements OnDestroy {
    * Return response from cache
    */
   getFromCache<K, T>(req: HttpRequest<K>): Readonly<HttpResponse<T>> | undefined {
+    return this.getFromCacheWithState<K, T>(req)?.response;
+  }
+
+  /**
+   * Return the response from the cache, together with whether it is stale.
+   * A stale response is served as it is, but the caller (the interceptor) refreshes it
+   * in background. See the `staleTime` config.
+   */
+  getFromCacheWithState<K, T>(req: HttpRequest<K>): NgHttpCachingCacheHit<T> | undefined {
     const key: string = this.getKey(req);
     const cached: NgHttpCachingEntry<K, T> | undefined = this.config.store.get<K, T>(key);
 
@@ -464,14 +528,19 @@ export class NgHttpCachingService implements OnDestroy {
       this.config.store.set<K, T>(key, { ...cached, addedTime: now });
     }
 
+    const stale = this.isStale(cached, req);
+
     // when a `responseSerializer` is configured, every reader gets its own copy of the
     // body and is free to mutate it: what the store keeps is left untouched
     const responseSerializer = this.getResponseSerializer(req);
     if (responseSerializer) {
-      return cached.response.clone({ body: responseSerializer(cached.response.body) });
+      return {
+        response: cached.response.clone({ body: responseSerializer(cached.response.body) }),
+        stale,
+      };
     }
 
-    return this.freezeResponse(cached.response);
+    return { response: this.freezeResponse(cached.response), stale };
   }
 
   /**
@@ -525,11 +594,13 @@ export class NgHttpCachingService implements OnDestroy {
     // response handed to the subscriber of this request is as mutable as the one served
     // to every later cache hit
     const responseSerializer = this.getResponseSerializer(req);
+    const now = Date.now();
     const entry: NgHttpCachingEntry<K, T> = {
       url: req.urlWithParams,
       response: responseSerializer ? res.clone({ body: responseSerializer(res.body) }) : res,
       request: req,
-      addedTime: Date.now(),
+      addedTime: now,
+      freshTime: now,
       version: this.config.version,
     };
     if (this.isValid(entry)) {
@@ -755,6 +826,45 @@ export class NgHttpCachingService implements OnDestroy {
     if (this.queueEpoch.has(key)) {
       this.queueEpoch.set(key, this.mutationEpoch);
     }
+  }
+
+  /**
+   * Return true if the cache entry is stale, so it is served as it is and refreshed in
+   * background. See the `staleTime` config.
+   * Revalidation is always off on the server: it would only slow the render down, and
+   * the browser starts from an empty cache anyway.
+   */
+  isStale<K, T>(entry: NgHttpCachingEntry<K, T>, req?: HttpRequest<K>): boolean {
+    if (this.isServer) {
+      return false;
+    }
+    // if user provide custom method, use it
+    const context = (req ?? entry.request).context.get(NG_HTTP_CACHING_CONTEXT);
+    if (typeof context?.isStale === 'function') {
+      const result = context.isStale(entry, req);
+      // if result is undefined, normal behaviour is provided
+      if (result !== undefined) {
+        return result;
+      }
+    }
+    // if user provide custom method, use it
+    if (typeof this.config.isStale === 'function') {
+      const result = this.config.isStale(entry, req);
+      // if result is undefined, normal behaviour is provided
+      if (result !== undefined) {
+        return result;
+      }
+    }
+    const staleTime = this.config.staleTime;
+    if (staleTime === undefined) {
+      return false;
+    }
+    if (staleTime < 0 || isNaN(staleTime)) {
+      throw new Error('staleTime must be greater than or equal 0');
+    }
+    // `freshTime` is the moment the body came from the backend: `slidingExpiration`
+    // moves `addedTime`, so reading an entry keeps it, but doesn't make it fresh again
+    return (entry.freshTime ?? entry.addedTime) + staleTime <= Date.now();
   }
 
   /**

@@ -7,7 +7,6 @@ import {
   HttpInterceptor,
   HttpInterceptorFn,
   HttpRequest,
-  HttpResponse,
 } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { asyncScheduler, Observable, of, scheduled } from 'rxjs';
@@ -54,16 +53,24 @@ const handle = (
     );
   }
 
+  // Checked if there is cached response for this request.
+  // The cache is read before the queue: while a stale entry is being refreshed in
+  // background its key is into the queue, and joining that request would make the
+  // caller wait for the network instead of serving it the response we already have.
+  const hit = cacheService.getFromCacheWithState(req);
+  if (hit) {
+    if (hit.stale) {
+      // stale-while-revalidate: the subscriber gets the cached response right away, and
+      // the entry is refreshed in background for whoever asks next
+      revalidate(req, next, cacheService);
+    }
+    return scheduled(of(hit.response.clone()), asyncScheduler);
+  }
+
   // Checked if there is pending response for this request
   const cachedObservable: Observable<HttpEvent<any>> | undefined = cacheService.getFromQueue(req);
   if (cachedObservable) {
     return cachedObservable;
-  }
-
-  // Checked if there is cached response for this request
-  const cachedResponse: HttpResponse<any> | undefined = cacheService.getFromCache(req);
-  if (cachedResponse) {
-    return scheduled(of(cachedResponse.clone()), asyncScheduler);
   }
 
   // If the request of going through for first time
@@ -94,6 +101,38 @@ const handle = (
   cacheService.addToQueue(req, shared);
 
   return shared;
+};
+
+/**
+ * Refresh a stale entry in background. Nothing is emitted to the caller: the response
+ * only lands into the cache, for the next request.
+ */
+const revalidate = (
+  req: HttpRequest<any>,
+  next: HttpHandlerFn,
+  cacheService: NgHttpCachingService,
+): void => {
+  // a refresh is already running for this key, or a first request is still in flight
+  if (cacheService.getFromQueue(req)) {
+    return;
+  }
+  const shared = sendRequest(req, next).pipe(
+    tap((event) => {
+      if (event.type === HttpEventType.Response) {
+        cacheService.addToCache(req, event);
+      }
+    }),
+    finalize(() => {
+      cacheService.deleteFromQueue(req);
+    }),
+    // no `refCount`: the refresh must survive our own unsubscribe, and any parallel
+    // request finding it into the queue gets the very same response
+    shareReplay({ bufferSize: 1, refCount: false }),
+  );
+  cacheService.addToQueue(req, shared);
+  // a failed revalidation keeps the stale entry and must not reach the global error
+  // handler: the caller has already been served
+  shared.subscribe({ error: () => undefined });
 };
 
 /**

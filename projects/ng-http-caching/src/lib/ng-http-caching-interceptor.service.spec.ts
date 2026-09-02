@@ -6,10 +6,12 @@ import {
   HttpEvent,
   HttpHeaders,
   HttpContext,
+  HttpClient,
   provideHttpClient,
+  withInterceptors,
   withInterceptorsFromDi,
 } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { of, Observable, throwError, firstValueFrom } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import {
@@ -20,7 +22,10 @@ import {
   NgHttpCachingConfig,
   withNgHttpCachingContext,
 } from './ng-http-caching.service';
-import { NgHttpCachingInterceptorService } from './ng-http-caching-interceptor.service';
+import {
+  NgHttpCachingInterceptorService,
+  ngHttpCachingInterceptor,
+} from './ng-http-caching-interceptor.service';
 import { provideNgHttpCaching } from './ng-http-caching-provider';
 import { withNgHttpCachingLocalStorage } from './storage/ng-http-caching-local-storage';
 
@@ -609,5 +614,47 @@ describe('NgHttpCachingInterceptorService: behaviour through the interceptor', (
     expect(service.getStore().has('GET@https://angular.io/a')).toBe(true);
     expect(service.getStore().has('GET@https://angular.io/c')).toBe(true);
     expect(service.getStore().has('GET@https://angular.io/b')).toBe(false);
+  }, 1000);
+});
+
+describe('ngHttpCachingInterceptor: functional interceptor', () => {
+  let http: HttpClient;
+  let ctrl: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideNgHttpCaching(),
+        provideHttpClient(withInterceptors([ngHttpCachingInterceptor])),
+        provideHttpClientTesting(),
+      ],
+    });
+    http = TestBed.inject(HttpClient);
+    ctrl = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => ctrl.verify());
+
+  it('should cache without withInterceptorsFromDi()', async () => {
+    const url = 'https://angular.io/docs?functional';
+
+    const first = firstValueFrom(http.get(url));
+    ctrl.expectOne(url).flush({ ok: 1 });
+    expect(await first).toEqual({ ok: 1 });
+
+    // served from the cache: the backend isn't reached a second time
+    expect(await firstValueFrom(http.get(url))).toEqual({ ok: 1 });
+    ctrl.expectNone(url);
+  }, 1000);
+
+  it('should trim the custom headers before the request goes out', async () => {
+    const url = 'https://angular.io/docs?functional-headers';
+
+    const done = firstValueFrom(http.get(url, { headers: { [NgHttpCachingHeaders.TAG]: 'foo' } }));
+    const req = ctrl.expectOne(url);
+    expect(req.request.headers.has(NgHttpCachingHeaders.TAG)).toBe(false);
+    req.flush({ ok: 1 });
+    await done;
   }, 1000);
 });

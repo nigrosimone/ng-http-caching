@@ -226,6 +226,30 @@ Both are safe to use with server side rendering: when `localStorage`/`sessionSto
 reachable (SSR, prerendering, sandboxed iframe, storage disabled by the user) they
 transparently fall back to an in-memory storage, so nothing is persisted and nothing throws.
 
+#### When the storage is full
+
+Web storage is small (around 5 MB) and the browser refuses the write when it fills up. By
+default the oldest entries are evicted, one at a time, until the new one fits, so a single
+big response doesn't cost you the whole cache. You can change it:
+
+```ts
+import { NgHttpCachingConfig, withNgHttpCachingLocalStorage } from 'ng-http-caching';
+
+const ngHttpCachingConfig: NgHttpCachingConfig = {
+  store: () =>
+    withNgHttpCachingLocalStorage({
+      // 'evict-oldest' (default) | 'clear' (drop the whole cache) | 'ignore' (skip the write)
+      onQuotaExceeded: 'evict-oldest',
+      // how many entries to evict before giving up on the write, default 10
+      maxQuotaRetry: 10,
+    }),
+};
+```
+
+With `slidingExpiration: true` every read rewrites the entry, so evicting the oldest is a
+real least recently used eviction. Without it, entries are evicted in the order they were
+added.
+
 #### Server side rendering: pass a factory, not an instance
 
 `store` also accepts a factory. This matters with server side rendering: the config object

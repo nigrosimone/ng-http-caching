@@ -1,5 +1,18 @@
 # Changelog
 
+## [22.3.0](https://github.com/nigrosimone/ng-http-caching/compare/v22.2.0...v22.3.0) (2026-09-02)
+
+### 🚀 Features
+
+- add slidingExpiration and pass the request being served to isExpired ([ef6988a](https://github.com/nigrosimone/ng-http-caching/commit/ef6988a2518f05829a543f8c0ceeb601631251a6))
+- add ngHttpCachingInterceptor, the functional interceptor for withInterceptors() ([40710fc](https://github.com/nigrosimone/ng-http-caching/commit/40710fc5d52d88de617d701b74a1f452d0e67aab))
+
+### 📝 Documentation
+
+- document the functional interceptor, slidingExpiration and refresh the alternatives ([b4c3237](https://github.com/nigrosimone/ng-http-caching/commit/b4c323700b27ade0ee89e4205e25a87ceaf3713a))
+
+**Full Changelog**: https://github.com/nigrosimone/ng-http-caching/compare/v22.2.0...v22.3.0
+
 ## [22.2.0](https://github.com/nigrosimone/ng-http-caching/compare/v22.1.0...v22.2.0) (2026-09-01)
 
 ### 🚀 Features

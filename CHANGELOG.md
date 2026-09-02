@@ -1,5 +1,15 @@
 # Changelog
 
+## [22.4.0](https://github.com/nigrosimone/ng-http-caching/compare/v22.3.1...v22.4.0) (2026-09-02)
+
+### 🚀 Features
+
+- invalidate the cache entries instead of deleting them, keeping them stale ([1fae535](https://github.com/nigrosimone/ng-http-caching/commit/1fae53543c56ab9288e9b11a329dc9fef181d6ad))
+- add keepInFlight and a configurable storage key prefix ([f959b33](https://github.com/nigrosimone/ng-http-caching/commit/f959b3329507ffb8d0dfc6e96054623c55f98152))
+- add staleTime and serve a stale response while it is refreshed in background ([1f5e06b](https://github.com/nigrosimone/ng-http-caching/commit/1f5e06bb23dc02eb143ae6231dbc3a689685d56c))
+
+**Full Changelog**: https://github.com/nigrosimone/ng-http-caching/compare/v22.3.1...v22.4.0
+
 ## [22.3.1](https://github.com/nigrosimone/ng-http-caching/compare/v22.3.0...v22.3.1) (2026-09-02)
 
 ### 🐛 Bug Fixes

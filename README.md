@@ -20,6 +20,7 @@ Rendering on the server too? [`NgSsrCaching`](https://www.npmjs.com/package/ng-s
 ✅ Check response headers cache-control and expires<br>
 ✅ Automatic cache invalidation on mutations (POST, PUT, DELETE, PATCH)<br>
 ✅ Stale-while-revalidate<br>
+✅ Cross-tab invalidation<br>
 ✅ Server side rendering (SSR) safe<br>
 
 ## Get Started
@@ -329,6 +330,38 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
 ```
 
 In the browser there is a single user per process, so both forms behave the same.
+
+there is also a `withNgHttpCachingBroadcastStorage`, an in-memory store that tells the other
+tabs when an entry stops being good:
+
+```ts
+import { NgHttpCachingConfig, withNgHttpCachingBroadcastStorage } from 'ng-http-caching';
+
+const ngHttpCachingConfig: NgHttpCachingConfig = {
+  store: () => withNgHttpCachingBroadcastStorage(),
+};
+```
+
+With the plain memory store a mutation in one tab leaves all the other tabs serving the old
+response for a whole `lifetime`. This one sends the invalidation over a `BroadcastChannel`,
+so the others know. The persistent stores don't need it: `localStorage` and
+`sessionStorage` are already shared by every tab of the origin.
+
+Two things it does on purpose:
+
+- only the **order** travels, never the response. Nothing has to be serializable, nothing
+  weighs on the channel, and no data moves between tabs;
+- the tab that receives the order doesn't drop its entry, it **marks it invalidated**: the
+  next read is served right away and refreshed in background. This way an eviction decided
+  by another tab (garbage collector, `maxSize`) can never empty this one.
+
+Pass `{ channel: 'my-app' }` to keep two applications of the same origin apart. Outside of a
+browser the channel isn't opened at all, so the requests rendered on the server, which share
+one process, don't invalidate each other.
+
+One case stays uncovered: a request already in flight when the order arrives still writes
+its response, so a tab can cache data from before the mutation. Locally this is prevented,
+but a store can't see it.
 
 and a `withNgHttpCachingNgSimpleState` adapter for use [ng-simple-state](https://www.npmjs.com/package/ng-simple-state) as the cache storage.
 

@@ -16,7 +16,7 @@ import {
   HttpContext,
   HttpHeaders,
 } from '@angular/common/http';
-import type { Observable } from 'rxjs';
+import type { Observable, Subscription } from 'rxjs';
 import { NgHttpCachingStorageInterface } from './storage/ng-http-caching-storage.interface';
 import { NgHttpCachingMemoryStorage } from './storage/ng-http-caching-memory-storage';
 import { NgHttpCachingNgSimpleStateSentinel } from './storage/ng-http-caching-ng-simple-state-sentinel';
@@ -30,6 +30,7 @@ export type NgHttpCachingContext = Pick<
   | 'isValid'
   | 'clearCacheOnMutation'
   | 'responseSerializer'
+  | 'keepInFlight'
 >;
 
 /**
@@ -317,6 +318,14 @@ export interface NgHttpCachingConfig {
    */
   staleTime?: number;
   /**
+   * By default a request is cancelled when its last subscriber goes away (a destroyed
+   * component, a `takeUntilDestroyed`, a route change), so the response never reaches the
+   * cache. Set this to `true` to let a cacheable request run to the end anyway: nothing is
+   * emitted to the gone subscriber, but the response fills the cache for the next one.
+   * A function is called with the request, and only for cacheable requests.
+   */
+  keepInFlight?: boolean | (<K>(req: HttpRequest<K>) => boolean | undefined | void);
+  /**
    * If this function return `true` the cache entry is stale and is refreshed in background,
    * if return `false` it isn't stale. If the result is `undefined`, the normal behaviour
    * (`staleTime`) is provided.
@@ -438,6 +447,13 @@ export class NgHttpCachingService implements OnDestroy {
   private gcLastRun = 0;
 
   private readonly isServer: boolean = isPlatformServer(inject(PLATFORM_ID));
+
+  /**
+   * Requests kept alive by `keepInFlight` after their last subscriber went away.
+   * They are held here so that they can be cancelled when the service is destroyed:
+   * on the server that means at the end of the rendered request.
+   */
+  private readonly keptAlive = new Set<Subscription>();
 
   private devMode: boolean = isDevMode();
 
@@ -829,6 +845,34 @@ export class NgHttpCachingService implements OnDestroy {
   }
 
   /**
+   * Return true if the request must run to the end even when its last subscriber goes
+   * away. See the `keepInFlight` config.
+   */
+  keepInFlight<K>(req: HttpRequest<K>): boolean {
+    const context = req.context.get(NG_HTTP_CACHING_CONTEXT);
+    const config = context?.keepInFlight ?? this.config.keepInFlight;
+    if (typeof config === 'function') {
+      return config(req) === true;
+    }
+    return config === true;
+  }
+
+  /**
+   * Subscribe to a request so that it completes even with no subscriber left.
+   * Nothing is emitted anywhere: the response only lands into the cache.
+   */
+  keepAlive<T>(obs: Observable<HttpEvent<T>>): void {
+    // the subscriber this response was meant for may already be gone, so an error here
+    // has nowhere to go: swallow it instead of reaching the global error handler
+    const subscription = obs.subscribe({ error: () => undefined });
+    if (subscription.closed) {
+      return;
+    }
+    this.keptAlive.add(subscription);
+    subscription.add(() => this.keptAlive.delete(subscription));
+  }
+
+  /**
    * Return true if the cache entry is stale, so it is served as it is and refreshed in
    * background. See the `staleTime` config.
    * Revalidation is always off on the server: it would only slow the render down, and
@@ -1115,6 +1159,11 @@ export class NgHttpCachingService implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    // iterate a copy: unsubscribing removes the subscription from the set
+    for (const subscription of Array.from(this.keptAlive)) {
+      subscription.unsubscribe();
+    }
+    this.keptAlive.clear();
     this.queue.clear();
     this.queueEpoch.clear();
     this.lastAccess.clear();

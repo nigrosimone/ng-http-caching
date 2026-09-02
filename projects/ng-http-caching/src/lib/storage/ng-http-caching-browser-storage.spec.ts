@@ -307,3 +307,55 @@ describe('NgHttpCachingBrowserStorage: storage quota', () => {
     expect(store.has('recent')).toBe(true);
   });
 });
+
+describe('NgHttpCachingBrowserStorage: keyPrefix', () => {
+  const entry: NgHttpCachingEntry = {
+    url: 'http://test.com',
+    response: new HttpResponse({ body: 'test' }),
+    request: new HttpRequest('GET', 'http://test.com'),
+    addedTime: 1000,
+    version: '1',
+  };
+
+  function memoryStorage(): Storage {
+    const entries: Record<string, string> = {};
+    return {
+      getItem: (key: string) => entries[key] ?? null,
+      setItem: (key: string, value: string) => {
+        entries[key] = value;
+      },
+      removeItem: (key: string) => delete entries[key],
+      clear: () => Object.keys(entries).forEach((k) => delete entries[k]),
+      key: (index: number) => Object.keys(entries)[index] ?? null,
+      get length() {
+        return Object.keys(entries).length;
+      },
+    };
+  }
+
+  it('should namespace the keys with the default prefix', () => {
+    const storage = memoryStorage();
+    new NgHttpCachingBrowserStorage(storage).set('mykey', entry);
+    expect(storage.getItem('NgHttpCaching::mykey')).toBeTruthy();
+  });
+
+  it('should keep two applications of the same origin apart', () => {
+    const storage = memoryStorage();
+    const first = new NgHttpCachingBrowserStorage(storage, { keyPrefix: 'app-one::' });
+    const second = new NgHttpCachingBrowserStorage(storage, { keyPrefix: 'app-two::' });
+
+    first.set('shared-key', entry);
+    second.set('shared-key', entry);
+
+    expect(storage.getItem('app-one::shared-key')).toBeTruthy();
+    expect(storage.getItem('app-two::shared-key')).toBeTruthy();
+    expect(first.size).toBe(1);
+    expect(second.size).toBe(1);
+
+    // clearing one leaves the other alone
+    first.clear();
+    expect(first.size).toBe(0);
+    expect(second.size).toBe(1);
+    expect(second.get('shared-key')).toBeTruthy();
+  });
+});

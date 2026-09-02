@@ -76,6 +76,8 @@ const handle = (
   // If the request of going through for first time
   // then let the request proceed and cache the response
 
+  const keep = cacheService.keepInFlight(req);
+
   const shared = sendRequest(req, next).pipe(
     tap((event) => {
       if (event.type === HttpEventType.Response) {
@@ -99,6 +101,13 @@ const handle = (
 
   // add pending request to queue for cache parallel request
   cacheService.addToQueue(req, shared);
+
+  if (keep) {
+    // one more subscriber, so the request survives the caller going away. `refCount` is
+    // left on, so that cancelling this subscription (the service being destroyed) still
+    // cancels the request instead of leaving it running.
+    cacheService.keepAlive(shared);
+  }
 
   return shared;
 };

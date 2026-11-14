@@ -36,7 +36,18 @@ export const serializeRequest = (req: HttpRequest<any>): string => {
   });
 };
 
+/**
+ * Return true for a body JSON can't carry: it would come back as `{}`
+ */
+const isBinary = (body: unknown): boolean =>
+  (typeof Blob !== 'undefined' && body instanceof Blob) ||
+  body instanceof ArrayBuffer ||
+  ArrayBuffer.isView(body);
+
 export const serializeResponse = (res: HttpResponse<any>): string => {
+  if (isBinary(res.body)) {
+    throw new Error('A binary response body (Blob, ArrayBuffer) cannot be serialized');
+  }
   const response = res.clone();
   return JSON.stringify({
     headers: Object.fromEntries(

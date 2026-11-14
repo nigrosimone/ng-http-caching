@@ -1,5 +1,6 @@
 import { HttpRequest, HttpResponse } from '@angular/common/http';
 import { NgHttpCachingBrowserStorage } from './ng-http-caching-browser-storage';
+import { NgHttpCachingInMemoryWebStorage } from './ng-http-caching-web-storage';
 import { NgHttpCachingEntry } from '../ng-http-caching.service';
 
 describe('NgHttpCachingBrowserStorage', () => {
@@ -391,5 +392,20 @@ describe('NgHttpCachingBrowserStorage: entry round trip', () => {
     expect(read?.addedTime).toBe(2000);
     expect(read?.freshTime).toBe(1000);
     expect(read?.invalidated).toBe(true);
+  });
+
+  it('should not store a binary body, which JSON would turn into {}', () => {
+    const store = new NgHttpCachingBrowserStorage(new NgHttpCachingInMemoryWebStorage());
+
+    for (const body of [new Blob(['x']), new ArrayBuffer(1), new Uint8Array(1)]) {
+      store.set('mykey', {
+        url: 'http://test.com',
+        response: new HttpResponse({ body }),
+        request: new HttpRequest('GET', 'http://test.com'),
+        addedTime: Date.now(),
+        version: '1',
+      });
+      expect(store.get('mykey')).toBeUndefined();
+    }
   });
 });

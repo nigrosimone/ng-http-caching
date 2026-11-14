@@ -69,6 +69,19 @@ describe('NgHttpCachingBroadcastStorage', () => {
     expect(tabB.get('a')?.invalidated).toBe(true);
   });
 
+  it('should not propagate again an entry rewritten while already invalidated', async () => {
+    tabA.set('a', { ...entry('https://angular.io/a'), invalidated: true });
+    await flush();
+    // B refreshed its own copy meanwhile
+    tabB.set('a', entry('https://angular.io/a'));
+
+    // what `slidingExpiration` does on every read of the invalidated entry
+    tabA.set('a', { ...entry('https://angular.io/a'), invalidated: true });
+    await flush();
+
+    expect(tabB.get('a')?.invalidated).toBeUndefined();
+  });
+
   it('should invalidate everything on clear', async () => {
     for (const key of ['a', 'b']) {
       tabA.set(key, entry(`https://angular.io/${key}`));

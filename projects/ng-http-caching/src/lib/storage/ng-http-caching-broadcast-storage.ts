@@ -59,10 +59,13 @@ export class NgHttpCachingBroadcastStorage extends NgHttpCachingMemoryStorage {
   }
 
   override set<K = any, T = any>(key: string, value: NgHttpCachingEntry<K, T>): this {
+    // only the move to invalidated is news: an entry rewritten while already invalidated
+    // (eg. `slidingExpiration` on a read) would invalidate the other tabs again and again
+    const wasInvalidated = super.get(key)?.invalidated;
     super.set(key, value);
     // an entry stored as invalidated is the `mutationInvalidation: STALE` path: the other
     // tabs have to know, and it's an order, so it carries no body
-    if (value.invalidated) {
+    if (value.invalidated && !wasInvalidated) {
       this.post({ op: 'invalidate', keys: [key] });
     }
     return this;

@@ -1019,6 +1019,27 @@ describe('NgHttpCachingInterceptorService: conditional revalidation', () => {
     expect(handler.calls).toBe(2);
   }, 2000);
 
+  it('should not confirm an entry invalidated by a mutation during the refresh', async () => {
+    const { interceptor, service } = setup({
+      staleTime: 0,
+      clearCacheOnMutation: NgHttpCachingMutationStrategy.ALL,
+      mutationInvalidation: NgHttpCachingInvalidation.STALE,
+    });
+    const handler = new NotModifiedHandler(20);
+    const url = 'https://angular.io/docs?etag-mutation';
+    const req = GET(url);
+
+    await firstValueFrom(interceptor.intercept(req, handler));
+    // stale: starts the conditional refresh
+    await firstValueFrom(interceptor.intercept(req, handler));
+    // a mutation completes while the refresh is in flight
+    service.clearCacheByMutation(new HttpRequest('POST', url, {}));
+    await sleep(40);
+
+    // the 304 was asked before the mutation: it can't confirm what the mutation changed
+    expect(service.getStore().get(service.getKey(req))?.invalidated).toBe(true);
+  }, 2000);
+
   it('should leave the entry alone when there is no validator', async () => {
     const { interceptor } = setup({ staleTime: 30 });
     const handler = new CountingHandler();

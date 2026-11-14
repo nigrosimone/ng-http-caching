@@ -643,8 +643,7 @@ export class NgHttpCachingService implements OnDestroy {
     const key: string = this.getKey(req);
     // this response was requested before a mutation invalidated the cache: it describes
     // the state the mutation has changed, so storing it would defeat `clearCacheOnMutation`
-    const epoch = this.queueEpoch.get(key);
-    if (epoch !== undefined && epoch < this.mutationEpoch) {
+    if (this.isOutdated(key)) {
       return false;
     }
     // with a `responseSerializer` the store keeps a private copy of the body, so the
@@ -971,6 +970,14 @@ export class NgHttpCachingService implements OnDestroy {
   }
 
   /**
+   * Return true when the pending request for this key was queued before the last mutation
+   */
+  private isOutdated(key: string): boolean {
+    const epoch = this.queueEpoch.get(key);
+    return epoch !== undefined && epoch < this.mutationEpoch;
+  }
+
+  /**
    * Return the request to send to refresh a stale entry: the same one, plus the
    * conditional headers when the cached response carries a validator, so the backend can
    * answer `304 Not Modified` instead of sending the body again.
@@ -1008,6 +1015,10 @@ export class NgHttpCachingService implements OnDestroy {
    */
   confirmFromCache<K, T>(req: HttpRequest<K>): Readonly<HttpResponse<T>> | undefined {
     const key: string = this.getKey(req);
+    // a 304 asked before a mutation can't confirm what the mutation has changed
+    if (this.isOutdated(key)) {
+      return undefined;
+    }
     const cached: NgHttpCachingEntry<K, T> | undefined = this.config.store.get<K, T>(key);
     if (!cached) {
       return undefined;

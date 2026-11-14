@@ -574,6 +574,38 @@ describe('NgHttpCachingInterceptorService: behaviour through the interceptor', (
     expect(service.getFromQueue(GET(url))).toBeUndefined();
   }, 2000);
 
+  it('a response in flight when clearCache() is called should not be cached', async () => {
+    const { interceptor, service } = setup();
+    const backend = new CountingHandler(60);
+    const url = 'https://angular.io/api/me';
+
+    const pendingGet = firstValueFrom(interceptor.intercept(GET(url), backend));
+    await sleep(10);
+
+    // eg. a logout: the data asked by the previous user must not land into the cache
+    service.clearCache();
+    await pendingGet;
+
+    expect(service.getFromCache(GET(url))).toBeUndefined();
+    const after = (await firstValueFrom(
+      interceptor.intercept(GET(url), backend),
+    )) as HttpResponse<any>;
+    expect(after.body.call).toBe(2);
+  }, 2000);
+
+  it('a response in flight when invalidateCache() is called should not be cached', async () => {
+    const { interceptor, service } = setup();
+    const backend = new CountingHandler(60);
+    const url = 'https://angular.io/api/me';
+
+    const pendingGet = firstValueFrom(interceptor.intercept(GET(url), backend));
+    await sleep(10);
+    service.invalidateCache();
+    await pendingGet;
+
+    expect(service.getFromCache(GET(url))).toBeUndefined();
+  }, 2000);
+
   it('the first consumer should not be able to poison the cached body', async () => {
     const { interceptor } = setup();
     const handler = new CountingHandler();
@@ -1039,8 +1071,9 @@ describe('NgHttpCachingInterceptorService: conditional revalidation', () => {
     await firstValueFrom(interceptor.intercept(req, handler));
     // stale: starts the conditional refresh
     await firstValueFrom(interceptor.intercept(req, handler));
-    // the entry goes away while the refresh is in flight (cleared, expired, evicted)
-    service.clearCache();
+    // the entry goes away while the refresh is in flight (expired, evicted): straight from
+    // the store, because `clearCache()` would make the refresh outdated too
+    service.getStore().delete(service.getKey(req));
 
     // this request misses the cache and joins the refresh, which gets a 304
     const joined = await firstValueFrom(interceptor.intercept(req, handler));

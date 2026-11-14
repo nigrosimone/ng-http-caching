@@ -479,10 +479,11 @@ export class NgHttpCachingService implements OnDestroy {
   private readonly lastAccess = new Map<string, number>();
 
   /**
-   * Number of invalidations performed by `clearCacheByMutation` so far, and the value it
-   * had when each pending request was queued. A response requested before an invalidation
-   * already describes the state the mutation has changed, so it must not be cached, and a
-   * request made after the invalidation must not join it.
+   * Number of invalidations performed so far, by `clearCacheByMutation` or by the public
+   * `clearCache*`/`invalidateCache*` methods, and the value it had when each pending
+   * request was queued. A response requested before an invalidation already describes the
+   * state the invalidation has made old, so it must not be cached, and a request made
+   * after the invalidation must not join it.
    * Kept by observable, not by key: an outdated request and the newer one replacing it in
    * the queue can be in flight together for the same key.
    */
@@ -578,7 +579,7 @@ export class NgHttpCachingService implements OnDestroy {
     // a persistent store can't serialize an `HttpContext`, so the request of the entry
     // may have come back without one
     if (this.isExpired(cached, req)) {
-      this.clearCacheByKey(key);
+      this.evict(key);
       return undefined;
     }
 
@@ -699,7 +700,7 @@ export class NgHttpCachingService implements OnDestroy {
       keys.push({ key, lastAccess: this.lastAccess.get(key) ?? entry.addedTime });
     });
     keys.sort((a, b) => a.lastAccess - b.lastAccess);
-    this.clearCacheByKeys(keys.slice(0, keys.length - maxSize).map((k) => k.key));
+    this.evictKeys(keys.slice(0, keys.length - maxSize).map((k) => k.key));
   }
 
   /**
@@ -711,29 +712,51 @@ export class NgHttpCachingService implements OnDestroy {
   }
 
   /**
-   * Clear the cache
+   * Clear the cache.
+   * Like every public `clearCache*`/`invalidateCache*` method, it also covers the requests
+   * in flight: their response was asked before the clear, so it isn't cached.
    */
   clearCache(): void {
-    this.lastAccess.clear();
-    this.config.store.clear();
+    this.mutationEpoch++;
+    this.evictAll();
   }
 
   /**
    * Clear the cache by key
    */
   clearCacheByKey(key: string): boolean {
-    this.lastAccess.delete(key);
-    return this.config.store.delete(key);
+    this.mutationEpoch++;
+    return this.evict(key);
   }
 
   /**
    * Clear the cache by keys
    */
   clearCacheByKeys(keys: string[]): number {
+    this.mutationEpoch++;
+    return this.evictKeys(keys);
+  }
+
+  /**
+   * Drop every entry. The internal removals (expiration, garbage collector, `maxSize`,
+   * mutation) go through these and not through the public methods: they must not make
+   * the requests in flight outdated.
+   */
+  private evictAll(): void {
+    this.lastAccess.clear();
+    this.config.store.clear();
+  }
+
+  private evict(key: string): boolean {
+    this.lastAccess.delete(key);
+    return this.config.store.delete(key);
+  }
+
+  private evictKeys(keys: string[]): number {
     let counter = 0;
     if (keys) {
       for (const key of keys) {
-        if (this.clearCacheByKey(key)) {
+        if (this.evict(key)) {
           counter++;
         }
       }
@@ -760,7 +783,8 @@ export class NgHttpCachingService implements OnDestroy {
    * so the first read of each refreshes it in background.
    */
   invalidateCache<K, T>(): number {
-    return this.invalidateCacheByKeys(this.keysByFilter<K, T>(() => true));
+    this.mutationEpoch++;
+    return this.markInvalidated(this.keysByFilter<K, T>(() => true));
   }
 
   /**
@@ -775,6 +799,11 @@ export class NgHttpCachingService implements OnDestroy {
    * Return the number of entries actually marked.
    */
   invalidateCacheByKeys<K, T>(keys: string[]): number {
+    this.mutationEpoch++;
+    return this.markInvalidated<K, T>(keys);
+  }
+
+  private markInvalidated<K, T>(keys: string[]): number {
     let count = 0;
     for (const key of keys) {
       const entry: NgHttpCachingEntry<K, T> | undefined = this.config.store.get<K, T>(key);
@@ -861,18 +890,15 @@ export class NgHttpCachingService implements OnDestroy {
   private applyMutation<K>(req: HttpRequest<K>, urls?: string[]): void {
     const context = req.context.get(NG_HTTP_CACHING_CONTEXT);
     const invalidation = context.mutationInvalidation ?? this.config.mutationInvalidation;
+    // the epoch has been opened by the caller already, so the internal methods are used
     if (invalidation === NgHttpCachingInvalidation.STALE) {
-      if (urls) {
-        this.invalidateCacheByKeys(this.keysByUrls<K, any>(urls));
-      } else {
-        this.invalidateCache();
-      }
+      this.markInvalidated(urls ? this.keysByUrls<K, any>(urls) : this.keysByFilter(() => true));
       return;
     }
     if (urls) {
-      this.clearCacheByKeys(this.keysByUrls<K, any>(urls));
+      this.evictKeys(this.keysByUrls<K, any>(urls));
     } else {
-      this.clearCache();
+      this.evictAll();
     }
   }
 
@@ -900,7 +926,7 @@ export class NgHttpCachingService implements OnDestroy {
           keys.push(key);
         }
       });
-      this.clearCacheByKeys(keys);
+      this.evictKeys(keys);
     } finally {
       this.gcLock = false;
     }

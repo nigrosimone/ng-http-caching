@@ -760,7 +760,9 @@ export class NgHttpCachingService {
   deleteFromCache<K>(req: HttpRequest<K>): boolean;
 
   /**
-   * Clear the cache
+   * Clear the cache.
+   * Like every `clearCache*` and `invalidateCache*` method, it also covers the requests
+   * in flight: a response asked before the call is delivered but not cached.
    */
   clearCache(): void;
 

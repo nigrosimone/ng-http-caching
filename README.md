@@ -230,8 +230,9 @@ reach the backend and still invalidate the cache.
 
 ### checkResponseHeaders (boolean - default false);
 If true response headers cache-control and expires are respected.
-`Cache-Control: no-store`/`no-cache`, and an `Expires` already in the past, keep the response
-out of the cache; `max-age` drives the entry lifetime. The `Age` header is subtracted from
+`Cache-Control: no-store`/`no-cache`, and an `Expires` already in the past (or not a date at
+all, like `0` or `-1`, RFC 9111 5.3), keep the response out of the cache; `max-age` drives
+the entry lifetime. The `Age` header is subtracted from
 `max-age`, so a response a CDN or proxy has already been holding isn't kept for the full
 `max-age` again — when `Age` is greater than or equal to `max-age` the response is already
 stale and isn't cached at all.

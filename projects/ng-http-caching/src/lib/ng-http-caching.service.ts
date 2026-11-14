@@ -102,8 +102,9 @@ export const getAgeSeconds = (headers: HttpHeaders): number => {
 
 /**
  * Return the absolute timestamp of the `Expires` response header, or `undefined` when
- * the header is missing/unparsable or when `Cache-Control` has a `max-age`, which takes
- * precedence (RFC 9111, 5.3).
+ * the header is missing or when `Cache-Control` has a `max-age`, which takes precedence
+ * (RFC 9111, 5.3). A value that isn't a date (eg. `0`, `-1`) is a time in the past, so the
+ * response is already expired (RFC 9111, 5.3).
  */
 export const getExpiresDeadline = (headers: HttpHeaders): number | undefined => {
   if (MAX_AGE.test(headers.get('cache-control')?.toLowerCase() ?? '')) {
@@ -114,7 +115,7 @@ export const getExpiresDeadline = (headers: HttpHeaders): number | undefined => 
     return undefined;
   }
   const expires = Date.parse(expiresHeader);
-  return isNaN(expires) ? undefined : expires;
+  return isNaN(expires) ? 0 : expires;
 };
 
 /**

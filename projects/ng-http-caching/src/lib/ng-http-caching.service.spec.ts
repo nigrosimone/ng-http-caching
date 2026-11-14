@@ -1317,7 +1317,16 @@ describe('NgHttpCachingService: context and edge cases', () => {
     expect(checkCacheHeaders(new HttpHeaders({ 'cache-control': 'public, max-age=3600' }))).toBe(
       3600000,
     );
-    expect(checkCacheHeaders(new HttpHeaders({ expires: 'invalid' }))).toBe(true);
+  });
+
+  it('checkCacheHeaders: an Expires that is not a date is already expired (RFC 9111, 5.3)', () => {
+    expect(checkCacheHeaders(new HttpHeaders({ expires: 'invalid' }))).toBe(false);
+    expect(checkCacheHeaders(new HttpHeaders({ expires: '0' }))).toBe(false);
+    expect(checkCacheHeaders(new HttpHeaders({ expires: '-1' }))).toBe(false);
+    // `max-age` still wins over it
+    expect(
+      checkCacheHeaders(new HttpHeaders({ 'cache-control': 'max-age=60', expires: '-1' })),
+    ).toBe(60000);
   });
 
   it('checkCacheHeaders: no-store and no-cache are not cacheable', () => {

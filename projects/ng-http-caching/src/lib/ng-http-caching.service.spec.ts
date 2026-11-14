@@ -1794,6 +1794,27 @@ describe('NgHttpCachingService: expires header drives the lifetime', () => {
     };
     expect(service.isExpired(entry)).toBe(false);
   });
+
+  it('should respect expires when cache-control has no max-age', () => {
+    const url = 'https://angular.io/docs?expires-and-public';
+    const now = Date.now();
+    const entry: NgHttpCachingEntry = {
+      url,
+      addedTime: now - 2 * NG_HTTP_CACHING_SECOND_IN_MS,
+      response: new HttpResponse({
+        status: 200,
+        headers: new HttpHeaders({
+          'cache-control': 'public',
+          expires: new Date(now - NG_HTTP_CACHING_SECOND_IN_MS).toUTCString(),
+        }),
+      }),
+      request: new HttpRequest('GET', url),
+      version: VERSION.major,
+    };
+    // only `max-age` overrides `Expires` (RFC 9111, 5.3)
+    expect(service.isExpired(entry)).toBe(true);
+    expect(checkCacheHeaders(entry.response.headers)).toBe(false);
+  });
 });
 
 describe('NgHttpCachingService: function mutation strategy is limited to mutations', () => {

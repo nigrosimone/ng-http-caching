@@ -46,6 +46,8 @@ export const withNgHttpCachingContext = (
   context: HttpContext = new HttpContext(),
 ) => context.set(NG_HTTP_CACHING_CONTEXT, value);
 
+const MAX_AGE = /max-age\s*=\s*(\d+)/;
+
 export const checkCacheHeaders = (headers: HttpHeaders): boolean | number => {
   // check Cache-Control
   const cacheControlHeader = headers.get('cache-control');
@@ -57,7 +59,7 @@ export const checkCacheHeaders = (headers: HttpHeaders): boolean | number => {
       return false;
     }
     // extract max-age value if present
-    const maxAgeMatch = /max-age\s*=\s*(\d+)/.exec(cacheControl);
+    const maxAgeMatch = MAX_AGE.exec(cacheControl);
     if (maxAgeMatch) {
       const maxAgeSec = parseInt(maxAgeMatch[1], 10);
       // `max-age` is counted from the moment the response was generated, not from the
@@ -73,10 +75,9 @@ export const checkCacheHeaders = (headers: HttpHeaders): boolean | number => {
       // return the remaining freshness in milliseconds so the caller can use it as lifetime
       return freshSec * 1000;
     }
-    return true;
   }
 
-  // check Expires header if response is without Cache-Control
+  // check Expires header if response is without max-age
   const expires = getExpiresDeadline(headers);
   if (expires !== undefined) {
     return expires > Date.now();
@@ -101,10 +102,11 @@ export const getAgeSeconds = (headers: HttpHeaders): number => {
 
 /**
  * Return the absolute timestamp of the `Expires` response header, or `undefined` when
- * the header is missing/unparsable or when `Cache-Control` (which takes precedence) is set.
+ * the header is missing/unparsable or when `Cache-Control` has a `max-age`, which takes
+ * precedence (RFC 9111, 5.3).
  */
 export const getExpiresDeadline = (headers: HttpHeaders): number | undefined => {
-  if (headers.get('cache-control')) {
+  if (MAX_AGE.test(headers.get('cache-control')?.toLowerCase() ?? '')) {
     return undefined;
   }
   const expiresHeader = headers.get('expires');

@@ -1,5 +1,26 @@
 # Changelog
 
+## [22.5.1](https://github.com/nigrosimone/ng-http-caching/compare/v22.5.0...v22.5.1) (2026-11-14)
+
+### 🐛 Bug Fixes
+
+- treat an Expires that isn't a date as already expired ([e7a05f9](https://github.com/nigrosimone/ng-http-caching/commit/e7a05f9b14250fb1b7c3a38fb6564e6e0853b0fb))
+- drop the stale entry when the refresh brings a response that can't be cached ([92e8bc3](https://github.com/nigrosimone/ng-http-caching/commit/92e8bc340d541431161f3576470ca55b4d066b4e))
+- don't exempt a request sharing the key with a non cacheable mutation from the invalidation ([de250c8](https://github.com/nigrosimone/ng-http-caching/commit/de250c81250884a9b9aebc60e37bb60b1b454247))
+- don't cache a response in flight when clearCache() or invalidateCache() is called ([e4c5ee1](https://github.com/nigrosimone/ng-http-caching/commit/e4c5ee10a17c340173c7728f1b92212c6fd80276))
+- don't store a Blob or ArrayBuffer body into the web storage, it came back as {} ([178c8ed](https://github.com/nigrosimone/ng-http-caching/commit/178c8ed221ea3e6cddefeab7f2dd940315edf4f9))
+- respect Expires when Cache-Control has no max-age ([f3d2f7a](https://github.com/nigrosimone/ng-http-caching/commit/f3d2f7a19f91e925d52dea6bb0f797aa39e8d72c))
+- don't broadcast again an entry rewritten while already invalidated ([21b97ad](https://github.com/nigrosimone/ng-http-caching/commit/21b97ad48231007cef810478e651e56ca8bd9c98))
+- don't let a request made after a mutation join a request still in flight from before it ([b2c7de2](https://github.com/nigrosimone/ng-http-caching/commit/b2c7de2613f3e7b870878d76f91f29129e40e306))
+- don't let a 304 asked before a mutation confirm the entry the mutation invalidated ([99df742](https://github.com/nigrosimone/ng-http-caching/commit/99df7421555fde04dd7422067d59a362fc40f19e))
+- serve the confirmed body on 304 to a request that joined the refresh after the entry was gone ([b9a4f42](https://github.com/nigrosimone/ng-http-caching/commit/b9a4f422dde178f3c0d3781a007a1d4968d8cc5d))
+
+### 🧹 Chores
+
+- update dependencies ([748473d](https://github.com/nigrosimone/ng-http-caching/commit/748473d127d2e98ab1c44935ed020881cb86f712))
+
+**Full Changelog**: https://github.com/nigrosimone/ng-http-caching/compare/v22.5.0...v22.5.1
+
 ## [22.5.0](https://github.com/nigrosimone/ng-http-caching/compare/v22.4.0...v22.5.0) (2026-09-02)
 
 ### 🚀 Features

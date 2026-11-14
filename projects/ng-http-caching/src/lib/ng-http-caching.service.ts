@@ -479,10 +479,13 @@ export class NgHttpCachingService implements OnDestroy {
   /**
    * Number of invalidations performed by `clearCacheByMutation` so far, and the value it
    * had when each pending request was queued. A response requested before an invalidation
-   * already describes the state the mutation has changed, so it must not be cached.
+   * already describes the state the mutation has changed, so it must not be cached, and a
+   * request made after the invalidation must not join it.
+   * Kept by observable, not by key: an outdated request and the newer one replacing it in
+   * the queue can be in flight together for the same key.
    */
   private mutationEpoch = 0;
-  private readonly queueEpoch = new Map<string, number>();
+  private readonly queueEpoch = new WeakMap<Observable<HttpEvent<any>>, number>();
 
   private gcLock = false;
   private gcLastRun = 0;
@@ -637,13 +640,18 @@ export class NgHttpCachingService implements OnDestroy {
   }
 
   /**
-   * Add response to cache
+   * Add response to cache.
+   * `obs` is the pending request that brought the response, when it was queued.
    */
-  addToCache<K, T>(req: HttpRequest<K>, res: HttpResponse<T>): boolean {
+  addToCache<K, T>(
+    req: HttpRequest<K>,
+    res: HttpResponse<T>,
+    obs?: Observable<HttpEvent<any>>,
+  ): boolean {
     const key: string = this.getKey(req);
     // this response was requested before a mutation invalidated the cache: it describes
     // the state the mutation has changed, so storing it would defeat `clearCacheOnMutation`
-    if (this.isOutdated(key)) {
+    if (this.isOutdated(obs ?? this.queue.get(key))) {
       return false;
     }
     // with a `responseSerializer` the store keeps a private copy of the body, so the
@@ -898,9 +906,10 @@ export class NgHttpCachingService implements OnDestroy {
   }
 
   /**
-   * Clear the cache by mutation
+   * Clear the cache by mutation.
+   * `obs` is the pending request of the mutation, when it is cacheable and queued.
    */
-  clearCacheByMutation<K>(req: HttpRequest<K>): boolean {
+  clearCacheByMutation<K>(req: HttpRequest<K>, obs?: Observable<HttpEvent<any>>): boolean {
     const context = req.context.get(NG_HTTP_CACHING_CONTEXT);
     const strategy = context.clearCacheOnMutation ?? this.config.clearCacheOnMutation;
 
@@ -916,7 +925,7 @@ export class NgHttpCachingService implements OnDestroy {
     if (typeof strategy === 'function') {
       const result = strategy(req);
       if (result === true) {
-        this.openMutationEpoch(req);
+        this.openMutationEpoch(req, obs);
         this.applyMutation(req);
         return true;
       }
@@ -924,7 +933,7 @@ export class NgHttpCachingService implements OnDestroy {
     }
 
     if (strategy === true || strategy === NgHttpCachingMutationStrategy.ALL) {
-      this.openMutationEpoch(req);
+      this.openMutationEpoch(req, obs);
       this.applyMutation(req);
       return true;
     }
@@ -936,7 +945,7 @@ export class NgHttpCachingService implements OnDestroy {
     // POST/PUT requests) and the key isn't `method@urlWithParams` anymore
 
     if (strategy === NgHttpCachingMutationStrategy.IDENTICAL) {
-      this.openMutationEpoch(req);
+      this.openMutationEpoch(req, obs);
       this.applyMutation(req, [url]);
       return true;
     }
@@ -948,7 +957,7 @@ export class NgHttpCachingService implements OnDestroy {
         parts.pop();
         urls.push(parts.join('/'));
       }
-      this.openMutationEpoch(req);
+      this.openMutationEpoch(req, obs);
       this.applyMutation(req, urls);
       return true;
     }
@@ -961,19 +970,19 @@ export class NgHttpCachingService implements OnDestroy {
    * epoch and won't be cached anymore by `addToCache`. The mutation itself is moved into
    * the new epoch, because its own response is the result of the mutation, not stale data.
    */
-  private openMutationEpoch<K>(req: HttpRequest<K>): void {
+  private openMutationEpoch<K>(req: HttpRequest<K>, obs?: Observable<HttpEvent<any>>): void {
     this.mutationEpoch++;
-    const key: string = this.getKey(req);
-    if (this.queueEpoch.has(key)) {
-      this.queueEpoch.set(key, this.mutationEpoch);
+    const own = obs ?? this.queue.get(this.getKey(req));
+    if (own && this.queueEpoch.has(own)) {
+      this.queueEpoch.set(own, this.mutationEpoch);
     }
   }
 
   /**
-   * Return true when the pending request for this key was queued before the last mutation
+   * Return true when the pending request was queued before the last mutation
    */
-  private isOutdated(key: string): boolean {
-    const epoch = this.queueEpoch.get(key);
+  private isOutdated(obs: Observable<HttpEvent<any>> | undefined): boolean {
+    const epoch = obs && this.queueEpoch.get(obs);
     return epoch !== undefined && epoch < this.mutationEpoch;
   }
 
@@ -1012,11 +1021,15 @@ export class NgHttpCachingService implements OnDestroy {
    * Confirm the cached entry after a `304 Not Modified`: the body we hold is still the
    * current one, so both clocks restart and the entry isn't invalidated anymore.
    * Return the confirmed response, or `undefined` when there is nothing to confirm.
+   * `obs` is the pending refresh that got the 304.
    */
-  confirmFromCache<K, T>(req: HttpRequest<K>): Readonly<HttpResponse<T>> | undefined {
+  confirmFromCache<K, T>(
+    req: HttpRequest<K>,
+    obs?: Observable<HttpEvent<any>>,
+  ): Readonly<HttpResponse<T>> | undefined {
     const key: string = this.getKey(req);
     // a 304 asked before a mutation can't confirm what the mutation has changed
-    if (this.isOutdated(key)) {
+    if (this.isOutdated(obs ?? this.queue.get(key))) {
       return undefined;
     }
     const cached: NgHttpCachingEntry<K, T> | undefined = this.config.store.get<K, T>(key);
@@ -1288,7 +1301,9 @@ export class NgHttpCachingService implements OnDestroy {
     const key: string = this.getKey(req);
     const cached: Observable<HttpEvent<T>> | undefined = this.queue.get(key);
 
-    if (!cached) {
+    // sent before a mutation: its response describes the state the mutation has changed,
+    // so a request made now has to go to the backend instead of joining it
+    if (!cached || this.isOutdated(cached)) {
       return undefined;
     }
 
@@ -1301,15 +1316,19 @@ export class NgHttpCachingService implements OnDestroy {
   addToQueue<K, T>(req: HttpRequest<K>, obs: Observable<HttpEvent<T>>): void {
     const key: string = this.getKey(req);
     this.queue.set(key, obs);
-    this.queueEpoch.set(key, this.mutationEpoch);
+    this.queueEpoch.set(obs, this.mutationEpoch);
   }
 
   /**
-   * Delete observable from cache
+   * Delete observable from cache.
+   * With `obs`, only when it is still the one queued for the request: after a mutation a
+   * newer request may have taken its key.
    */
-  deleteFromQueue<K>(req: HttpRequest<K>): boolean {
+  deleteFromQueue<K>(req: HttpRequest<K>, obs?: Observable<HttpEvent<any>>): boolean {
     const key: string = this.getKey(req);
-    this.queueEpoch.delete(key);
+    if (obs && this.queue.get(key) !== obs) {
+      return false;
+    }
     return this.queue.delete(key);
   }
 
@@ -1362,7 +1381,6 @@ export class NgHttpCachingService implements OnDestroy {
     this.keptAlive.clear();
     this.config.store.destroy?.();
     this.queue.clear();
-    this.queueEpoch.clear();
     this.lastAccess.clear();
   }
 }

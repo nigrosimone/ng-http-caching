@@ -545,6 +545,35 @@ describe('NgHttpCachingInterceptorService: behaviour through the interceptor', (
     expect(after.body.call).toBe(2);
   }, 2000);
 
+  it('a request made after a mutation should not join one in flight from before', async () => {
+    const { interceptor, service } = setup({
+      clearCacheOnMutation: NgHttpCachingMutationStrategy.ALL,
+    });
+    const backend = new CountingHandler(60);
+    const url = 'https://angular.io/api/items';
+
+    // the GET starts and is still travelling
+    const pendingGet = firstValueFrom(interceptor.intercept(GET(url), backend));
+    await sleep(10);
+
+    // meanwhile a mutation succeeds
+    await firstValueFrom(
+      interceptor.intercept(new HttpRequest('POST', url, {}), new CountingHandler()),
+    );
+
+    // a GET made now must reach the backend, not get the data from before the mutation
+    const after = (await firstValueFrom(
+      interceptor.intercept(GET(url), backend),
+    )) as HttpResponse<any>;
+    await pendingGet;
+    expect(backend.calls).toBe(2);
+    expect(after.body.call).toBe(2);
+
+    // and the old GET, ending first, neither fills the cache nor drops the new one
+    expect((service.getFromCache(GET(url))?.body as any)?.call).toBe(2);
+    expect(service.getFromQueue(GET(url))).toBeUndefined();
+  }, 2000);
+
   it('the first consumer should not be able to poison the cached body', async () => {
     const { interceptor } = setup();
     const handler = new CountingHandler();

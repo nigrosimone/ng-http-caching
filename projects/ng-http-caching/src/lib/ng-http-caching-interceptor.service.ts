@@ -78,20 +78,21 @@ const handle = (
 
   const keep = cacheService.keepInFlight(req);
 
-  const shared = sendRequest(req, next).pipe(
+  // `shared` is handed to the service as the identity of this pending request
+  const shared: Observable<HttpEvent<any>> = sendRequest(req, next).pipe(
     tap((event) => {
       if (event.type === HttpEventType.Response) {
         if (event.ok) {
           // a mutation can be cacheable too (eg. `allowedMethod: ['ALL']`):
           // invalidate before caching, so the response of this very request survives
-          cacheService.clearCacheByMutation(req);
+          cacheService.clearCacheByMutation(req, shared);
         }
-        cacheService.addToCache(req, event);
+        cacheService.addToCache(req, event, shared);
       }
     }),
     finalize(() => {
       // delete pending request
-      cacheService.deleteFromQueue(req);
+      cacheService.deleteFromQueue(req, shared);
     }),
     shareReplay({
       bufferSize: 1,
@@ -130,17 +131,20 @@ const revalidate = (
   const stored = cacheService.getStore().get(cacheService.getKey(req))?.response;
   // the same request, plus `If-None-Match`/`If-Modified-Since` when the cached response
   // carries a validator: the backend can then answer `304 Not Modified` with no body
-  const shared = sendRequest(cacheService.getConditionalRequest(req), next).pipe(
+  const shared: Observable<HttpEvent<any>> = sendRequest(
+    cacheService.getConditionalRequest(req),
+    next,
+  ).pipe(
     tap((event) => {
       if (event.type === HttpEventType.Response) {
-        cacheService.addToCache(req, event);
+        cacheService.addToCache(req, event, shared);
       }
     }),
     catchError((error) => {
       // Angular reports a 304 as an error, because it isn't a 2xx. It is the good case:
       // what we hold is still current.
       if (error?.status === 304) {
-        const confirmed = cacheService.confirmFromCache(req) ?? stored;
+        const confirmed = cacheService.confirmFromCache(req, shared) ?? stored;
         if (confirmed) {
           return of(confirmed);
         }
@@ -148,7 +152,7 @@ const revalidate = (
       return throwError(() => error);
     }),
     finalize(() => {
-      cacheService.deleteFromQueue(req);
+      cacheService.deleteFromQueue(req, shared);
     }),
     // no `refCount`: the refresh must survive our own unsubscribe, and any parallel
     // request finding it into the queue gets the very same response

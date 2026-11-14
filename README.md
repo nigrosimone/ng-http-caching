@@ -474,6 +474,9 @@ const ngHttpCachingConfig: NgHttpCachingConfig = {
 If this function return `true` the cache entry is valid and can be stored, if return `false` isn't valid. 
 If the result is `undefined`, the normal behaviour is provided.
 Default behaviour is whether the status code falls in the 2xx range and response headers cache-control and expires allow cache.
+A response that isn't valid is delivered but not stored, and if it refreshes a stale entry
+(see `staleTime`) that entry is removed too: the cache never serves what the backend has
+stopped confirming.
 Example of customization:
 
 ```ts

@@ -682,6 +682,9 @@ export class NgHttpCachingService implements OnDestroy {
       this.enforceMaxSize();
       return true;
     }
+    // the latest response for this key can't be cached (eg. the backend now answers with
+    // `no-store`): the entry it was meant to refresh must not be served anymore either
+    this.evict(key);
     return false;
   }
 

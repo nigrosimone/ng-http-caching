@@ -336,7 +336,10 @@ describe('NgHttpCachingInterceptorService: mutation on a cacheable method', () =
  */
 class CountingHandler extends HttpHandler {
   public calls = 0;
-  constructor(private readonly delayMs = 0) {
+  constructor(
+    private readonly delayMs = 0,
+    private readonly headers?: Record<string, string>,
+  ) {
     super();
   }
   handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
@@ -344,6 +347,7 @@ class CountingHandler extends HttpHandler {
     const res = new HttpResponse({
       status: 200,
       body: { call: this.calls, url: req.urlWithParams },
+      headers: new HttpHeaders(this.headers),
     });
     return this.delayMs > 0 ? of(res).pipe(delay(this.delayMs)) : of(res);
   }
@@ -820,6 +824,23 @@ describe('NgHttpCachingInterceptorService: staleTime and stale-while-revalidate'
       expect(bodyOf(body)).toEqual({ call: 1, url: req.urlWithParams });
     }
     expect(handler.calls).toBe(2);
+  }, 1000);
+
+  it('should drop the stale entry when the refresh brings a response that cannot be cached', async () => {
+    const { interceptor, service } = setup({ staleTime: 0, checkResponseHeaders: true });
+    const req = GET('https://angular.io/docs?swr-no-store');
+
+    await firstValueFrom(interceptor.intercept(req, new CountingHandler()));
+
+    // stale: served, and refreshed by a backend that now says `no-store`
+    const noStore = new CountingHandler(0, { 'cache-control': 'no-store' });
+    await firstValueFrom(interceptor.intercept(req, noStore));
+    await sleep(10);
+
+    // the old body must not be served anymore: the next request reaches the backend
+    expect(service.getFromCache(req)).toBeUndefined();
+    const next = await firstValueFrom(interceptor.intercept(req, noStore));
+    expect(bodyOf(next)).toEqual({ call: 2, url: req.urlWithParams });
   }, 1000);
 
   it('should keep the stale entry when the refresh fails', async () => {

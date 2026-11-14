@@ -496,6 +496,26 @@ describe('NgHttpCachingInterceptorService: behaviour through the interceptor', (
     expect(service.getStore().has('GET@https://angular.io/api/other')).toBe(true);
   }, 1000);
 
+  it('a mutation sharing the key with a GET in flight should not exempt it', async () => {
+    // a custom key without the method: the POST isn't cacheable, so what the queue holds
+    // for its key is the GET, and it must become outdated like any other request
+    const { interceptor, service } = setup({
+      clearCacheOnMutation: NgHttpCachingMutationStrategy.ALL,
+      getKey: (req) => req.urlWithParams,
+    });
+    const backend = new CountingHandler(60);
+    const url = 'https://angular.io/api/items';
+
+    const pendingGet = firstValueFrom(interceptor.intercept(GET(url), backend));
+    await sleep(10);
+    await firstValueFrom(
+      interceptor.intercept(new HttpRequest('POST', url, {}), new CountingHandler()),
+    );
+    await pendingGet;
+
+    expect(service.getFromCache(GET(url))).toBeUndefined();
+  }, 2000);
+
   it('a context override should be honoured with a persistent store too', async () => {
     // an HttpContext holds live functions and can't be serialized with the entry: the
     // override has to be read from the request being served, and not from the one the

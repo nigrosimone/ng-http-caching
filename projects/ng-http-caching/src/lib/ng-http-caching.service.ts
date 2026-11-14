@@ -953,7 +953,7 @@ export class NgHttpCachingService implements OnDestroy {
     if (typeof strategy === 'function') {
       const result = strategy(req);
       if (result === true) {
-        this.openMutationEpoch(req, obs);
+        this.openMutationEpoch(obs);
         this.applyMutation(req);
         return true;
       }
@@ -961,7 +961,7 @@ export class NgHttpCachingService implements OnDestroy {
     }
 
     if (strategy === true || strategy === NgHttpCachingMutationStrategy.ALL) {
-      this.openMutationEpoch(req, obs);
+      this.openMutationEpoch(obs);
       this.applyMutation(req);
       return true;
     }
@@ -973,7 +973,7 @@ export class NgHttpCachingService implements OnDestroy {
     // POST/PUT requests) and the key isn't `method@urlWithParams` anymore
 
     if (strategy === NgHttpCachingMutationStrategy.IDENTICAL) {
-      this.openMutationEpoch(req, obs);
+      this.openMutationEpoch(obs);
       this.applyMutation(req, [url]);
       return true;
     }
@@ -985,7 +985,7 @@ export class NgHttpCachingService implements OnDestroy {
         parts.pop();
         urls.push(parts.join('/'));
       }
-      this.openMutationEpoch(req, obs);
+      this.openMutationEpoch(obs);
       this.applyMutation(req, urls);
       return true;
     }
@@ -998,11 +998,13 @@ export class NgHttpCachingService implements OnDestroy {
    * epoch and won't be cached anymore by `addToCache`. The mutation itself is moved into
    * the new epoch, because its own response is the result of the mutation, not stale data.
    */
-  private openMutationEpoch<K>(req: HttpRequest<K>, obs?: Observable<HttpEvent<any>>): void {
+  private openMutationEpoch(obs?: Observable<HttpEvent<any>>): void {
     this.mutationEpoch++;
-    const own = obs ?? this.queue.get(this.getKey(req));
-    if (own && this.queueEpoch.has(own)) {
-      this.queueEpoch.set(own, this.mutationEpoch);
+    // only the observable handed over is the mutation's own: a mutation that isn't
+    // cacheable is never queued, and what the queue holds for its key (eg. a GET sharing
+    // the key with a custom `getKey`) is another request, that has to become outdated
+    if (obs && this.queueEpoch.has(obs)) {
+      this.queueEpoch.set(obs, this.mutationEpoch);
     }
   }
 

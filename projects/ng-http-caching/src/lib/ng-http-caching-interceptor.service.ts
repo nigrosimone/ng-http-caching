@@ -125,6 +125,9 @@ const revalidate = (
   if (cacheService.getFromQueue(req)) {
     return;
   }
+  // the response the validators come from: a 304 confirms it even if the entry is gone by
+  // then, and a request that missed the cache and joined this refresh needs a body
+  const stored = cacheService.getStore().get(cacheService.getKey(req))?.response;
   // the same request, plus `If-None-Match`/`If-Modified-Since` when the cached response
   // carries a validator: the backend can then answer `304 Not Modified` with no body
   const shared = sendRequest(cacheService.getConditionalRequest(req), next).pipe(
@@ -137,7 +140,7 @@ const revalidate = (
       // Angular reports a 304 as an error, because it isn't a 2xx. It is the good case:
       // what we hold is still current.
       if (error?.status === 304) {
-        const confirmed = cacheService.confirmFromCache(req);
+        const confirmed = cacheService.confirmFromCache(req) ?? stored;
         if (confirmed) {
           return of(confirmed);
         }

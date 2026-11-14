@@ -13,8 +13,8 @@ import {
   withInterceptorsFromDi,
 } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
-import { of, Observable, throwError, firstValueFrom } from 'rxjs';
-import { delay } from 'rxjs/operators';
+import { of, Observable, throwError, firstValueFrom, timer } from 'rxjs';
+import { delay, mergeMap } from 'rxjs/operators';
 import {
   NgHttpCachingService,
   NgHttpCachingHeaders,
@@ -900,11 +900,17 @@ describe('NgHttpCachingInterceptorService: mutationInvalidation STALE', () => {
 class NotModifiedHandler extends HttpHandler {
   public calls = 0;
   public lastRequest: HttpRequest<any> | undefined;
+  constructor(private readonly delayMs = 1) {
+    super();
+  }
   handle(req: HttpRequest<any>): Observable<HttpEvent<any>> {
     this.calls++;
     this.lastRequest = req;
     if (req.headers.has('If-None-Match') || req.headers.has('If-Modified-Since')) {
-      return throwError(() => new HttpErrorResponse({ status: 304, url: req.url })).pipe(delay(1));
+      // `delay` doesn't delay an error, a timer does
+      return timer(this.delayMs).pipe(
+        mergeMap(() => throwError(() => new HttpErrorResponse({ status: 304, url: req.url }))),
+      );
     }
     return of(
       new HttpResponse({
@@ -993,6 +999,23 @@ describe('NgHttpCachingInterceptorService: conditional revalidation', () => {
     await sleep(20);
 
     expect(service.getFromCacheWithState(req)?.stale).toBe(false);
+    expect(handler.calls).toBe(2);
+  }, 2000);
+
+  it('should serve the confirmed body to a request joining the refresh after the entry is gone', async () => {
+    const { interceptor, service } = setup({ staleTime: 0 });
+    const handler = new NotModifiedHandler(20);
+    const req = GET('https://angular.io/docs?etag-gone');
+
+    await firstValueFrom(interceptor.intercept(req, handler));
+    // stale: starts the conditional refresh
+    await firstValueFrom(interceptor.intercept(req, handler));
+    // the entry goes away while the refresh is in flight (cleared, expired, evicted)
+    service.clearCache();
+
+    // this request misses the cache and joins the refresh, which gets a 304
+    const joined = await firstValueFrom(interceptor.intercept(req, handler));
+    expect(bodyOf(joined)).toEqual({ call: 1 });
     expect(handler.calls).toBe(2);
   }, 2000);
 
